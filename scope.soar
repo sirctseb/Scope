@@ -1,0 +1,3 @@
+pushd scope
+source scope_source.soar
+popd
