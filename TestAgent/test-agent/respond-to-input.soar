@@ -1,0 +1,27 @@
+sp {incur*input
+   (state <s> ^name test-agent
+              ^io.input-link <input>)
+-->
+   (<input> ^text |blah|)
+}
+sp {propose*respond-to-input
+   (state <s> ^name test-agent
+              ^io.input-link <input>)
+   (<input> ^text <text>)
+-->
+   (<s> ^operator <o> +)
+   (<o> ^name respond-to-input
+        ^text <text>)
+}
+
+sp {apply*respond-to-input
+   (state <s> ^name test-agent
+              ^operator <o>
+              ^io.output-link <output>)
+   (<o> ^name respond-to-input
+        ^text <text>)
+-->
+   (<output> ^response <response-text>)
+   (<response-text> ^text (concat |oh, | <text> |,copy that|))
+   (write (crlf) |oh, | <text> |, copy that|)
+}
