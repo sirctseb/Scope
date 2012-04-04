@@ -223,7 +223,8 @@ namespace TestCSharpSML
 		/// </summary>
 		[STAThread]
 		static void Main(string[] args)
-		{
+        {
+            Console.WriteLine(System.IO.Directory.GetCurrentDirectory());
 			//System.Console.Out.WriteLine("Press return to start") ;
 			//System.Console.In.ReadLine() ;
 
@@ -254,7 +255,10 @@ namespace TestCSharpSML
 			//
 			// TODO: Add code to start application here
 			//
-			sml.Kernel kernel = sml.Kernel.CreateKernelInNewThread("SoarKernelSML") ;
+			//sml.Kernel kernel = sml.Kernel.CreateKernelInNewThread("SoarKernelSML") ;
+            sml.Kernel kernel = sml.Kernel.CreateKernelInNewThread();
+            //sml.Kernel kernel = sml.Kernel.CreateKernelInCurrentThread();
+            //sml.Kernel kernel = sml.Kernel.CreateRemoteConnection();
 
 			// Make sure the kernel was ok
 			if (kernel.HadError())
@@ -268,7 +272,7 @@ namespace TestCSharpSML
 			if (kernel.HadError())
 				throw new Exception("Error creating agent: " + kernel.GetLastErrorDescription()) ;
 
-			bool ok = agent.LoadProductions("..\\Tests\\testcsharpsml.soar") ;
+			bool ok = agent.LoadProductions("test_agents\\testcsharpsml.soar") ;
 			if (!ok)
 			{
 				System.Console.Out.WriteLine("Load failed") ; 
@@ -331,10 +335,11 @@ namespace TestCSharpSML
 			int rhsCallbackID	= kernel.AddRhsFunction("test-rhs", rhsCall, myTestData) ;
 			int clientCallbackID= kernel.RegisterForClientMessageEvent("test-client", clientCall, myTestData) ;
 
+            ok = pAgent.Commit();
 			// Running the agent will trigger most of the events we're listening for so
 			// we can check that they're working correctly.
-			agent.RunSelf(3) ;
-			//kernel.RunAllAgents(3) ;
+			pAgent.RunSelf(1) ;
+            //kernel.RunAllAgents(3);
 
 			// Trigger an agent event
 			agent.InitSoar() ;
