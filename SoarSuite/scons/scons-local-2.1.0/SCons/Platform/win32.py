@@ -375,7 +375,7 @@ def generate(env):
     env['ESCAPE']         = escape
     
     env['HOST_OS']        = 'win32'
-    env['HOST_ARCH']      = get_architecture().arch
+    env['HOST_ARCH']      = 'x86'#get_architecture().arch
     
 
 # Local Variables:
