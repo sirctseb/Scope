@@ -1,5 +1,6 @@
 sp {incur*input
-   (state <s> ^name test-agent
+   (state <s> ^disable this-please
+              ^name test-agent
               ^io.input-link <input>)
 -->
    (<input> ^text |blah|)
