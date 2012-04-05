@@ -9,23 +9,21 @@ namespace SoarIMPRINTPlugin
 	{
 		// TODO test when IMPRINT creates plugin objects
 		private static bool kernelInitialized = false;
-		//private static sml.Kernel kernel = null;
-		//private static sml.Agent agent = null;
+		private static sml.Kernel kernel = null;
+		private static sml.Agent agent = null;
 		public static string ScopeOutput = null;
 
 		public static bool CreateKernel()
 		{
-			//kernel = sml.Kernel.CreateKernelInNewThread();
+			kernel = sml.Kernel.CreateKernelInNewThread();
 			
-			//return kernelInitialized = !kernel.HadError();
-			return true;
+			return kernelInitialized = !kernel.HadError();
 		}
 
 		public static bool InitializeScope()
 		{
-			return true;
 			// create the agent
-			/*agent = kernel.CreateAgent("scope-agent");
+			agent = kernel.CreateAgent("scope-agent");
 			if (kernel.HadError()) return false;
 
 			// load scope productions
@@ -47,7 +45,13 @@ namespace SoarIMPRINTPlugin
 				}
 			}
 
-			return true;*/
+			return true;
+		}
+
+		public static bool KillKernel()
+		{
+			kernel.Shutdown();
+			return true;
 		}
 
 		#region IPlugin Implementation
