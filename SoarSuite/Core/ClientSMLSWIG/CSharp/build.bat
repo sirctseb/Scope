@@ -14,7 +14,8 @@ mkdir "C:\Users\cjbest\Desktop\Coping\Soar9.3.2\SoarSuite\build\Core\ClientSMLSW
    -c++ -csharp -Wall -outdir "C:\Users\cjbest\Desktop\Coping\Soar9.3.2\SoarSuite\build\Core\ClientSMLSWIG\CSharp\src\sml" ^
    "C:\Users\cjbest\Desktop\Coping\Soar9.3.2\SoarSuite\Core\ClientSMLSWIG\CSharp\CSharp_sml_ClientInterface.i"
 cd ..\..\..\build\Core\ClientSMLSWIG\CSharp\src\sml
-csc /target:library /out:..\..\sml_CSharp.dll /platform:x64 .\*.cs
+REM csc /target:library /out:..\..\sml_CSharp.dll /platform:x64 .\*.cs
+%SystemRoot%\Microsoft.NET\Framework\v3.5\csc.exe /target:library /out:..\..\sml_CSharp.dll /platform:x64 ./*.cs
 cd ..\..
 copy ..\..\..\..\Core\ClientSMLSWIG\CSharp\CSharpCallbackByHand.h .\
 cd ..\..\..\..
