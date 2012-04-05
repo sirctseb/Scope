@@ -5,7 +5,7 @@
 import os
 Import('env', 'InstallDir')
 
-subdirs = ['TestSMLEvents', 'TestSMLPerformance', 'TestSoarPerformance', 'TestExternalLibrary', 'UnitTests']
+subdirs = ['TestSMLEvents', 'TestSMLPerformance', 'TestSoarPerformance', 'TestExternalLibrary']
 
 tests = []
 for d in subdirs:
