@@ -57,6 +57,10 @@
       <Project>{2A40D0DB-CC7F-43F5-834B-4C03420568E5}</Project>
       <Name>SoarIMPRINTPlugin</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Utility\Utility.csproj">
+      <Project>{037FE73F-B98D-443D-8CA5-C67E7F8D249F}</Project>
+      <Name>Utility</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

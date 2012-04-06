@@ -2,11 +2,18 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-
+using Utility;
 namespace SoarIMPRINTPlugin
 {
-	public class Scope : IMPRINTLogger, MAAD.Utilities.Plugins.IPlugin
+	public class Scope : Utility.IMPRINTAccess, Utility.IIMPRINTLogger, MAAD.Utilities.Plugins.IPlugin
 	{
+		// to "subclass" from IMPRINTLogger
+		public Utility.IMPRINTLogger logger
+		{
+			get;
+			set;
+		}
+
 		// TODO test when IMPRINT creates plugin objects
 		private bool kernelInitialized = false;
 		private sml.Kernel kernel = null;
@@ -16,7 +23,7 @@ namespace SoarIMPRINTPlugin
 
 		public Scope()
 		{
-			enable("debug");
+			this.enable("debug");
 		}
 		
 		// we learned that a new object is constructed everytime a simulation starts
@@ -40,6 +47,7 @@ namespace SoarIMPRINTPlugin
 		private void OnBeforeBeginningEffect(MAAD.Simulator.Executor executor)
 		{
 			// TODO add task props to Soar input
+			//AddTask(executor.
 		}
 		public void OnSimulationBegin(object sender, EventArgs e)
 		{
@@ -65,14 +73,14 @@ namespace SoarIMPRINTPlugin
 		public bool CreateKernel()
 		{
 			kernel = sml.Kernel.CreateKernelInNewThread();
-			log("Creating kernel: " + kernel.HadError(), "debug");
+			this.log("Creating kernel: " + kernel.HadError(), "debug");
 			
 			return kernelInitialized = !kernel.HadError();
 		}
 
 		public bool InitializeScope()
 		{
-			return InitializeScope("Scope/agent/test-agent.soar");
+			return InitializeScope("Scope/agent/scope.soar");
 		}
 		public bool InitializeScope(string source)
 		{
@@ -150,7 +158,7 @@ namespace SoarIMPRINTPlugin
 
 		public bool KillKernel()
 		{
-			log("killing kernel", "debug");
+			this.log("killing kernel", "debug");
 
 			kernel.Shutdown();
 			return true;

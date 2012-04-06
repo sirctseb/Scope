@@ -5,35 +5,31 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{2A40D0DB-CC7F-43F5-834B-4C03420568E5}</ProjectGuid>
+    <ProjectGuid>{037FE73F-B98D-443D-8CA5-C67E7F8D249F}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>SoarIMPRINTPlugin</RootNamespace>
-    <AssemblyName>SoarIMPRINTPlugin</AssemblyName>
+    <RootNamespace>Utility</RootNamespace>
+    <AssemblyName>Utility</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <DebugType>full</DebugType>
-    <PlatformTarget>x86</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisIgnoreBuiltInRuleSets>false</CodeAnalysisIgnoreBuiltInRuleSets>
-    <CodeAnalysisIgnoreBuiltInRules>false</CodeAnalysisIgnoreBuiltInRules>
-    <CodeAnalysisFailOnMissingRules>false</CodeAnalysisFailOnMissingRules>
+    <WarningLevel>4</WarningLevel>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>x86</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisIgnoreBuiltInRuleSets>false</CodeAnalysisIgnoreBuiltInRuleSets>
-    <CodeAnalysisIgnoreBuiltInRules>true</CodeAnalysisIgnoreBuiltInRules>
+    <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="MAAD.IMPRINTPro.EditableBase">
@@ -42,35 +38,28 @@
     <Reference Include="MAAD.IMPRINTPro.GuiMain">
       <HintPath>..\..\..\..\..\..\..\Program Files (x86)\IMPRINT Pro 3.0\MAAD.IMPRINTPro.GuiMain.dll</HintPath>
     </Reference>
-    <Reference Include="MAAD.Network, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ab8390509656afcc, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="MAAD.Network">
       <HintPath>..\..\..\..\..\..\..\Program Files (x86)\IMPRINT Pro 3.0\MAAD.Network.dll</HintPath>
     </Reference>
-    <Reference Include="MAAD.Plugins.ImprintPluginLoader">
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\IMPRINT Pro 3.0\MAAD.Plugins.ImprintPluginLoader.dll</HintPath>
-    </Reference>
-    <Reference Include="MAAD.Simulator, Version=1.0.0.0, Culture=neutral, PublicKeyToken=e15f99eef356f3f8, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="MAAD.Simulator">
       <HintPath>..\..\..\..\..\..\..\Program Files (x86)\IMPRINT Pro 3.0\MAAD.Simulator.dll</HintPath>
     </Reference>
     <Reference Include="MAAD.Utilities">
       <HintPath>..\..\..\..\..\..\..\Program Files (x86)\IMPRINT Pro 3.0\MAAD.Utilities.dll</HintPath>
     </Reference>
-    <Reference Include="sml_CSharp">
-      <HintPath>..\..\include\sml_CSharp.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Scope.cs" />
-    <Compile Include="SoarIMPRINTPluginDefinition.cs" />
+    <Compile Include="IMPRINTAccess.cs" />
+    <Compile Include="IMPRINTLog.cs" />
+    <Compile Include="Reflection.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Utility\Utility.csproj">
-      <Project>{037FE73F-B98D-443D-8CA5-C67E7F8D249F}</Project>
-      <Name>Utility</Name>
-    </ProjectReference>
+    <Compile Include="SmartPlugin.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
