@@ -57,18 +57,18 @@ namespace SoarIMPRINTPlugin
 			}
 		}
 
-		public bool CreateKernel()
+		private bool CreateKernel()
 		{
 			kernel = sml.Kernel.CreateKernelInNewThread();
 			
 			return kernelInitialized = !kernel.HadError();
 		}
 
-		public bool InitializeScope()
+		private bool InitializeScope()
 		{
 			return InitializeScope("Scope/agent/test-agent.soar");
 		}
-		public bool InitializeScope(string source)
+		private bool InitializeScope(string source)
 		{
 			// create the agent
 			agent = kernel.CreateAgent("scope-agent");
@@ -115,7 +115,7 @@ namespace SoarIMPRINTPlugin
 			return output;
 		}
 
-		public bool KillKernel()
+		private bool KillKernel()
 		{
 			kernel.Shutdown();
 			return true;
