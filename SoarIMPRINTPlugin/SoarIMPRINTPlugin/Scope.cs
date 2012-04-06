@@ -5,43 +5,70 @@ using System.Text;
 
 namespace SoarIMPRINTPlugin
 {
-	public class Scope : MAAD.Utilities.Plugins.IPlugin
+	public class Scope : SmartPlugin, MAAD.Utilities.Plugins.IPlugin
 	{
 		// TODO test when IMPRINT creates plugin objects
-		private static bool kernelInitialized = false;
-		private static sml.Kernel kernel = null;
-		private static sml.Agent agent = null;
-		public static string ScopeOutput = null;
-		private static bool eventsRegistered = false;
-
-		//private static MAAD.Simulator.Utilities.DSimulationEvent Generator_OnBeforeBeginningEffect;
-		private static void OnBeforeBeginningEffect(MAAD.Simulator.Executor executor)
+		private bool kernelInitialized = false;
+		private sml.Kernel kernel = null;
+		private sml.Agent agent = null;
+		public string ScopeOutput = null;
+		private bool eventsRegistered = false;
+		
+		// we learned that a new object is constructed everytime a simulation starts
+		//private static int constructorCalls = 0;
+		/*public Scope()
 		{
-			// blah blah
-			staticApplication.AcceptTrace("beginnign effect!");
+			constructorCalls += 1;
+			app.AcceptTrace("constructing!");
 		}
-		public static void RegisterEvents()
+		~Scope()
+		{
+			app.AcceptTrace("destructing!");
+		}
+		public int getConstructorCalls()
+		{
+			return constructorCalls;
+		}*/
+
+		//public delegate void DSimulationEvent(Executor executor);
+		//public delegate void DNetworkEvent(object sender, EventArgs e);
+		private void OnBeforeBeginningEffect(MAAD.Simulator.Executor executor)
+		{
+			// TODO add task props to Soar input
+		}
+		public void OnSimulationBegin(object sender, EventArgs e)
+		{
+			CreateKernel();
+			InitializeScope();
+		}
+		public void OnSimulationComplete(object sender, EventArgs e)
+		{
+			KillKernel();
+		}
+		public void RegisterEvents()
 		{
 			if(!eventsRegistered) {
-				MAAD.Simulator.Utilities.ISimulationApplication app =
-					staticApplication as MAAD.Simulator.Utilities.ISimulationApplication;
 				app.Generator.OnBeforeBeginningEffect +=
 					new MAAD.Simulator.Utilities.DSimulationEvent(OnBeforeBeginningEffect);
+				app.Generator.OnSimulationBegin +=
+					new MAAD.Simulator.Utilities.DNetworkEvent(OnSimulationBegin);
+				app.Generator.OnSimulationComplete +=
+					new MAAD.Simulator.Utilities.DNetworkEvent(OnSimulationComplete);
 			}
 		}
 
-		public static bool CreateKernel()
+		public bool CreateKernel()
 		{
 			kernel = sml.Kernel.CreateKernelInNewThread();
 			
 			return kernelInitialized = !kernel.HadError();
 		}
 
-		public static bool InitializeScope()
+		public bool InitializeScope()
 		{
 			return InitializeScope("Scope/agent/test-agent.soar");
 		}
-		public static bool InitializeScope(string source)
+		public bool InitializeScope(string source)
 		{
 			// create the agent
 			agent = kernel.CreateAgent("scope-agent");
@@ -55,7 +82,7 @@ namespace SoarIMPRINTPlugin
 			return true;
 		}
 
-		public static bool RunAgent(int steps) {
+		public bool RunAgent(int steps) {
 
 			// run agent for 3 steps
 			agent.RunSelf(steps);
@@ -64,7 +91,7 @@ namespace SoarIMPRINTPlugin
 			return true;
 		}
 
-		public static bool SetInput(string attribute, string value)
+		public bool SetInput(string attribute, string value)
 		{
 			// get input link
 			sml.Identifier input = agent.GetInputLink();
@@ -72,7 +99,7 @@ namespace SoarIMPRINTPlugin
 			sml.StringElement el = input.CreateStringWME(attribute, value);
 			return el != null;
 		}
-		public static string GetOutput(string command, string parameter)
+		public string GetOutput(string command, string parameter)
 		{
 			string output = null;
 			// get output
@@ -88,7 +115,7 @@ namespace SoarIMPRINTPlugin
 			return output;
 		}
 
-		public static bool KillKernel()
+		public bool KillKernel()
 		{
 			kernel.Shutdown();
 			return true;
@@ -100,12 +127,10 @@ namespace SoarIMPRINTPlugin
 			get { return null; }
 		}
 
-		MAAD.Utilities.Plugins.IPluginApplication application;
-		static MAAD.Utilities.Plugins.IPluginApplication staticApplication;
 		public MAAD.Utilities.Plugins.IPluginApplication PluginApplication
 		{
-			get { return application; }
-			set { application = value; staticApplication = application; RegisterEvents(); }
+			get;
+			set;
 		}
 
 		public string PluginID

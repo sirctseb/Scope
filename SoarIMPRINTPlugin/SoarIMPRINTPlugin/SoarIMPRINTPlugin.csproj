@@ -57,6 +57,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Scope.cs" />
+    <Compile Include="SmartPlugin.cs" />
     <Compile Include="SoarIMPRINTPluginDefinition.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

@@ -8,6 +8,7 @@ namespace SoarIMPRINTPlugin
 {
 	public class SoarIMPRINTPluginDefinition : IExternalVariableProvider, IImprintPlugin
 	{
+		// TODO find out when this class is constructed
 		public string[] GetAssemblyReferences()
 		{
 			return new string[]
