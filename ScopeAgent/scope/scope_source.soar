@@ -6,3 +6,4 @@ pushd elaborations
 source elaborations_source.soar
 popd
 source initialize-scope.soar
+source perform-all.soar

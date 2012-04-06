@@ -7,4 +7,5 @@ VERSION 4
 4	3	FOPERATOR _all _all.soar 5
 5	3	FOPERATOR top-state top-state.soar 6
 6	0	OPERATOR initialize-scope initialize-scope.soar 7
+7	0	OPERATOR perform-all perform-all.soar 8
 END
