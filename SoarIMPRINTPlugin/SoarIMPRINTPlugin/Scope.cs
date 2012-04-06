@@ -12,6 +12,23 @@ namespace SoarIMPRINTPlugin
 		private static sml.Kernel kernel = null;
 		private static sml.Agent agent = null;
 		public static string ScopeOutput = null;
+		private static bool eventsRegistered = false;
+
+		//private static MAAD.Simulator.Utilities.DSimulationEvent Generator_OnBeforeBeginningEffect;
+		private static void OnBeforeBeginningEffect(MAAD.Simulator.Executor executor)
+		{
+			// blah blah
+			staticApplication.AcceptTrace("beginnign effect!");
+		}
+		public static void RegisterEvents()
+		{
+			if(!eventsRegistered) {
+				MAAD.Simulator.Utilities.ISimulationApplication app =
+					staticApplication as MAAD.Simulator.Utilities.ISimulationApplication;
+				app.Generator.OnBeforeBeginningEffect +=
+					new MAAD.Simulator.Utilities.DSimulationEvent(OnBeforeBeginningEffect);
+			}
+		}
 
 		public static bool CreateKernel()
 		{
@@ -22,30 +39,53 @@ namespace SoarIMPRINTPlugin
 
 		public static bool InitializeScope()
 		{
+			return InitializeScope("Scope/agent/test-agent.soar");
+		}
+		public static bool InitializeScope(string source)
+		{
 			// create the agent
 			agent = kernel.CreateAgent("scope-agent");
 			if (kernel.HadError()) return false;
 
 			// load scope productions
 			// TODO load test productions for now
-			agent.LoadProductions("Scope/agent/test-agent.soar");
+			agent.LoadProductions(source);
 			if (agent.HadError()) return false;
 
+			return true;
+		}
+
+		public static bool RunAgent(int steps) {
+
 			// run agent for 3 steps
-			agent.RunSelf(3);
+			agent.RunSelf(steps);
 			if (agent.HadError()) return false;
-			
+
+			return true;
+		}
+
+		public static bool SetInput(string attribute, string value)
+		{
+			// get input link
+			sml.Identifier input = agent.GetInputLink();
+			// set value
+			sml.StringElement el = input.CreateStringWME(attribute, value);
+			return el != null;
+		}
+		public static string GetOutput(string command, string parameter)
+		{
+			string output = null;
 			// get output
 			for (int i = 0; i < agent.GetNumberCommands(); i++)
 			{
 				sml.Identifier id = agent.GetCommand(i);
-				if (id.GetCommandName() == "response")
+				if (id.GetCommandName() == command)
 				{
-					Scope.ScopeOutput = id.GetParameterValue("text");
+					output = id.GetParameterValue(parameter);
 				}
 			}
 
-			return true;
+			return output;
 		}
 
 		public static bool KillKernel()
@@ -60,10 +100,12 @@ namespace SoarIMPRINTPlugin
 			get { return null; }
 		}
 
+		MAAD.Utilities.Plugins.IPluginApplication application;
+		static MAAD.Utilities.Plugins.IPluginApplication staticApplication;
 		public MAAD.Utilities.Plugins.IPluginApplication PluginApplication
 		{
-			get;
-			set;
+			get { return application; }
+			set { application = value; staticApplication = application; RegisterEvents(); }
 		}
 
 		public string PluginID
