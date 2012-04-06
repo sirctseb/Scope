@@ -36,6 +36,12 @@
     <CodeAnalysisIgnoreBuiltInRules>true</CodeAnalysisIgnoreBuiltInRules>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="MAAD.IMPRINTPro.EditableBase">
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\IMPRINT Pro 3.0\MAAD.IMPRINTPro.EditableBase.dll</HintPath>
+    </Reference>
+    <Reference Include="MAAD.IMPRINTPro.GuiMain">
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\IMPRINT Pro 3.0\MAAD.IMPRINTPro.GuiMain.dll</HintPath>
+    </Reference>
     <Reference Include="MAAD.Network, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ab8390509656afcc, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\..\..\Program Files (x86)\IMPRINT Pro 3.0\MAAD.Network.dll</HintPath>

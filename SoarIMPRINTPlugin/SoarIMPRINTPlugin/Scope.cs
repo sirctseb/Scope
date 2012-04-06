@@ -5,7 +5,7 @@ using System.Text;
 
 namespace SoarIMPRINTPlugin
 {
-	public class Scope : SmartPlugin, MAAD.Utilities.Plugins.IPlugin
+	public class Scope : IMPRINTLogger, MAAD.Utilities.Plugins.IPlugin
 	{
 		// TODO test when IMPRINT creates plugin objects
 		private bool kernelInitialized = false;
@@ -13,6 +13,11 @@ namespace SoarIMPRINTPlugin
 		private sml.Agent agent = null;
 		public string ScopeOutput = null;
 		private bool eventsRegistered = false;
+
+		public Scope()
+		{
+			enable("debug");
+		}
 		
 		// we learned that a new object is constructed everytime a simulation starts
 		//private static int constructorCalls = 0;
@@ -60,7 +65,7 @@ namespace SoarIMPRINTPlugin
 		public bool CreateKernel()
 		{
 			kernel = sml.Kernel.CreateKernelInNewThread();
-			app.AcceptTrace("Creating kernel: " + kernel.HadError());
+			log("Creating kernel: " + kernel.HadError(), "debug");
 			
 			return kernelInitialized = !kernel.HadError();
 		}
@@ -92,6 +97,33 @@ namespace SoarIMPRINTPlugin
 			return true;
 		}
 
+		public bool AddTask(MAAD.IMPRINTPro.NetworkTask task)
+		{
+			// get input link
+			sml.Identifier input = agent.GetInputLink();
+
+			// create a wme for the task
+			sml.Identifier taskLink = input.CreateIdWME("task");
+			
+			// add the task ID
+			taskLink.CreateStringWME("taskID", task.ID);
+
+			foreach (MAAD.IMPRINTPro.Interfaces.ITaskDemand demand in task.TaskDemandList.GetITaskDemands) {
+				// get workload attributes
+				string name = demand.RIPair.Resource.Name;
+				double value = demand.DemandValue;
+
+				// create the demand wme
+				sml.Identifier demandLink = taskLink.CreateIdWME("demand");
+
+				// add the workload resource
+				demandLink.CreateStringWME("resource", name);
+				// add the workload value
+				demandLink.CreateFloatWME("value", value);
+			}
+
+			return !agent.HadError();
+		}
 		public bool SetInput(string attribute, string value)
 		{
 			// get input link
@@ -118,6 +150,8 @@ namespace SoarIMPRINTPlugin
 
 		public bool KillKernel()
 		{
+			log("killing kernel", "debug");
+
 			kernel.Shutdown();
 			return true;
 		}
