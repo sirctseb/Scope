@@ -15,14 +15,18 @@ namespace SoarIMPRINTPlugin
 		}
 
 		// TODO test when IMPRINT creates plugin objects
-		private bool kernelInitialized = false;
-		private sml.Kernel kernel = null;
-		private sml.Agent agent = null;
+		private static bool kernelInitialized = false;
+		private static sml.Kernel kernel = null;
+		private static sml.Agent agent = null;
 		public string ScopeOutput = null;
 		private bool eventsRegistered = false;
 
 		public Scope()
 		{
+			CreateKernel();
+			InitializeScope();
+			RegisterEvents();
+			logger = new IMPRINTLogger();
 			this.enable("debug");
 		}
 		
@@ -46,54 +50,95 @@ namespace SoarIMPRINTPlugin
 		//public delegate void DNetworkEvent(object sender, EventArgs e);
 		private void OnBeforeBeginningEffect(MAAD.Simulator.Executor executor)
 		{
-			// TODO add task props to Soar input
-			//AddTask(executor.
+			MAAD.Simulator.Utilities.IRuntimeTask task = executor.EventQueue.GetTask();
+			//app.AcceptTrace(task.ID);
+			// ignore the first and last task
+			int taskID = int.Parse(task.ID);
+			if (taskID > 0 && taskID < 999)
+			{
+				// find corresponding MAAD.IMPRINTPro.NetworkTask
+				foreach (MAAD.IMPRINTPro.NetworkTask nt in this.GetTaskList())
+				{
+					if (nt.ID == task.ID)
+					{
+						// add task props to Soar input
+						AddTask(nt);
+					}
+				}
+			}
+
+			// run the agent until it decides what to do
+			string output = agent.RunSelfTilOutput();
+			//app.AcceptTrace(output);
+			app.AcceptTrace(GetOutput("strategy", "name"));
 		}
 		public void OnSimulationBegin(object sender, EventArgs e)
 		{
-			CreateKernel();
-			InitializeScope();
+			ResetSoar();
 		}
 		public void OnSimulationComplete(object sender, EventArgs e)
 		{
-			KillKernel();
+			//KillKernel();
+			// TODO when to shutdown kernel?
+			UnregisterEvents();
 		}
+
+		private MAAD.Simulator.Utilities.DSimulationEvent OBBE;
+		private MAAD.Simulator.Utilities.DNetworkEvent OSB;
+		private MAAD.Simulator.Utilities.DNetworkEvent OSC;
 		public void RegisterEvents()
 		{
-			if(!eventsRegistered) {
-				app.Generator.OnBeforeBeginningEffect +=
-					new MAAD.Simulator.Utilities.DSimulationEvent(OnBeforeBeginningEffect);
-				app.Generator.OnSimulationBegin +=
-					new MAAD.Simulator.Utilities.DNetworkEvent(OnSimulationBegin);
-				app.Generator.OnSimulationComplete +=
-					new MAAD.Simulator.Utilities.DNetworkEvent(OnSimulationComplete);
-			}
+			app.Generator.OnBeforeBeginningEffect +=
+				OBBE = new MAAD.Simulator.Utilities.DSimulationEvent(OnBeforeBeginningEffect);
+			app.Generator.OnSimulationBegin +=
+				OSB = new MAAD.Simulator.Utilities.DNetworkEvent(OnSimulationBegin);
+			app.Generator.OnSimulationComplete +=
+				OSC = new MAAD.Simulator.Utilities.DNetworkEvent(OnSimulationComplete);
 		}
-
-		public bool CreateKernel()
+		public void UnregisterEvents()
 		{
-			kernel = sml.Kernel.CreateKernelInNewThread();
-			this.log("Creating kernel: " + kernel.HadError(), "debug");
-			
-			return kernelInitialized = !kernel.HadError();
+			app.Generator.OnBeforeBeginningEffect -= OBBE;
+			app.Generator.OnSimulationBegin -= OSB;
+			app.Generator.OnSimulationComplete -= OSC;
 		}
 
-		public bool InitializeScope()
+		public static bool CreateKernel()
+		{
+			if (kernel == null)
+			{
+				kernel = sml.Kernel.CreateKernelInNewThread();
+				//this.log("Creating kernel: " + !kernel.HadError(), "debug");
+
+				return kernelInitialized = !kernel.HadError();
+			}
+			return true;
+		}
+
+		public static bool InitializeScope()
 		{
 			return InitializeScope("Scope/agent/scope.soar");
 		}
-		public bool InitializeScope(string source)
+		public static bool InitializeScope(string source)
 		{
-			// create the agent
-			agent = kernel.CreateAgent("scope-agent");
-			if (kernel.HadError()) return false;
+			if (agent == null)
+			{
+				// create the agent
+				agent = kernel.CreateAgent("scope-agent");
+				if (kernel.HadError()) return false;
 
-			// load scope productions
-			// TODO load test productions for now
-			agent.LoadProductions(source);
-			if (agent.HadError()) return false;
+				// load scope productions
+				// TODO load test productions for now
+				agent.LoadProductions(source);
+				if (agent.HadError()) return false;
+			}
 
 			return true;
+		}
+		public bool ResetSoar()
+		{
+			agent.InitSoar();
+
+			return !agent.HadError();
 		}
 
 		public bool RunAgent(int steps) {
@@ -129,6 +174,8 @@ namespace SoarIMPRINTPlugin
 				// add the workload value
 				demandLink.CreateFloatWME("value", value);
 			}
+			//agent.Commit();
+			kernel.CheckForIncomingCommands();
 
 			return !agent.HadError();
 		}
@@ -158,8 +205,7 @@ namespace SoarIMPRINTPlugin
 
 		public bool KillKernel()
 		{
-			this.log("killing kernel", "debug");
-
+			//this.log("killing kernel", "debug");
 			kernel.Shutdown();
 			return true;
 		}

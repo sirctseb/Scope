@@ -13,5 +13,7 @@ sp {apply*perform-all
               ^io.output-link <output>)
    (<o> ^name perform-all)
 -->
-   (<output> ^strategy perform-all)
+   (<output> ^strategy <st>)
+   (<st> ^name perform-all)
+   (write (crlf) |Perform All|)
 }

@@ -13,7 +13,8 @@ namespace SoarIMPRINTPlugin
 		{
 			return new string[]
 			{
-				"SoarIMPRINTPlugin.dll"
+				"SoarIMPRINTPlugin.dll",
+				"Utility.dll"
 			};
 		}
 
