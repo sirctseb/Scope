@@ -7,6 +7,7 @@ source elaborations_source.soar
 popd
 source ignore-new.soar
 source initialize-scope.soar
+source interrupt-task.soar
 source mark-new.soar
 source perform-all.soar
 source workload-threshold.soar
