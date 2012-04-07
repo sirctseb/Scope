@@ -1,29 +1,36 @@
+# elaborate to consolidate existing all tasks into one wme that indicates that any exist
+sp {elaborate*tasks-exist
+   (state <s> ^io.input-link.task)
+-->
+   (<s> ^tasks-exist yes)
+}
+
 # propose perform-all as long as there are any tasks
 sp {propose*perform-all
    (state <s> ^name scope
-              ^io.input-link <input>)
-   (<input> ^task <task>)
+              ^tasks-exist yes)
 -->
    (<s> ^operator <o> +)
    (<o> ^name perform-all)
 }
 
 # TODO this will propose one perform-all operator for _every_ task that exists
-# we could solve this by making all perform-all operators are indifferent to each other
+# 1)we could solve this by making all perform-all operators are indifferent to each other
 # however, it would be better not to propose a bunch of them, and just propose one instead
-# this may be achieved by simply testing for (<input> ^task) above, instead of (<input> ^task <task>)
+# 2)this may be achieved by simply testing for (<input> ^task) above, instead of (<input> ^task <task>)
 # No. that does not work
-# ooh, another option: elaborate based on the existence of a task to a single WME
+# 3)ooh, another option: elaborate based on the existence of a task to a single WME
 # then propose perform-all based on that
-sp {equate*all*perform-all
-   (state <s> ^name scope
-              ^operator <o1> +
-              ^operator { <o2> <> <o1> } +)
-   (<o1> ^name perform-all)
-   (<o2> ^name perform-all)
--->
-   (<s> ^operator <o1> = <o2>)
-}
+# 3) seems to work well so we shouldn't need to indifferent them, i am removing it for now
+#sp {equate*all*perform-all
+#   (state <s> ^name scope
+#              ^operator <o1> +
+#              ^operator { <o2> <> <o1> } +)
+#   (<o1> ^name perform-all)
+#   (<o2> ^name perform-all)
+#-->
+#   (<s> ^operator <o1> = <o2>)
+#}
 
 sp {apply*perform-all
    (state <s> ^operator <o>
