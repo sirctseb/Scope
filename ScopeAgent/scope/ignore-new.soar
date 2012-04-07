@@ -3,7 +3,8 @@
 # at the same time. It may be true because the agent should run after each new
 # task starts in the simulation
 sp {propose*ignore-new
-   (state <s> ^io.input-link.task <task>)
+   (state <s> ^name scope
+              ^io.input-link.task <task>)
    (<task> ^new yes)
 -->
    (<s> ^operator <o> +)

@@ -1,6 +1,7 @@
 # elaborate to consolidate existing all tasks into one wme that indicates that any exist
 sp {elaborate*tasks-exist
-   (state <s> ^io.input-link.task)
+   (state <s> ^name scope
+              ^io.input-link.task)
 -->
    (<s> ^tasks-exist yes)
 }
@@ -33,7 +34,8 @@ sp {propose*perform-all
 #}
 
 sp {apply*perform-all
-   (state <s> ^operator <o>
+   (state <s> ^name scope
+              ^operator <o>
               ^io.output-link <output>)
    (<o> ^name perform-all)
 -->
