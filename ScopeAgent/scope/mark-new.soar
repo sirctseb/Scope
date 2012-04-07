@@ -13,7 +13,7 @@ sp {elaborate*new-task
 # existing tasks are no longer new
 # TODO we could require the command operators have a special attribute that we test here
 sp {apply*old-task
-   (state <s> ^scope
+   (state <s> ^name scope
               ^operator <o>
               ^io.input-link.task <task>)
    (<task> ^new yes)
