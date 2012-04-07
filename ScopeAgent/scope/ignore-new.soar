@@ -22,4 +22,5 @@ sp {apply*ignore-new
    (<output> ^strategy <st>)
    (<st> ^name ignore-new
          ^task <task>)
+   (write (crlf) |Ignore new task|)
 }
