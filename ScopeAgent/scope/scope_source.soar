@@ -10,4 +10,5 @@ source initialize-scope.soar
 source interrupt-task.soar
 source mark-new.soar
 source perform-all.soar
+source simulation-simulator.soar
 source workload-threshold.soar

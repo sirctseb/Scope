@@ -1,0 +1,9 @@
+# test choosing perform-all
+sp {perform-all-test-init
+   (state <s> ^operator <o>
+              ^io.input-link <input>)
+   (<o> ^name initialize-scope)
+-->
+   (<input> ^over-threshold no
+            ^task <t1> <t2>)
+}

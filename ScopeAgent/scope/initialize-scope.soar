@@ -9,13 +9,7 @@ sp {propose*initialize-scope
 sp {apply*initialize-scope
    (state <s> ^operator <op>)
    (<op> ^name initialize-scope)
-   # to simulate tasks
-   (<s> ^io.input-link <input>)
 -->
    (<s> ^name scope)
-   
-   # simulate some tasks
-   (<input> ^over-threshold no
-            ^task <t1> <t2>)
 }
 

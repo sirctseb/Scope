@@ -11,5 +11,6 @@ VERSION 4
 8	0	OPERATOR interrupt-task interrupt-task.soar 12
 9	0	OPERATOR mark-new mark-new.soar 9
 10	0	OPERATOR perform-all perform-all.soar 10
-11	0	OPERATOR workload-threshold workload-threshold.soar 11
+11	0	OPERATOR simulation-simulator simulation-simulator.soar 13
+12	0	OPERATOR workload-threshold workload-threshold.soar 11
 END

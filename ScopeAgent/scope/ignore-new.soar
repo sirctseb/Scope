@@ -16,8 +16,9 @@ sp {propose*ignore-new
 sp {apply*ignore-new
    (state <s> ^name scope
               ^operator <o>
-              ^io.output-link <outupt>)
-   (<o> ^name ignore-new)
+              ^io.output-link <output>)
+   (<o> ^name ignore-new
+        ^task <task>)
 -->
    (<output> ^strategy <st>)
    (<st> ^name ignore-new
