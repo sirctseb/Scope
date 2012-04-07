@@ -1,4 +1,4 @@
-17
+19
 SOAR_ID 0
 SOAR_ID 1
 SOAR_ID 2
@@ -16,7 +16,9 @@ SOAR_ID 13
 ENUMERATION 14 1 mark-new
 SOAR_ID 15
 ENUMERATION 16 1 workload-threshold
-17
+SOAR_ID 17
+ENUMERATION 18 1 interrupt-task
+19
 0 io 1
 0 name 7
 0 operator 4
@@ -24,6 +26,7 @@ ENUMERATION 16 1 workload-threshold
 0 operator 11
 0 operator 13
 0 operator 15
+0 operator 17
 0 superstate 6
 0 top-state 0
 0 type 5
@@ -34,3 +37,4 @@ ENUMERATION 16 1 workload-threshold
 11 name 12
 13 name 14
 15 name 16
+17 name 18
