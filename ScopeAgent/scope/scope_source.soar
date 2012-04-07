@@ -5,5 +5,8 @@ popd
 pushd elaborations
 source elaborations_source.soar
 popd
+source ignore-new.soar
 source initialize-scope.soar
+source mark-new.soar
 source perform-all.soar
+source workload-threshold.soar

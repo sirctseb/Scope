@@ -1,0 +1,20 @@
+# indicate that a task is new
+# TODO we could also think about requiring the plugin to do this
+# if this gets complicated
+sp {elaborate*new-task
+   (state <s> ^io.input-link.task <task>)
+-->
+   (<task> ^new yes)
+}
+
+# remove new-task designation on all tasks when any operator is applied
+# TODO this assumes that every operator is a command and means that
+# existing tasks are no longer new
+# TODO we could require the command operators have a special attribute that we test here
+sp {apply*old-task
+   (state <s> ^operator <o>
+              ^io.input-link.task <task>)
+   (<task> ^new yes)
+-->
+   (<task> ^new yes -)
+}

@@ -8,6 +8,23 @@ sp {propose*perform-all
    (<o> ^name perform-all)
 }
 
+# TODO this will propose one perform-all operator for _every_ task that exists
+# we could solve this by making all perform-all operators are indifferent to each other
+# however, it would be better not to propose a bunch of them, and just propose one instead
+# this may be achieved by simply testing for (<input> ^task) above, instead of (<input> ^task <task>)
+# No. that does not work
+# ooh, another option: elaborate based on the existence of a task to a single WME
+# then propose perform-all based on that
+sp {equate*all*perform-all
+   (state <s> ^name scope
+              ^operator <o1> +
+              ^operator { <o2> <> <o1> } +)
+   (<o1> ^name perform-all)
+   (<o2> ^name perform-all)
+-->
+   (<s> ^operator <o1> = <o2>)
+}
+
 sp {apply*perform-all
    (state <s> ^operator <o>
               ^io.output-link <output>)

@@ -1,0 +1,19 @@
+# prefer to perform all tasks if below the workload threshold
+sp {preference*under-threshold
+   (state <s> ^io.input-link.over-threshold no
+              ^operator <o> +)
+   (<o> ^name perform-all)
+-->
+   # make best preference
+   (<s> ^operator <o> >)
+}
+
+# reject perform-all if over the workload threshold
+# TODO should we simply make it worst?
+sp {prefer*not-perform-all
+   (state <s> ^io.input-link.over-threshold yes
+              ^operator <o> +)
+   (<o> ^name perform-all)
+-->
+   (<s> ^operator <o> -)
+}

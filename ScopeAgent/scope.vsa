@@ -6,6 +6,9 @@ VERSION 4
 3	0	FOLDER elaborations elaborations 4
 4	3	FOPERATOR _all _all.soar 5
 5	3	FOPERATOR top-state top-state.soar 6
-6	0	OPERATOR initialize-scope initialize-scope.soar 7
-7	0	OPERATOR perform-all perform-all.soar 8
+6	0	OPERATOR ignore-new ignore-new.soar 7
+7	0	OPERATOR initialize-scope initialize-scope.soar 8
+8	0	OPERATOR mark-new mark-new.soar 9
+9	0	OPERATOR perform-all perform-all.soar 10
+10	0	OPERATOR workload-threshold workload-threshold.soar 11
 END

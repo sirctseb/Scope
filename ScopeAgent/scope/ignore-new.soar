@@ -1,0 +1,12 @@
+# propose ignore-new if when a new task is added
+# TODO figure out if it will be the case that we never have two new tasks
+# at the same time. It may be true because the agent should run after each new
+# task starts in the simulation
+sp {propose*ignore-new
+   (state <s> ^io.input-link.task <task>)
+   (<task> ^new yes)
+-->
+   (<s> ^operator <o> +)
+   (<o> ^name ignore-new
+        ^task <task>)
+}
