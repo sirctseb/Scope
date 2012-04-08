@@ -1,6 +1,18 @@
+# elaborate input with whether the workload thershold is exceede
+sp {elaborate*over-threshold
+   (state <s> ^name scope
+              ^io.input-link <input>)
+   # if workload is greater than threshold
+   (<input> ^threshold <threshold>
+            ^workload > <threshold>)
+-->
+   (<input> ^over-threshold yes)
+}
+
 # prefer to perform all tasks if below the workload threshold
 sp {preference*under-threshold
-   (state <s> ^io.input-link.over-threshold no
+   (state <s> ^name scope
+              -^io.input-link.over-threshold yes
               ^operator <o> +)
    (<o> ^name perform-all)
 -->
@@ -11,9 +23,37 @@ sp {preference*under-threshold
 # reject perform-all if over the workload threshold
 # TODO should we simply make it worst?
 sp {prefer*not-perform-all
-   (state <s> ^io.input-link.over-threshold yes
+   (state <s> ^name scope
+              ^io.input-link.over-threshold yes
               ^operator <o> +)
    (<o> ^name perform-all)
 -->
    (<s> ^operator <o> -)
+}
+
+# elaborate ignore operators with the total workload value
+# after subtracting the task the operator would ignore
+sp {computer*workoad*after*ignore
+   (state <s> ^name scope
+              ^operator <o>
+              ^io.input-link.workload <workload>)
+   (<o> ^name ignore-new
+        ^task.workload <task-workload>)
+-->
+   (<o> ^new-workload (- <workload> <task-workload>))
+}
+
+# prefer ignoring a new task if it is
+# the only task putting us over the threshold
+sp {prefer*ignore-if-otherwise-safe
+   (state <s> ^name scope
+              ^io.input-link.threshold <threshold>
+              ^operator <o1> +
+              ^operator <o2> +)
+   (<o1> ^name ignore-new
+         ^new-workload < <threshold>)
+   (<o2> ^name interrupt-task)
+-->
+   # prefer the ignore-new over the interrupt-tasks
+   (<s> ^operator <o1> > <o2>)
 }

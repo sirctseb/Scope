@@ -10,7 +10,8 @@ sp {propose*interrupt-task
    (<s> ^operator <o> +)
    (<o> ^name interrupt-task
         ^interrupt-task <task1>
-        ^new-task <task2>)
+        ^new-task <task2>
+        ^strategy yes)
 }
 
 # apply interrupt-task operator
