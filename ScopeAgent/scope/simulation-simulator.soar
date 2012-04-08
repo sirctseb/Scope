@@ -1,0 +1,69 @@
+# test choosing perform-all
+sp {perform-all-test-init
+   (state <s> ^disable
+              ^operator <o>
+              ^io.input-link <input>)
+   (<o> ^name initialize-scope)
+-->
+   (<input> ^over-threshold no
+            ^task <t1> <t2>)
+}
+
+# elaborate operators to indicate that they are strategy operators
+sp {elaborate*strategy*operators
+   (state <s> ^operator <o>)
+   (<o> ^name << perform-all ignore-new interrupt-task >> )
+-->
+   (<o> ^strategy yes)
+}
+
+
+# initialize strategy counter
+sp {apply*initialize-strategy-counter
+   (state <s> ^operator <o>)
+   (<o> ^name initialize-scope)
+-->
+   (<s> ^strategy-counter 0)
+   #(<s> ^counter-obj <obj>)
+   #(<obj> ^count 0)
+}
+# increment a counter every time a strategy decision is made
+sp {apply*increment-strategy-counter
+   (state <s> ^disable
+           ^name scope
+              ^operator <o>
+#   (<obj> ^count <count>)
+              ^strategy-counter <count>)
+    (<o> ^name perform-all
+         ^strategy yes)
+#         ^count <count>)
+-->
+   (<s> ^strategy-counter (+ <count> 1)
+        ^strategy-counter <count> -)
+#   (<o> ^count (+ <count> 1)
+#          ^count <count> -)
+}   
+
+# test choosing ignore-new over interrupt-task
+# get the first one out of the way
+sp {ignore-new-over-interrupt-task-init
+   (state <s> ^operator <o>
+              ^io.input-link <input>)
+   (<o> ^name initialize-scope)
+-->
+   (<input> ^task <t1>
+            ^threshold 8)
+   (<t1> ^workload 5)
+}
+# introduce new task that puts us over the threshold
+# once the first strategy operator is applied
+sp {apply*strategy-operator*for*ignore*test
+   (state <s> ^operator <o>
+#              ^strategy-counter 0
+              ^counter-obj.count 0
+              ^io.input-link <input>)
+   (<o> ^strategy yes)
+-->
+   (<input> ^task <task>)
+   (<task> ^workload 4)
+}
