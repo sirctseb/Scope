@@ -1,0 +1,39 @@
+# initialize workload values
+sp {apply*initialize-workload
+   (state <s> ^operator <o>)
+   (<o> ^name initialize-scope)
+-->
+   (<s> ^old-workload 0)
+}
+
+# elaborate to keep workload always up to date
+sp {elaborate*current-workload-new-task
+   (state <s> ^name scope
+              ^old-workload <old-workload>
+              ^io.input-link.task <new-task>)
+   (<new-task> ^workload <new-workload>
+               ^new yes)
+-->
+   (<s> ^workload (+ <old-workload> <new-workload>))
+}
+# compute workload if there is no new task
+sp {elaborate*current-workload-no-new-task
+   (state <s> ^name scope
+              ^old-workload <old-workload>
+             -^io.input-link.task.new)
+-->
+   (<s> ^workload <old-workload>)
+}
+# update workload values for every new task
+sp {apply*update-workload
+   (state <s> ^name scope
+              ^operator <o>
+              ^io.input-link.task <new-task>
+              ^old-workload <old-workload>)
+   (<o> ^strategy yes)
+   (<new-task> ^workload <new-workload>
+               ^new yes)
+-->
+   (<s> ^old-workload <old-workload> -
+        ^old-workload (+ <old-workload> <new-workload>))
+}

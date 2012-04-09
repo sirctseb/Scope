@@ -1,10 +1,11 @@
 # elaborate input with whether the workload thershold is exceede
 sp {elaborate*over-threshold
    (state <s> ^name scope
-              ^io.input-link <input>)
+              ^io.input-link <input>
+              ^workload > <threshold>)
    # if workload is greater than threshold
-   (<input> ^threshold <threshold>
-            ^workload > <threshold>)
+   (<input> ^threshold <threshold>)
+#            ^workload > <threshold>)
 -->
    (<input> ^over-threshold yes)
 }
@@ -36,7 +37,8 @@ sp {prefer*not-perform-all
 sp {compute*workload*after*ignore
    (state <s> ^name scope
               ^operator <o> +
-              ^io.input-link.workload <workload>)
+#              ^io.input-link.workload <workload>)
+              ^workload <workload>)
    (<o> ^name ignore-new
         ^task.workload <task-workload>)
 -->

@@ -9,9 +9,6 @@ sp {elaborate*new-task
 }
 
 # remove new-task designation on all tasks when any operator is applied
-# TODO this assumes that every operator is a command and means that
-# existing tasks are no longer new
-# TODO we could require the command operators have a special attribute that we test here
 sp {apply*old-task
    (state <s> ^name scope
               ^operator <o>
@@ -22,4 +19,14 @@ sp {apply*old-task
    (<task> ^new yes)
 -->
    (<task> ^new yes -)
+}
+
+# remove old commands
+sp {removed*old*command
+   (state <s> ^operator.strategy
+              ^io.output-link <out>)
+   (<out> ^<att> <value>)
+   (<value> ^status complete)
+-->
+   (<out> ^<att> <value> -)
 }

@@ -1,7 +1,10 @@
 # elaborate to consolidate existing all tasks into one wme that indicates that any exist
 sp {elaborate*tasks-exist
    (state <s> ^name scope
-              ^io.input-link.task)
+              # test for new so that support will
+              # retract when perform-all is applied,
+              # so we don't get an operator-no-change impasse
+              ^io.input-link.task.new)
 -->
    (<s> ^tasks-exist yes)
 }
