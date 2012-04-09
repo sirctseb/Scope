@@ -24,6 +24,7 @@ sp {apply*initialize-strategy-counter
    (<o> ^name initialize-scope)
 -->
    (<s> ^strategy-counter 0)
+   (<s> ^count 0)
    #(<s> ^counter-obj <obj>)
    #(<obj> ^count 0)
 }
@@ -67,3 +68,21 @@ sp {apply*strategy-operator*for*ignore*test
    (<input> ^task <task>)
    (<task> ^workload 4)
 }
+
+# force a counter
+sp {propose*count
+   (state <s> ^name scope)
+-->
+   (<s> ^operator <o> + !)
+   (<o> ^name count)
+}
+sp {apply*count
+   (state <s> ^name scope
+              ^operator <o>
+              ^count <count>)
+   (<o> ^name count)
+-->
+   (<s> ^count (+ <count> 1)
+        ^count <count> -)
+}
+   
