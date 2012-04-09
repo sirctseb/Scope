@@ -33,9 +33,9 @@ sp {prefer*not-perform-all
 
 # elaborate ignore operators with the total workload value
 # after subtracting the task the operator would ignore
-sp {computer*workoad*after*ignore
+sp {compute*workload*after*ignore
    (state <s> ^name scope
-              ^operator <o>
+              ^operator <o> +
               ^io.input-link.workload <workload>)
    (<o> ^name ignore-new
         ^task.workload <task-workload>)

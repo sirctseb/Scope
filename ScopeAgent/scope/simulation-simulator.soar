@@ -1,3 +1,37 @@
+# indicate that we are simulating the simulator
+sp {simulator*indicator
+   (state <s> ^name scope
+              ^io.input-link <input>)
+   (<input> -^IMPRINT)
+-->
+   (<input> ^simulated yes)
+}
+
+# alternate a simulated input
+sp {propose*simulate-input
+   (state <s> ^name scope
+              ^phase simulate-input)
+-->
+   (<s> ^operator <o> + !)
+   (<o> ^name simulate-input)
+}
+sp {apply*simulate-input
+   (state <s> ^name scope
+              ^phase simulate-input
+              ^operator <o>)
+   (<o> ^name simulate-input)
+-->
+   (<s> ^phase simulate-input -)
+}
+sp {apply*not-simulate-input
+   (state <s> ^name scope
+              ^operator <o>)
+   (<o> -^name simulate-input
+         ^strategy yes)
+-->
+   (<s> ^phase simulate-input)
+}
+              
 # test choosing perform-all
 sp {perform-all-test-init
    (state <s> ^disable
@@ -34,7 +68,7 @@ sp {apply*increment-strategy-counter
               ^operator <o>
               ^strategy-counter <count>)
     (<o> ^strategy yes)
-    (<o> ^increment-strategy-counter)
+    #(<o> ^increment-strategy-counter)
 -->
    (<s> ^strategy-counter (+ <count> 1)
         ^strategy-counter <count> -)
@@ -50,16 +84,19 @@ sp {ignore-new-over-interrupt-task-init
    (<input> ^task <t1>
             ^threshold 8)
    (<t1> ^workload 5)
+   (<input> ^workload 5)
 }
 # introduce new task that puts us over the threshold
 # once the first strategy operator is applied
 sp {apply*strategy-operator*for*ignore*test
    (state <s> ^operator <o>
-#              ^strategy-counter 0
-              ^counter-obj.count 0
+              ^strategy-counter 1
               ^io.input-link <input>)
-   (<o> ^strategy yes)
+   #(<o> ^strategy yes)
+   (<o> ^name simulate-input)
 -->
    (<input> ^task <task>)
    (<task> ^workload 4)
+   (<input> ^workload 5 -
+            ^workload 9)
 }
