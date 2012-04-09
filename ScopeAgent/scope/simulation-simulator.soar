@@ -24,26 +24,21 @@ sp {apply*initialize-strategy-counter
    (<o> ^name initialize-scope)
 -->
    (<s> ^strategy-counter 0)
-   (<s> ^count 0)
-   #(<s> ^counter-obj <obj>)
-   #(<obj> ^count 0)
 }
+# TODO you have to test ^strategy-counter in the
+# conditions for every strategy operator proposal or this
+# elaborates infinitely. figure out why
 # increment a counter every time a strategy decision is made
 sp {apply*increment-strategy-counter
-   (state <s> ^disable
-           ^name scope
+   (state <s> ^name scope
               ^operator <o>
-#   (<obj> ^count <count>)
               ^strategy-counter <count>)
-    (<o> ^name perform-all
-         ^strategy yes)
-#         ^count <count>)
+    (<o> ^strategy yes)
+    (<o> ^increment-strategy-counter)
 -->
    (<s> ^strategy-counter (+ <count> 1)
         ^strategy-counter <count> -)
-#   (<o> ^count (+ <count> 1)
-#          ^count <count> -)
-}   
+}
 
 # test choosing ignore-new over interrupt-task
 # get the first one out of the way
@@ -68,21 +63,3 @@ sp {apply*strategy-operator*for*ignore*test
    (<input> ^task <task>)
    (<task> ^workload 4)
 }
-
-# force a counter
-sp {propose*count
-   (state <s> ^name scope)
--->
-   (<s> ^operator <o> + !)
-   (<o> ^name count)
-}
-sp {apply*count
-   (state <s> ^name scope
-              ^operator <o>
-              ^count <count>)
-   (<o> ^name count)
--->
-   (<s> ^count (+ <count> 1)
-        ^count <count> -)
-}
-   

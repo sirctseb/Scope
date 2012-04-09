@@ -4,7 +4,8 @@
 # task starts in the simulation
 sp {propose*ignore-new
    (state <s> ^name scope
-              ^io.input-link.task <task>)
+              ^io.input-link.task <task>
+              ^strategy-counter)
    (<task> ^new yes)
 -->
    (<s> ^operator <o> +)

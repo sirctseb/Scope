@@ -2,7 +2,8 @@
 sp {propose*interrupt-task
    (state <s> ^name scope
               ^io.input-link.task <task1>
-              ^io.input-link.task {<task2> <> <task1>})
+              ^io.input-link.task {<task2> <> <task1>}
+              ^strategy-counter)
    (<task1> -^new yes)
    (<task2> ^new yes)
 -->
