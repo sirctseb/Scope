@@ -12,31 +12,16 @@ sp {elaborate*tasks-exist
 # propose perform-all as long as there are any tasks
 sp {propose*perform-all
    (state <s> ^name scope
+              # as long as any tasks exist
               ^tasks-exist yes
+              # test for the strategy-counter so we don't get an infinite loop of elaborations
               ^strategy-counter)
 -->
    (<s> ^operator <o> +)
    (<o> ^name perform-all)
 }
 
-# TODO this will propose one perform-all operator for _every_ task that exists
-# 1)we could solve this by making all perform-all operators are indifferent to each other
-# however, it would be better not to propose a bunch of them, and just propose one instead
-# 2)this may be achieved by simply testing for (<input> ^task) above, instead of (<input> ^task <task>)
-# No. that does not work
-# 3)ooh, another option: elaborate based on the existence of a task to a single WME
-# then propose perform-all based on that
-# 3) seems to work well so we shouldn't need to indifferent them, i am removing it for now
-#sp {equate*all*perform-all
-#   (state <s> ^name scope
-#              ^operator <o1> +
-#              ^operator { <o2> <> <o1> } +)
-#   (<o1> ^name perform-all)
-#   (<o2> ^name perform-all)
-#-->
-#   (<s> ^operator <o1> = <o2>)
-#}
-
+# send the perform-all strategy to output
 sp {apply*perform-all
    (state <s> ^name scope
               ^operator <o>

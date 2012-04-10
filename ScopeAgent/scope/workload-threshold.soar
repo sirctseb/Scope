@@ -1,4 +1,4 @@
-# elaborate input with whether the workload thershold is exceede
+# elaborate input with whether the workload threshold is exceeded
 sp {elaborate*over-threshold
    (state <s> ^name scope
               ^io.input-link <input>

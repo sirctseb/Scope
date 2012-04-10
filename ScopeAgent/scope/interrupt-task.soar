@@ -2,7 +2,9 @@
 sp {propose*interrupt-task
    (state <s> ^name scope
               ^io.input-link.task <task1>
-              ^io.input-link.task {<task2> <> <task1>}
+              ^io.input-link.task <task2>
+              # below is redundant with the ^new matches
+#              ^io.input-link.task {<task2> <> <task1>}
               ^strategy-counter)
    (<task1> -^new yes)
    (<task2> ^new yes)
@@ -11,8 +13,7 @@ sp {propose*interrupt-task
    (<s> ^operator <o> +)
    (<o> ^name interrupt-task
         ^interrupt-task <task1>
-        ^new-task <task2>
-        ^strategy yes)
+        ^new-task <task2>)
 }
 
 # apply interrupt-task operator
