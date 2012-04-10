@@ -147,14 +147,14 @@ namespace SoarIMPRINTPlugin
 					// kill the entity in the newly started task
 					// TODO trying to remove entity if Soar says to ignore it
 					//this.log("Aborting: " + app.Executor.Simulation.Model.Abort("Tag", app.Executor.EventQueue.GetEntity().Tag));
-					MAAD.Simulator.Utilities.IRuntimeTask task = app.Executor.EventQueue.GetTask();
-					app.AcceptTrace("items in task: " + task.ItemsInTask);
+					//MAAD.Simulator.Utilities.IRuntimeTask task = app.Executor.EventQueue.GetTask();
+					//app.AcceptTrace("items in task: " + task.ItemsInTask);
 					//app.Executor.EventQueue.AddEntityAction(app.Executor.EventQueue.GetEntity(), MAAD.Simulator.Utilities.EEntityAction.Suspend);
-					app.Executor.EventQueue.GetTask().Remove(app.Executor.EventQueue.GetEntity(), MAAD.Simulator.Utilities.ETaskCollection.Task);
+					//app.Executor.EventQueue.GetTask().Remove(app.Executor.EventQueue.GetEntity(), MAAD.Simulator.Utilities.ETaskCollection.Task);
 
-					this.log("Aborting: " + app.Executor.Simulation.Model.Abort(app.Executor.EventQueue.GetEntity()));
+					//this.log("Aborting: " + app.Executor.Simulation.Model.Abort(app.Executor.EventQueue.GetEntity()));
 
-					app.AcceptTrace("items in task: " + task.ItemsInTask);
+					//app.AcceptTrace("items in task: " + task.ItemsInTask);
 					this.log("Scope: Ignore new task");
 					break;
 				case "perform-all":
