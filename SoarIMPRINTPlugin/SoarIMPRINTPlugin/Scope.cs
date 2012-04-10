@@ -29,7 +29,7 @@ namespace SoarIMPRINTPlugin
 			logger = new IMPRINTLogger();
 			this.enable("debug");
 		}
-		
+
 		// we learned that a new object is constructed everytime a simulation starts
 		//private static int constructorCalls = 0;
 		/*public Scope()
@@ -63,6 +63,7 @@ namespace SoarIMPRINTPlugin
 		private void OnBeforeBeginningEffect(MAAD.Simulator.Executor executor)
 		{
 			MAAD.Simulator.Utilities.IRuntimeTask task = executor.EventQueue.GetTask();
+
 			//app.AcceptTrace(task.ID);
 			// ignore the first and last task
 			int taskID = int.Parse(task.ID);
@@ -71,7 +72,8 @@ namespace SoarIMPRINTPlugin
 				// find corresponding MAAD.IMPRINTPro.NetworkTask
 				MAAD.IMPRINTPro.NetworkTask nt = GetIMPRINTTaskFromRuntimeTask(task);
 
-				if(nt != null) {
+				if (nt != null)
+				{
 					// add task props to Soar input
 					AddTask(nt);
 				}
@@ -134,7 +136,8 @@ namespace SoarIMPRINTPlugin
 		}
 
 		#region IMPRINT communication stuff
-		private void ApplyStrategy() {
+		private void ApplyStrategy()
+		{
 			// get the strategy name
 			string strategy = GetOutput("strategy", "name");
 			// TODO make a class to handle this stuff
@@ -143,9 +146,15 @@ namespace SoarIMPRINTPlugin
 				case "ignore-new":
 					// kill the entity in the newly started task
 					// TODO trying to remove entity if Soar says to ignore it
-					//app.Executor.EventQueue.GetTask().Remove(app.Executor.EventQueue.GetEntity(), MAAD.Simulator.Utilities.ETaskCollection.Task);
-					this.log("Aborting: " + app.Executor.Simulation.Model.Abort(app.Executor.EventQueue.GetEntity()));
 					//this.log("Aborting: " + app.Executor.Simulation.Model.Abort("Tag", app.Executor.EventQueue.GetEntity().Tag));
+					MAAD.Simulator.Utilities.IRuntimeTask task = app.Executor.EventQueue.GetTask();
+					app.AcceptTrace("items in task: " + task.ItemsInTask);
+					//app.Executor.EventQueue.AddEntityAction(app.Executor.EventQueue.GetEntity(), MAAD.Simulator.Utilities.EEntityAction.Suspend);
+					app.Executor.EventQueue.GetTask().Remove(app.Executor.EventQueue.GetEntity(), MAAD.Simulator.Utilities.ETaskCollection.Task);
+
+					this.log("Aborting: " + app.Executor.Simulation.Model.Abort(app.Executor.EventQueue.GetEntity()));
+
+					app.AcceptTrace("items in task: " + task.ItemsInTask);
 					this.log("Scope: Ignore new task");
 					break;
 				case "perform-all":
@@ -214,7 +223,8 @@ namespace SoarIMPRINTPlugin
 			return !agent.HadError();
 		}
 
-		public bool RunAgent(int steps) {
+		public bool RunAgent(int steps)
+		{
 
 			// run agent for 3 steps
 			agent.RunSelf(steps);
@@ -241,10 +251,10 @@ namespace SoarIMPRINTPlugin
 						break;
 					}
 				}
-				
+
 
 				//sml.IdentifierSymbol blah = child.GetIdentifier();
-				
+
 				/*sml.StringElement taskIDElement = (sml.StringElement)child.FindByAttribute("taskID", 0);
 				string taskID = taskIDElement.GetValue();
 				if (taskID == task.ID)
@@ -262,12 +272,13 @@ namespace SoarIMPRINTPlugin
 
 			// create a wme for the task
 			sml.Identifier taskLink = input.CreateIdWME("task");
-			
+
 			// add the task ID
 			taskLink.CreateStringWME("taskID", task.ID);
 
 			double totalWorkload = 0;
-			foreach (MAAD.IMPRINTPro.Interfaces.ITaskDemand demand in task.TaskDemandList.GetITaskDemands) {
+			foreach (MAAD.IMPRINTPro.Interfaces.ITaskDemand demand in task.TaskDemandList.GetITaskDemands)
+			{
 				// get workload attributes
 				string name = demand.RIPair.Resource.Name;
 				double value = demand.DemandValue;
@@ -286,6 +297,10 @@ namespace SoarIMPRINTPlugin
 			}
 			// add sum of workload values as total workload
 			taskLink.CreateFloatWME("workload", totalWorkload);
+
+			// TODO add task duration
+			// TODO add task priority
+			//taskLink.CreateFloatWME("duration", task.TaskPriority
 
 			//agent.Commit();
 			//kernel.CheckForIncomingCommands();
