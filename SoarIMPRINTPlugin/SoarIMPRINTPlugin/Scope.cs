@@ -247,7 +247,8 @@ namespace SoarIMPRINTPlugin
 					sml.Identifier childID = child.ConvertToIdentifier();
 					if (childID.FindByAttribute("taskID", 0).GetValueAsString() == task.ID)
 					{
-						this.log("Removing input task: " + childID.DestroyWME());
+						//this.log("Removing input task: " + childID.DestroyWME());
+						childID.DestroyWME();
 						break;
 					}
 				}

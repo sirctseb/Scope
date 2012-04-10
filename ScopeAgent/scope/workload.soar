@@ -1,3 +1,53 @@
+# new operator-based method for doing workload
+sp {propose*removed-workload-value
+   (state <s> ^name scope
+              ^tasks-accounted-for <task>
+             -^io.input-link.task <task>)
+-->
+   (<s> ^operator <o> + >)
+   (<o> ^name remove-workload
+        ^task <task>)
+}
+# make all remove-workload-value operators equal
+sp {preference*remove*equal
+   (state <s> ^name scope
+              ^operator <o> +
+              ^operator <o2> +)
+   (<o> ^name remove-workload
+        ^task <t1>)
+   (<o2> ^name remove-workload
+         ^task <> <t1>)
+-->
+   (<s> ^operator <o> = <o2>)
+}
+# make remove-workload-value operators better than any strategy
+sp {preference*remove*better*than*strategy
+   (state <s> ^name scope
+              ^operator <o> +
+              ^operator <o2> +)
+   (<o> ^name remove-workload)
+   (<o2> ^strategy yes)
+-->
+   (<s> ^operator <o> > <o2>)
+}
+# apply operator
+sp {apply*remove-workload
+   (state <s> ^name scope
+              ^operator <o>
+              ^old-workload <old-workload>)
+   (<o> ^name remove-workload
+        ^task <task>)
+   (<task> ^workload <workload>)
+-->
+   (<s> ^old-workload <old-workload> -
+        ^old-workload (- <old-workload> <workload>)
+        ^tasks-accounted-for <task> -)
+}
+
+
+
+
+
 # initialize workload values
 sp {apply*initialize-workload
    (state <s> ^operator <o>)
@@ -24,6 +74,17 @@ sp {elaborate*current-workload-no-new-task
 -->
    (<s> ^workload <old-workload>)
 }
+# compute workload if there is a removed task
+sp {elaborate*current-workload-removed-task
+   (state <s> ^disable
+              ^name scope
+              ^tasks-accounted-for <task>
+             -^io.input-link.task <task>
+              ^old-workload <old-workload>)
+   (<task> ^workload <workload>)
+-->
+   (<s> ^workload (- <old-workload> <workload>))
+}
 # update workload values for every new task
 sp {apply*update-workload
    (state <s> ^name scope
@@ -35,5 +96,22 @@ sp {apply*update-workload
                ^new yes)
 -->
    (<s> ^old-workload <old-workload> -
-        ^old-workload (+ <old-workload> <new-workload>))
+        ^old-workload (+ <old-workload> <new-workload>)
+        ^tasks-accounted-for <new-task>)
+}
+
+# remove workloads from completed tasks
+sp {apply*update-workload-remove
+   (state <s> ^disable
+              ^name scope
+              ^operator <o>
+              ^tasks-accounted-for <removed-task>
+             -^io.input-link.task <removed-task>
+               ^old-workload <old-workload>)
+   (<o> ^strategy yes)
+   (<removed-task> ^workload <workload>)
+-->
+   (<s> ^old-workload <old-workload> -
+        ^old-workload (- <old-workload> <workload>)
+        ^tasks-accounted-for <removed-task> -)
 }

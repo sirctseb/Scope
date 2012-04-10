@@ -49,7 +49,7 @@ sp {perform-all-test-init
 # elaborate operators to indicate that they are strategy operators
 # TODO this should not be defined here because it's used in real operation
 sp {elaborate*strategy*operators
-   (state <s> ^operator <o>)
+   (state <s> ^operator <o> +)
    (<o> ^name << perform-all ignore-new interrupt-task >> )
 -->
    (<o> ^strategy yes)
@@ -90,12 +90,12 @@ sp {ignore-new-over-interrupt-task-init
 -->
    (<input> ^task <t1>
             ^threshold 8)
-   (<t1> ^workload 5)
-#   (<input> ^workload 5)
+   (<t1> ^workload 1
+         ^ID 0)
 }
 # introduce new task that puts us over the threshold
 # once the first strategy operator is applied
-sp {apply*strategy-operator*for*ignore*test
+sp {apply*strategy-operator*for*ignore*test*1
    (state <s> ^operator <o>
               ^strategy-counter 1
               ^io.input-link <input>
@@ -103,7 +103,34 @@ sp {apply*strategy-operator*for*ignore*test
    (<o> ^name simulate-input)
 -->
    (<input> ^task <task>)
-   (<task> ^workload 4)
-#   (<input> ^workload 5 -
-#            ^workload 9)
+   (<task> ^workload 2
+           ^ID 1)
+}
+# complete the first task
+sp {apply*strategy-operator*for*ignore*test*2
+   (state <s> ^operator <o>
+              ^strategy-counter 2
+              ^io.input-link <input>
+              ^simulated yes)
+   (<input> ^task <t>)
+   (<t> ^ID 0)
+   (<o> ^name simulate-input)
+-->
+   (<input> ^task <t> -)
+   (<input> ^task <new>)
+   (<new> ^ID 2
+          ^workload 3)
+}
+# introduce another task
+sp {apply*strategy-operator*for*ignore*test*3
+   (state <s> ^disable
+              ^operator <o>
+              ^strategy-counter 3
+              ^io.input-link <input>
+              ^simulated yes)
+   (<o> ^name simulate-input)
+-->
+   (<input> ^task <task>)
+   (<task> ^ID 2
+           ^workload 2)
 }
