@@ -5,10 +5,12 @@ popd
 pushd elaborations
 source elaborations_source.soar
 popd
+source debug.soar
 source ignore-new.soar
 source initialize-scope.soar
 source interrupt-task.soar
 source mark-new.soar
+source minimize-workload.soar
 source perform-all.soar
 source simulation-simulator.soar
 source workload.soar

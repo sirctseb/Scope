@@ -4,7 +4,8 @@ sp {elaborate*tasks-exist
               # test for new so that support will
               # retract when perform-all is applied,
               # so we don't get an operator-no-change impasse
-              ^io.input-link.task.new)
+              #^io.input-link.task.release)
+              ^io.input-link.task <task>)
 -->
    (<s> ^tasks-exist yes)
 }
@@ -13,12 +14,50 @@ sp {elaborate*tasks-exist
 sp {propose*perform-all
    (state <s> ^name scope
               # as long as any tasks exist
-              ^tasks-exist yes
+#              ^tasks-exist yes
+              ^io.input-link.task <task>
               # test for the strategy-counter so we don't get an infinite loop of elaborations
               ^strategy-counter)
+   (<task> ^release yes)
 -->
    (<s> ^operator <o> +)
    (<o> ^name perform-all)
+}
+# all perform-all equal
+sp {preference*perform-all*indifferent
+   (state <s> ^name scope
+              ^operator <o1> +
+              ^operator {<o2> <> <o1>} +)
+   (<o1> ^name perform-all)
+   (<o2> ^name perform-all)
+-->
+   (<s> ^operator <o1> = <o2>)
+}
+
+# elaborate perform-all with the workload that would
+# result if we accepted the tasks that it suggests
+sp {elaborate*perform-all*workload*release
+   (state <s> ^name scope
+              ^operator <o> +
+              # TODO this assumes only one of these
+              ^io.input-link.task <task>
+              ^workload <workload>)
+   (<task> ^release yes
+           ^workload <new-workload>)
+   (<o> ^name perform-all)
+-->
+   (<o> ^workload (+ <workload> <new-workload>))
+}
+# elaborate perform-all with the workload when
+# there are no tasks in release
+sp {elaborate*perform-all*workload*no*release
+   (state <s> ^name scope
+              ^operator <o> +
+             -^io.input-link.task.release yes
+              ^workload <workload>)
+   (<o> ^name perform-all)
+-->
+   (<o> ^workload <workload>)
 }
 
 # send the perform-all strategy to output

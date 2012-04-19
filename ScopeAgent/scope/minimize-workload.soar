@@ -1,0 +1,63 @@
+# resolve ties by examining which will result in lowest workload
+
+sp {apply*ignore-new*evaluate
+   (state <s> ^operator <o>
+              ^workload <workload>)
+   (<o> ^name ignore-new)
+-->
+   (<s> ^workload <workload> -
+        ^workload <workload>)
+}
+
+sp {apply*interrupt-task*evaluate
+   (state <s> ^operator <o>
+              ^workload <workload>)
+   (<o> ^name interrupt-task
+        ^interrupt-task <task>
+        ^new-task <new-task>)
+   (<task> ^workload <task-workload>)
+   (<new-task> ^workload <new-workload>)
+-->
+   # update the state workload
+   (<s> ^workload <workload> -
+        ^workload (+ <new-workload> (- <workload> <task-workload>)))
+}
+
+sp {evaluate*state*workload*numeric
+   (state <s> ^desired <d>
+              ^tried-tied-operator
+              ^workload <workload>)
+-->
+   (<s> ^numeric-value <workload>)
+}
+
+sp {evaluate*state*workload*success
+   (state <s> ^disable
+              ^desired <d>
+              ^top-state.io.input-link.threshold <threshold>
+              ^top-state <> <s>
+              # TODO I think we used < elsewhere
+              ^workload <= <threshold>)
+-->
+   (<s> ^success <d>)
+}
+
+sp {evaluate*state*workload*failure
+   (state <s> ^disable
+              ^desired <d>
+              ^top-state.io.input-link.threshold <threshold>
+              ^workload > <threshold>)
+-->
+   (<s> ^failure <d>)
+}
+
+# TODO duplicate state detection?
+
+# problem space def
+sp {scope*elaborate*problem-space
+   (state <s> ^name scope)
+-->
+   (<s> ^problem-space <p>)
+   (<p> ^name scope-space
+        ^default-state-copy yes)
+}

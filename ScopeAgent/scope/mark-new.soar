@@ -2,7 +2,8 @@
 # TODO we could also think about requiring the plugin to do this
 # if this gets complicated
 sp {elaborate*new-task
-   (state <s> ^name scope
+   (state <s> ^disable
+              ^name scope
               ^io.input-link.task <task>)
 -->
    (<task> ^new yes)
@@ -10,7 +11,8 @@ sp {elaborate*new-task
 
 # remove new-task designation on all tasks when any operator is applied
 sp {apply*old-task
-   (state <s> ^name scope
+   (state <s> ^disable
+              ^name scope
               ^operator <o>
               ^io.input-link.task <task>)
    # TODO ^strategy should not be defined in

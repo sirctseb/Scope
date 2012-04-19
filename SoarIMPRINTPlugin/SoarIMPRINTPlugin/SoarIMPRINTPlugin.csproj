@@ -63,6 +63,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Scope.cs" />
+    <Compile Include="ScopeData.cs" />
     <Compile Include="SoarIMPRINTPluginDefinition.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
