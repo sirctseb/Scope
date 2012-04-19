@@ -1,4 +1,4 @@
-99
+103
 SOAR_ID 0
 SOAR_ID 1
 SOAR_ID 2
@@ -98,7 +98,11 @@ SOAR_ID 95
 STRING 96
 FLOAT_RANGE 97 0.0 7.0
 INTEGER_RANGE 98 1 5
-99
+SOAR_ID 99
+ENUMERATION 100 1 debug
+SOAR_ID 101
+ENUMERATION 102 1 minimize-workload
+103
 0 disable 69
 0 io 1
 0 name 7
@@ -112,6 +116,8 @@ INTEGER_RANGE 98 1 5
 0 operator 19
 0 operator 21
 0 operator 67
+0 operator 99
+0 operator 101
 0 phase 66
 0 simulated 65
 0 strategy-counter 24
@@ -198,3 +204,5 @@ INTEGER_RANGE 98 1 5
 67 new-workload 84
 95 resource 96
 95 value 97
+99 name 100
+101 name 102

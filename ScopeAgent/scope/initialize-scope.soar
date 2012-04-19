@@ -10,6 +10,8 @@ sp {apply*initialize-scope
    (state <s> ^operator <op>)
    (<op> ^name initialize-scope)
 -->
-   (<s> ^name scope)
+   (<s> ^name scope
+        ^desired <d>)
+   (<d> ^better lower)
 }
 

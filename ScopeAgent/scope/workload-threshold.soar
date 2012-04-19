@@ -1,21 +1,20 @@
-# elaborate input with whether the workload threshold is exceeded
-sp {elaborate*over-threshold
+# elaborate perform-all if it puts us over threshold
+sp {elaborate*perform-all*threshold
    (state <s> ^name scope
-              ^io.input-link <input>
-              ^workload > <threshold>)
-   # if workload is greater than threshold
-   (<input> ^threshold <threshold>)
-#            ^workload > <threshold>)
+              ^operator <o> +
+              ^io.input-link.threshold <threshold>)
+   (<o> ^name perform-all
+        ^workload <workload> > <threshold>)
 -->
-   (<input> ^over-threshold yes)
+   (<o> ^over-threshold yes)
 }
 
-# prefer to perform all tasks if below the workload threshold
-sp {preference*under-threshold
+# prefer to perform all tasks if we're still under threshold
+sp {preference*perform-all*under-threshold
    (state <s> ^name scope
-              -^io.input-link.over-threshold yes
               ^operator <o> +)
-   (<o> ^name perform-all)
+   (<o> ^name perform-all
+       -^over-threshold yes)
 -->
    # make best preference
    (<s> ^operator <o> >)
@@ -23,11 +22,11 @@ sp {preference*under-threshold
 
 # reject perform-all if over the workload threshold
 # TODO should we simply make it worst?
-sp {prefer*not-perform-all
+sp {prefer*not*perform-all
    (state <s> ^name scope
-              ^io.input-link.over-threshold yes
               ^operator <o> +)
-   (<o> ^name perform-all)
+   (<o> ^name perform-all
+        ^over-threshold yes)
 -->
    (<s> ^operator <o> -)
 }
@@ -37,12 +36,11 @@ sp {prefer*not-perform-all
 sp {compute*workload*after*ignore
    (state <s> ^name scope
               ^operator <o> +
-#              ^io.input-link.workload <workload>)
               ^workload <workload>)
    (<o> ^name ignore-new
         ^task.workload <task-workload>)
 -->
-   (<o> ^new-workload (- <workload> <task-workload>))
+   (<o> ^new-workload <workload>)
 }
 
 # prefer ignoring a new task if it is

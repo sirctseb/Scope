@@ -6,8 +6,8 @@ sp {propose*interrupt-task
               # below is redundant with the ^new matches
 #              ^io.input-link.task {<task2> <> <task1>}
               ^strategy-counter)
-   (<task1> -^new yes)
-   (<task2> ^new yes)
+   (<task1> -^release yes)
+   (<task2> ^release yes)
 -->
    # propose interrupting task1 in favor of task2
    (<s> ^operator <o> +)

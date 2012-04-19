@@ -6,11 +6,23 @@ sp {propose*ignore-new
    (state <s> ^name scope
               ^io.input-link.task <task>
               ^strategy-counter)
-   (<task> ^new yes)
+   (<task> ^release yes)
 -->
    (<s> ^operator <o> +)
    (<o> ^name ignore-new
         ^task <task>)
+}
+
+# elaborate ignore-new operators with the workload that would result if
+# they were accepted and nothing rejected
+sp {elaborate*ignore-new*workload
+   (state <s> ^name scope
+              ^operator <o> +
+              ^workload <workload>)
+   (<o> ^name ignore-new
+        ^task.workload <new-workload>)
+-->
+   (<o> ^workload (+ <workload> <new-workload>))
 }
 
 # apply ignore-new operator

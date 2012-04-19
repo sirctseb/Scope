@@ -6,6 +6,18 @@ sp {simulator*indicator
    (<s> ^simulated yes)
 }
 
+# test choosing ignore-new over interrupt-task
+# get the first one out of the way
+sp {start*simualtion*simulator
+   (state <s> ^operator <o>
+              ^simulated yes
+              ^io.input-link <input>)
+   (<o> ^name initialize-scope)
+-->
+   (<s> ^phase simulate-input)
+   (<input> ^threshold 8)
+}
+
 # alternate a simulated input
 sp {propose*simulate-input
    (state <s> ^name scope
@@ -49,7 +61,7 @@ sp {perform-all-test-init
 # elaborate operators to indicate that they are strategy operators
 # TODO this should not be defined here because it's used in real operation
 sp {elaborate*strategy*operators
-   (state <s> ^operator <o>)
+   (state <s> ^operator <o> +)
    (<o> ^name << perform-all ignore-new interrupt-task >> )
 -->
    (<o> ^strategy yes)
@@ -80,30 +92,87 @@ sp {apply*increment-strategy-counter
         ^strategy-counter <count> -)
 }
 
-# test choosing ignore-new over interrupt-task
-# get the first one out of the way
-sp {ignore-new-over-interrupt-task-init
+# simulator effects for output commands
+# TODO
+sp {apply*perform-all*effects
+   (state <s> ^disable
+              ^name scope
+              ^operator <o>
+              ^io.input-link.task <task>)
+   (<o> ^name perform-all)
+   (<task> ^release yes)
+-->
+   (<task> ^release yes -)
+}
+
+# instead of having a rule for each
+sp {init*task*events
    (state <s> ^operator <o>
               ^io.input-link <input>
               ^simulated yes)
    (<o> ^name initialize-scope)
 -->
-   (<input> ^task <t1>
-            ^threshold 8)
-   (<t1> ^workload 5)
-#   (<input> ^workload 5)
+   (<s> ^simulate-task <n1>)
+   (<n1> ^task <t1>)
+   (<t1> ^workload 4
+         ^ID 0
+         ^release yes)
+   (<n1> ^next <n2>)
+   (<n2> ^remove <r1>)
+   (<r1> ^obj <t1>
+         ^attribute release
+         ^value yes)
+   (<n2> ^task <t2>)
+   (<t2> ^workload 4
+         ^ID 1
+         ^release yes)
+   (<n2> ^next <n3>)
+   (<n3> ^remove <r2>)
+   (<r2> ^obj <t2>
+         ^attribute release
+         ^value yes)
+   (<n3> ^task <t3>)
+   (<t3> ^workload 4
+         ^ID 3
+         ^release yes)
+   (<n3> ^next <end>)
 }
-# introduce new task that puts us over the threshold
-# once the first strategy operator is applied
-sp {apply*strategy-operator*for*ignore*test
-   (state <s> ^operator <o>
-              ^strategy-counter 1
-              ^io.input-link <input>
-              ^simulated yes)
+
+# generalized rules
+sp {apply*simulate-input*remove
+   (state <s> ^name scope
+              ^phase simulate-input
+              ^operator <o>
+              ^simulated yes
+              ^simulate-task <event>)
    (<o> ^name simulate-input)
+   (<event> ^remove <removal>)
+   (<removal> ^obj <obj>
+              ^attribute <attr>
+              ^value <val>)
+-->
+   (<obj> ^<attr> <val> -)
+}
+sp {apply*simulate-input*add*task
+   (state <s> ^name scope
+              ^phase simulate-input
+              ^operator <o>
+              ^simulated yes
+              ^simulate-task <event>
+              ^io.input-link <input>)
+   (<o> ^name simulate-input)
+   (<event> ^task <task>)
 -->
    (<input> ^task <task>)
-   (<task> ^workload 4)
-#   (<input> ^workload 5 -
-#            ^workload 9)
+}
+sp {x*finish*simulate*input
+   (state <s> ^name scope
+              ^phase simulate-input
+              ^operator <o>
+              ^simulate-task <event>)
+   (<event> ^next <next>)
+   (<o> ^name simulate-input)
+-->
+   (<s> ^simulate-task <event> -
+        ^simulate-task <next>)
 }

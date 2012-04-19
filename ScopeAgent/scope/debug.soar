@@ -1,0 +1,11 @@
+# barf if we ever have two tasks in release at the same time
+sp {double*release
+   (state <s> ^disable
+              ^name scope
+              ^io.input-link <input>)
+   (<input> ^task <t1> {<t2> <> <t1>})
+   (<t1> ^release yes)
+   (<t2> ^release yes)
+-->
+   (write (crlf) |Two Released Tasks|)
+}
