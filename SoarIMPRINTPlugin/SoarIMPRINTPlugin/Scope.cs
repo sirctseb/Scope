@@ -209,7 +209,18 @@ namespace SoarIMPRINTPlugin
 					break;
 				case "interrupt-task":
 					this.log("Scope: Interrupt task");
-					// TODO kill existing task somehow
+
+					// get task which should be interrupted
+					string taskID = agent.GetOutputLink()
+											.FindIDByAttribute("strategy")
+											.FindIDByAttribute("interrupt-task")
+											.FindStringByAttribute("taskID");
+					// abort entity(ies?) in task
+					// TODO this will abort all entities in task. should we include entity tag?
+					// TODO if we abort, we need to take task off input link
+					// TODO should suspend, and ask Scope if we can restart once in a while (in end effect?)
+					app.AcceptTrace("Interrupting " + app.Executor.Simulation.Model.FindTask(taskID).Properties.Name + ": " + app.Executor.Simulation.Model.Abort("ID", taskID));
+
 					// return true because entity should be released
 					return true;
 					break;
@@ -298,8 +309,17 @@ namespace SoarIMPRINTPlugin
 			// get input link
 			sml.Identifier input = agent.GetInputLink();
 
+			foreach (sml.Identifier taskLink in input.GetIDChildren("task"))
+			{
+				if (taskLink.FindStringByAttribute("taskID") == task.ID)
+				{
+					taskLink.DestroyWME();
+					break;
+				}
+			}
+
 			// search tasks for this one
-			for (int i = 0; i < input.GetNumberChildren(); i++)
+			/*for (int i = 0; i < input.GetNumberChildren(); i++)
 			{
 				sml.WMElement child = input.GetChild(i);
 				if (child.IsIdentifier())
@@ -312,7 +332,7 @@ namespace SoarIMPRINTPlugin
 						break;
 					}
 				}
-			}
+			}*/
 			return true;
 		}
 		public sml.Identifier AddRealTask(MAAD.IMPRINTPro.NetworkTask task)
