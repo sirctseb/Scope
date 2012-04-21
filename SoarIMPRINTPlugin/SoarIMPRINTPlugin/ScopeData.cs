@@ -97,5 +97,25 @@ namespace SoarIMPRINTPlugin
 			return strings;*/
 			return StrategyLog.Distinct().Select(strategy => strategy.Name);
 		}
+
+		public void WriteCounts(string filename)
+		{
+			System.IO.StreamWriter writer = new System.IO.StreamWriter(filename);
+			IEnumerable<ScopeData.StrategyCount> counts = GetStrategyCounts();
+			foreach (ScopeData.StrategyCount count in counts)
+			{
+				writer.WriteLine(count.Name + ": " + count.Count);
+			}
+			writer.Close();
+		}
+		public void WriteTrace(string filename)
+		{
+			System.IO.StreamWriter writer = new System.IO.StreamWriter(filename);
+			foreach (Strategy strategy in StrategyLog)
+			{
+				writer.WriteLine(strategy.Name + ": " + strategy.Time);
+			}
+			writer.Close();
+		}
 	}
 }

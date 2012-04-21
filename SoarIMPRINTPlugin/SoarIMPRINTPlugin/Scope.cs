@@ -31,11 +31,19 @@ namespace SoarIMPRINTPlugin
 
 		public Scope()
 		{
+			app.AcceptTrace("Scope Constructor");
+			logger = new IMPRINTLogger();
+			this.enable("debug");
+		}
+
+		public void EnableScope()
+		{
 			CreateKernel();
 			InitializeScope();
 			RegisterEvents();
-			logger = new IMPRINTLogger();
-			this.enable("debug");
+			// TODO we don't catch OnSimulationBegin if we wait for first task begin to initialize
+			ResetSoar();
+			app.AcceptTrace("Enable Scope Called");
 		}
 
 		// we learned that a new object is constructed everytime a simulation starts
@@ -114,20 +122,28 @@ namespace SoarIMPRINTPlugin
 				string output = agent.RunSelfTilOutput();
 				// get result
 				string strategy = GetOutput("strategy", "name");
-				// TODO we should probably write a separate method for this when resuming
-				bool release = ApplyStrategy(strategy);
 				// remove task as a release task
 				RemoveTask(executor.GetRuntimeTask(entity.ID));
 				// instead of returning release, resume the task if it is true
-				if (release)
+				//if (release)
+				// TODO sometimes tasks are resumed by interrupting other tasks and that causes problems
+				if(strategy == "perform-all")
 				{
+					// TODO we should probably write a separate method for this when resuming
+					bool release = ApplyStrategy(strategy);
+					// trace that we are resuming
 					app.AcceptTrace("Resuming task " + executor.GetRuntimeTask(entity.ID).Properties.Name + ": " + executor.Simulation.Model.Resume("ID", entity.ID));
 					// TODO this should be restored from what it was before
 					entity.Tag = 0;
 					// add the task as a real task
 					AddRealTask(executor.GetRuntimeTask(entity.ID));
 					// log that we resumed a task
-					scopeData.LogStrategy("Resume", executor.GetDiscreteClock());
+					scopeData.LogStrategy("Resume", app.Executor.Simulation.Clock);
+					// log the decision that allowed for the resume
+					scopeData.LogStrategy(strategy, app.Executor.Simulation.Clock);
+					// force logging because there's no corresponding begin task
+					// TODO this is a bad way to do this
+					scopeData.CommitStrategy();
 				}
 			}
 		}
@@ -141,12 +157,8 @@ namespace SoarIMPRINTPlugin
 			// TODO when to shutdown kernel?
 			UnregisterEvents();
 			// write data
-			System.IO.StreamWriter writer = new System.IO.StreamWriter("C:\\Users\\cjbest\\Desktop\\Coping\\ScopeData\\scope_data.txt");
-			IEnumerable<ScopeData.StrategyCount> counts = scopeData.GetStrategyCounts();
-			foreach (ScopeData.StrategyCount count in counts) {
-				writer.WriteLine(count.Name + ": " + count.Count);
-			}
-			writer.Close();
+			scopeData.WriteCounts("C:\\Users\\cjbest\\Desktop\\Coping\\ScopeData\\scope_counts.txt");
+			scopeData.WriteTrace("C:\\Users\\cjbest\\Desktop\\Coping\\ScopeData\\scope_trace.txt");
 		}
 		public void OnAfterReleaseCondition(MAAD.Simulator.Executor executor, ref bool release)
 		{
@@ -187,9 +199,7 @@ namespace SoarIMPRINTPlugin
 					// destroy the task input element
 					taskWME.DestroyWME();
 					// log the decision
-					// TODO log only once
-					//scopeData.LogStrategy(strategy, executor.GetContinuousClock());
-					scopeData.LogStrategy(strategy, executor.GetDiscreteClock());
+					scopeData.LogStrategy(strategy, executor.Simulation.Clock);
 				}
 			}
 		}
