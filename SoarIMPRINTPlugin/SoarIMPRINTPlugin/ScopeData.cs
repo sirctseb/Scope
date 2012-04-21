@@ -29,6 +29,7 @@ namespace SoarIMPRINTPlugin
 		}
 
 		public List<Strategy> StrategyLog { get; set; }
+		private Strategy lastStrategy = new Strategy();
 
 		public ScopeData()
 		{
@@ -38,7 +39,22 @@ namespace SoarIMPRINTPlugin
 		// add a strategy decision to the log
 		public void LogStrategy(string strategy, double time)
 		{
-			StrategyLog.Add(new Strategy {Name = strategy, Time = time});
+			lastStrategy.Name = strategy;
+			lastStrategy.Time = time;
+
+			// if strategy is a perform-all, wait until commit to add it	
+			if (strategy != "perform-all")
+			{
+				StrategyLog.Add(new Strategy { Name = strategy, Time = time });
+			}
+		}
+		// add the last strategy if it is a peform-all
+		public void CommitStrategy()
+		{
+			if (lastStrategy.Name == "perform-all")
+			{
+				StrategyLog.Add(new Strategy { Name = lastStrategy.Name, Time = lastStrategy.Time });
+			}
 		}
 
 		// return the number of times a strategy has been used

@@ -25,6 +25,10 @@ namespace SoarIMPRINTPlugin
 		public string ScopeOutput = null;
 		private bool eventsRegistered = false;
 
+		// hold the last decision & time so that we can filter duplicate perfom-alls
+		private string lastStrategyDecision;
+		private double lastStrategyDecisionTime;
+
 		public Scope()
 		{
 			CreateKernel();
@@ -66,6 +70,7 @@ namespace SoarIMPRINTPlugin
 		//public delegate void DNetworkEvent(object sender, EventArgs e);
 		private void OnBeforeBeginningEffect(MAAD.Simulator.Executor executor)
 		{
+			app.AcceptTrace("Before begin effect: " + executor.Simulation.GetTask().Properties.Name);
 			// TODO if a KILL_TAG entity gets here, something has gone wrong
 			// check that entity hasn't been marked KILL_TAG yet
 			if (executor.EventQueue.GetEntity().Tag == KILL_TAG)
@@ -80,6 +85,7 @@ namespace SoarIMPRINTPlugin
 			int taskID = int.Parse(task.ID);
 			if (taskID > 0 && taskID < 999)
 			{
+				scopeData.CommitStrategy();
 				// find corresponding MAAD.IMPRINTPro.NetworkTask
 				MAAD.IMPRINTPro.NetworkTask nt = GetIMPRINTTaskFromRuntimeTask(task);
 				if (nt != null)
@@ -120,6 +126,8 @@ namespace SoarIMPRINTPlugin
 					entity.Tag = 0;
 					// add the task as a real task
 					AddRealTask(executor.GetRuntimeTask(entity.ID));
+					// log that we resumed a task
+					scopeData.LogStrategy("Resume", executor.GetDiscreteClock());
 				}
 			}
 		}
