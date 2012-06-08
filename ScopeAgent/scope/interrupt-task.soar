@@ -20,10 +20,13 @@ sp {apply*interrupt-task
               ^io.output-link <output>)
    (<o> ^interrupt-task <task1>
         ^new-task <task2>)
+   # for debug output
+   (<task1> ^taskID <taskID1>)
+   (<task2> ^taskID <taskID2>)
 -->
    (<output> ^strategy <st>)
    (<st> ^name interrupt-task
          ^interrupt-task <task1>
          ^new-task <task2>)
-   (write (crlf) |Interrupt task|)
+   (write (crlf) |Interrupt task: | <taskID1> | to start: | <taskID2>)
 }

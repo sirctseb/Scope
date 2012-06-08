@@ -31,9 +31,11 @@ sp {apply*ignore-new
               ^io.output-link <output>)
    (<o> ^name ignore-new
         ^task <task>)
+   # for debug output
+   (<task> ^taskID <taskID>)
 -->
    (<output> ^strategy <st>)
    (<st> ^name ignore-new
          ^task <task>)
-   (write (crlf) |Ignore new task|)
+   (write (crlf) |Ignore new task: | <taskID>)
 }

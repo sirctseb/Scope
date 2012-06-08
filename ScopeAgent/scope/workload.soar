@@ -15,13 +15,15 @@ sp {elaborate*update-workload*remove
    (state <s> ^name scope
               ^tasks-accounted-for <task>
              -^io.input-link.task <task>)
+   # for debug output
+   (<task> ^taskID <taskID>)
 -->
    (<s> ^workload-update-needed yes)
    # details on update needed
    (<s> ^workload-update <w>)
    (<w> ^task <task>
         ^action remove)
-   (write (crlf) |Noticed that task | <task> | was gone, need update|)
+   (write (crlf) |Noticed that task | <taskID> | was gone, need update|)
 }
 # elaboration to indicate that a workload update is needed
 # due to an added task
@@ -30,13 +32,15 @@ sp {elaborate*update-workload*add
               ^io.input-link.task <task>
              -^tasks-accounted-for <task>)
    (<task> ^active yes)
+   # for debug output
+   (<task> ^taskID <taskID>)
 -->
    (<s> ^workload-update-needed yes)
    # details on update needed
    (<s> ^workload-update <w>)
    (<w> ^task <task>
         ^action add)
-   (write (crlf) |Noticed new active task | <task> | so we need update|)
+   (write (crlf) |Noticed new active task | <taskID> | so we need update|)
 }
 
 # propose update workload subgoal when a task is added or removed

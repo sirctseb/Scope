@@ -12,15 +12,15 @@ VERSION 4
 9	0	OPERATOR initialize-scope initialize-scope.soar 10
 10	0	OPERATOR interrupt-task interrupt-task.soar 11
 11	0	OPERATOR mark-new mark-new.soar 12
-12	0	OPERATOR meta meta.soar 23
-13	0	OPERATOR minimize-workload minimize-workload.soar 13
-14	0	OPERATOR perform-all perform-all.soar 14
-15	0	OPERATOR release-decision-subgoal release-decision-subgoal.soar 15
-16	0	HLOPERATOR resume-decision-subgoal resume-decision-subgoal.soar resume-decision-subgoal 262 16
-17	16	FOPERATOR elaborations elaborations.soar 17
-18	16	OPERATOR continue-delay continue-delay.soar 18
-19	16	OPERATOR resume-delayed resume-delayed.soar 19
-20	0	OPERATOR simulation-simulator simulation-simulator.soar 20
-21	0	OPERATOR workload workload.soar 21
-22	0	OPERATOR workload-threshold workload-threshold.soar 22
+12	0	OPERATOR meta meta.soar 13
+13	0	OPERATOR minimize-workload minimize-workload.soar 14
+14	0	OPERATOR perform-all perform-all.soar 15
+15	0	OPERATOR release-decision-subgoal release-decision-subgoal.soar 16
+16	0	HLOPERATOR resume-decision-subgoal resume-decision-subgoal.soar resume-decision-subgoal 262 17
+17	16	FOPERATOR elaborations elaborations.soar 18
+18	16	OPERATOR continue-delay continue-delay.soar 19
+19	16	OPERATOR resume-delayed resume-delayed.soar 20
+20	0	OPERATOR simulation-simulator simulation-simulator.soar 21
+21	0	OPERATOR workload workload.soar 22
+22	0	OPERATOR workload-threshold workload-threshold.soar 23
 END

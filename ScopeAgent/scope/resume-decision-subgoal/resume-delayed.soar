@@ -39,9 +39,11 @@ sp {apply*resume-delayed
               ^io.output-link <output>)
    (<o> ^name resume-delayed
         ^task <task>)
+   # for debug output
+   (<task> ^taskID <taskID>)
 -->
    (<output> ^strategy <st>)
    (<st> ^name resume-delayed
          ^task <task>)
-   (write (crlf) |Resume delayed task|)
+   (write (crlf) |Resume delayed task: | <taskID>)
 }

@@ -58,9 +58,11 @@ sp {apply*delay-new
               ^io.output-link <output>)
    (<o> ^name delay-new
         ^task <task>)
+   # for debug output
+   (<task> ^taskID <taskID>)
 -->
    (<output> ^strategy <st>)
    (<st> ^name delay-new
          ^task <task>)
-   (write (crlf) |Delay new task|)
+   (write (crlf) |Delay new task: | <taskID>)
 }

@@ -32,9 +32,11 @@ sp {apply*continue-delay
               ^io.output-link <output>)
    (<o> ^name resume-delayed
         ^task <task>)
+   # for debug output
+   (<task> ^taskID <taskID>)
 -->
    (<output> ^strategy <st>)
    (<st> ^name continue-delay
          ^task <task>)
-   (write (crlf) |Continue delay|)
+   (write (crlf) |Continue delay task: | <taskID>)
 }

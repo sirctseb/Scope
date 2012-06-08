@@ -36,6 +36,8 @@ namespace SoarIMPRINTPlugin
 			//app.AcceptTrace("Scope Constructor");
 			logger = new IMPRINTLogger();
 			this.enable("debug");
+			// high debug output
+			this.logger.LogLevel = 5;
 		}
 
 		public void EnableScope()
@@ -197,12 +199,14 @@ namespace SoarIMPRINTPlugin
 			// check that entity hasn't been marked KILL_TAG yet
 			if (executor.EventQueue.GetEntity().Tag == KILL_TAG)
 			{
+				this.log("KILL_TAG coming through release condition, rejecting", 3);
 				release = false;
 				return;
 			}
 			// check that entity isn't marked delayed
 			if (executor.EventQueue.GetEntity().Tag == DELAY_TAG)
 			{
+				this.log("DELAY_TAG coming through release condition, rejecting", 3);
 				release = false;
 				return;
 			}
@@ -210,6 +214,7 @@ namespace SoarIMPRINTPlugin
 			// if entity is marked to resume after delay, return true
 			if (executor.EventQueue.GetEntity().Tag == RESUME_DELAY_TAG)
 			{
+				this.log("RESUME_DELAY_TAG coming through release condition, accepting", 3);
 				release = true;
 				return;
 			}
@@ -231,6 +236,7 @@ namespace SoarIMPRINTPlugin
 					// run the agent until it decides what to do
 					string output = agent.RunSelfTilOutput();
 					string strategy = GetOutput("strategy", "name");
+					//this.log("Output strategy was: " + strategy, 5);
 					//app.AcceptTrace(strategy);
 					// execute the strategy
 					release = ApplyStrategy(strategy, taskWME);
@@ -273,6 +279,7 @@ namespace SoarIMPRINTPlugin
 			// get the strategy name
 			//string strategy = GetOutput("strategy", "name");
 			// TODO make a class to handle this stuff
+			this.log("Applying strategy " + strategy, 5);
 			switch (strategy)
 			{
 				case "delay-new":
@@ -280,9 +287,9 @@ namespace SoarIMPRINTPlugin
 					// mark DELAY_TAG
 					app.Executor.EventQueue.GetEntity().Tag = DELAY_TAG;
 					// add ^delayed yes to WME
-					taskWME.CreateStringWME("delayed", "yes");
+					this.log("Delay: add ^delayed: " + taskWME.CreateStringWME("delayed", "yes").GetValue(), 5);
 					// remove ^release from WME
-					taskWME.FindByAttribute("release", 0).DestroyWME();
+					this.log("Delay: remove ^release: " + taskWME.FindByAttribute("release", 0).DestroyWME(), 5);
 					// TODO can an entity be suspended in release condition event? NOPE
 					//app.AcceptTrace("Suspend for delay: " + app.Executor.Simulation.IModel.Suspend("Tag", DELAY_TAG));
 					// return false so the entity is not released
