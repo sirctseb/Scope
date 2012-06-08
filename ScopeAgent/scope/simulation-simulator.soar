@@ -20,7 +20,7 @@ sp {start*simulation*simulator
 
 # alternate a simulated input
 sp {propose*simulate-input
-   (state <s> #^name scope
+   (state <s> ^name scope
               ^phase simulate-input
               ^simulated yes)
 -->
@@ -30,8 +30,8 @@ sp {propose*simulate-input
 # in the application of input simulation,
 # change phase back to real scope processing
 sp {apply*simulate-input
-   (state <s> #^name scope
-              ^phase simulate-input
+   (state <s> ^name scope
+              #^phase simulate-input
               ^operator <o>
               ^simulated yes)
    (<o> ^name simulate-input)
@@ -43,11 +43,12 @@ sp {apply*simulate-input
 sp {apply*not-simulate-input
    (state <s> #^name scope
               ^operator <o>
-              ^simulated yes)
+              ^simulated yes
+              ^top-state <ts>)
    (<o> -^name simulate-input
          ^strategy yes)
 -->
-   (<s> ^phase simulate-input)
+   (<ts> ^phase simulate-input)
 }
               
 # test choosing perform-all
@@ -96,12 +97,25 @@ sp {apply*increment-strategy-counter
         ^strategy-counter <count> -)
 }
 
+# remove old commands from output
+sp {apply*remove*old*commands
+   (state <s> ^simulated yes
+              ^operator <o>
+              ^io.output-link <output>)
+   (<output> ^strategy <strategy>)
+   (<strategy> ^complete yes)
+   (<o> ^name simulate-input)
+-->
+   (<output> ^strategy <strategy> -)
+}
 # simulator effects for output commands
 sp {apply*perform-all*effects
    (state <s> ^simulated yes
               ^operator <o>
               ^io.input-link.task <task>
-              ^io.output-link.strategy.name perform-all)
+              ^io.output-link.strategy <strategy>)
+   (<strategy> ^name perform-all
+              -^complete yes)
    (<o> ^name simulate-input)
    (<task> ^release yes)
 -->
@@ -109,11 +123,55 @@ sp {apply*perform-all*effects
    (<task> ^release yes -)
    # add active flag
    (<task> ^active yes)
+   # mark as complete
+   (<strategy> ^complete yes)
 }
 
-#sp {apply*interrupt-task*effects
-#   (state <s> ^simulated yes
-#              ^operator <o>
+sp {apply*ignore-new*effects
+   (state <s> ^simulated yes
+              ^operator <o>
+              ^io.input-link <input>
+              ^io.input-link.task <task>
+              ^io.output-link.strategy <strategy>)
+   (<strategy> ^name ignore-new
+              -^complete yes)
+   (<o> ^name simulate-input)
+   (<task> ^release yes)
+-->
+   # remove task from input
+   (<input> ^task <task> -)
+   # mark as complete
+   (<strategy> ^complete yes)
+}
+
+sp {apply*interrupt-task*effects
+   (state <s> ^simulated yes
+              ^operator <o>
+              ^io.input-link <input>
+              ^io.input-link.task <interrupt-task>
+              ^io.input-link.task <new-task>
+              ^io.output-link.strategy <strategy>)
+   (<o> ^name simulate-input)
+   (<strategy> ^name interrupt-task
+         ^interrupt-task <interrupt-task>
+         ^new-task <new-task>
+        -^complete yes)
+-->
+   # remove release flag from new task
+   (<new-task> ^release yes -)
+   # add active flag to new task
+   (<new-task> ^active yes)
+   # remove interrupted task from input
+   # TODO this would be easier if it was just flagged
+   # and left there.
+   # TODO simulate attempts to resume interrupted task
+   (<input> ^task <interrupt-task> -)
+   # store task in special place on top state
+   # so that we many resume it some time
+   (<s> ^interrupted-task <interrupt-task>)
+   # mark as complete
+   (<strategy> ^complete yes)
+}
 
 # set which test we want to perform
 sp {init*task*events
