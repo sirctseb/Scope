@@ -1,6 +1,6 @@
 # elaborate to consolidate existing all tasks into one wme that indicates that any exist
 sp {elaborate*tasks-exist
-   (state <s> ^name scope
+   (state <s> ^name release-decision
               # test for new so that support will
               # retract when perform-all is applied,
               # so we don't get an operator-no-change impasse
@@ -12,7 +12,7 @@ sp {elaborate*tasks-exist
 
 # propose perform-all as long as there are any tasks
 sp {propose*perform-all
-   (state <s> ^name scope
+   (state <s> ^name release-decision
               ^io.input-link.task <task>)
    (<task> ^release yes)
 -->
@@ -21,7 +21,7 @@ sp {propose*perform-all
 }
 # all perform-all equal
 sp {preference*perform-all*indifferent
-   (state <s> ^name scope
+   (state <s> ^name release-decision
               ^operator <o1> +
               ^operator {<o2> <> <o1>} +)
    (<o1> ^name perform-all)
@@ -33,7 +33,7 @@ sp {preference*perform-all*indifferent
 # elaborate perform-all with the workload that would
 # result if we accepted the tasks that it suggests
 sp {elaborate*perform-all*workload*release
-   (state <s> ^name scope
+   (state <s> ^name release-decision
               ^operator <o> +
               # TODO this assumes only one of these
               ^io.input-link.task <task>
@@ -47,7 +47,7 @@ sp {elaborate*perform-all*workload*release
 # elaborate perform-all with the workload when
 # there are no tasks in release
 sp {elaborate*perform-all*workload*no*release
-   (state <s> ^name scope
+   (state <s> ^name release-decision
               ^operator <o> +
              -^io.input-link.task.release yes
               ^workload <workload>)
@@ -58,7 +58,7 @@ sp {elaborate*perform-all*workload*no*release
 
 # send the perform-all strategy to output
 sp {apply*perform-all
-   (state <s> ^name scope
+   (state <s> ^name release-decision
               ^operator <o>
               ^io.output-link <output>)
    (<o> ^name perform-all)

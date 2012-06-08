@@ -3,7 +3,7 @@
 # at the same time. It may be true because the agent should run after each new
 # task starts in the simulation
 sp {propose*ignore-new
-   (state <s> ^name scope
+   (state <s> ^name release-decision
               ^io.input-link.task <task>)
    (<task> ^release yes)
 -->
@@ -15,7 +15,7 @@ sp {propose*ignore-new
 # elaborate ignore-new operators with the workload that would result if
 # they were accepted and nothing rejected
 sp {elaborate*ignore-new*workload
-   (state <s> ^name scope
+   (state <s> ^name release-decision
               ^operator <o> +
               ^workload <workload>)
    (<o> ^name ignore-new
@@ -26,7 +26,7 @@ sp {elaborate*ignore-new*workload
 
 # apply ignore-new operator
 sp {apply*ignore-new
-   (state <s> ^name scope
+   (state <s> ^name release-decision
               ^operator <o>
               ^io.output-link <output>)
    (<o> ^name ignore-new

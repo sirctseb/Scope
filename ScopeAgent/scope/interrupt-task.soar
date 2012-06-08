@@ -1,6 +1,6 @@
 # propose interrupting tasks when a new one comes
 sp {propose*interrupt-task
-   (state <s> ^name scope
+   (state <s> ^name release-decision
               ^io.input-link.task <task1>
               ^io.input-link.task <task2>)
    (<task1> ^active yes)
@@ -15,7 +15,7 @@ sp {propose*interrupt-task
 
 # apply interrupt-task operator
 sp {apply*interrupt-task
-   (state <s> ^name scope
+   (state <s> ^name release-decision
               ^operator <o>
               ^io.output-link <output>)
    (<o> ^interrupt-task <task1>

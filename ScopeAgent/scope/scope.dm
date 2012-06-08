@@ -1,4 +1,4 @@
-258
+260
 SOAR_ID 0
 SOAR_ID 1
 SOAR_ID 2
@@ -257,7 +257,9 @@ INTEGER_RANGE 254 -2147483648 2147483647
 ENUMERATION 255 1 yes
 SOAR_ID 256
 ENUMERATION 257 1 release-decision-subgoal
-258
+SOAR_ID 258
+ENUMERATION 259 1 release-decision-subgoal
+260
 0 desired 118
 0 disable 69
 0 failure 138
@@ -279,6 +281,7 @@ ENUMERATION 257 1 release-decision-subgoal
 0 operator 103
 0 operator 162
 0 operator 256
+0 operator 258
 0 phase 66
 0 problem-space 139
 0 simulate-task 152
@@ -516,3 +519,4 @@ ENUMERATION 257 1 release-decision-subgoal
 248 release 255
 248 workload 253
 256 name 257
+258 name 259

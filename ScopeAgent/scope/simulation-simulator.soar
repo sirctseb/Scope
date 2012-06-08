@@ -20,7 +20,7 @@ sp {start*simulation*simulator
 
 # alternate a simulated input
 sp {propose*simulate-input
-   (state <s> ^name scope
+   (state <s> #^name scope
               ^phase simulate-input
               ^simulated yes)
 -->
@@ -30,7 +30,7 @@ sp {propose*simulate-input
 # in the application of input simulation,
 # change phase back to real scope processing
 sp {apply*simulate-input
-   (state <s> ^name scope
+   (state <s> #^name scope
               ^phase simulate-input
               ^operator <o>
               ^simulated yes)
@@ -41,7 +41,7 @@ sp {apply*simulate-input
 # in the application of real scope processing,
 # change phase back to input simulation
 sp {apply*not-simulate-input
-   (state <s> ^name scope
+   (state <s> #^name scope
               ^operator <o>
               ^simulated yes)
    (<o> -^name simulate-input
@@ -86,7 +86,7 @@ sp {apply*initialize-strategy-counter
 # elaborates infinitely. figure out why
 # increment a counter every time a strategy decision is made
 sp {apply*increment-strategy-counter
-   (state <s> ^name scope
+   (state <s> #^name scope
               ^operator <o>
               ^strategy-counter <count>
               ^simulated yes)
@@ -111,11 +111,18 @@ sp {apply*perform-all*effects
 
 # set which test we want to perform
 sp {init*task*events
-   (state <s> ^operator <o>
+   (state <s> ^operator <o> +
               ^simulated yes)
    (<o> ^name initialize-scope)
 -->
    (<o> ^test-name simultaneous-add-remove)
+}
+
+# copy down simulation commands into substates
+sp {copy*simulation*state
+   (state <s> ^superstate.simulate-task <st>)
+-->
+   (<s> ^simulate-task <st>)
 }
 sp {init*default
    (state <s> ^operator <o>
@@ -124,7 +131,8 @@ sp {init*default
    (<o> ^name initialize-scope
         ^test-name default)
 -->
-   (<s> ^simulate-task <n1>)
+   (<s> ^simulate-task <sim>)
+   (<sim> ^current <n1>)
    (<n1> ^task <t1>)
    (<t1> ^workload 4
          ^ID 0
@@ -157,7 +165,8 @@ sp {initialize*simultaneous*add*remove
    (<o> ^name initialize-scope
         ^test-name simultaneous-add-remove)
 -->
-   (<s> ^simulate-task <n1>)
+   (<s> ^simulate-task <sim>)
+   (<sim> ^current <n1>)
    # t=1 add the first task
    (<n1> ^add <a1>)
    (<a1> ^obj <input>
@@ -210,13 +219,13 @@ sp {initialize*simultaneous*add*remove
 
 # generalized rules
 sp {apply*simulate-input*remove
-   (state <s> ^name scope
+   (state <s> #^name scope
               ^phase simulate-input
               ^operator <o>
               ^simulated yes
-              ^simulate-task <event>)
+              ^simulate-task.current <current>)
    (<o> ^name simulate-input)
-   (<event> ^remove <removal>)
+   (<current> ^remove <removal>)
    (<removal> ^obj <obj>
               ^attribute <attr>
               ^value <val>)
@@ -224,49 +233,50 @@ sp {apply*simulate-input*remove
    (<obj> ^<attr> <val> -)
 }
 sp {apply*simulate-input*add
-   (state <s> ^name scope
+   (state <s> #^name scope
               ^phase simulate-input
               ^operator <o>
               ^simulated yes
-              ^simulate-task <event>)
+              ^simulate-task.current <current>)
    (<o> ^name simulate-input)
-   (<event> ^add <addition>)
+   (<current> ^add <addition>)
    (<addition> ^obj <obj>
                ^{<attr> <> obj} <val>)
 -->
    (<obj> ^<attr> <val>)
 }
 sp {apply*simulate-input*add*task
-   (state <s> ^name scope
+   (state <s> #^name scope
               ^phase simulate-input
               ^operator <o>
               ^simulated yes
-              ^simulate-task <event>
+              ^simulate-task.current <current>
               ^io.input-link <input>)
    (<o> ^name simulate-input)
-   (<event> ^task <task>)
+   (<current> ^task <task>)
 -->
    (<input> ^task <task>)
 }
 sp {apply*simulate-input*end
-   (state <s> ^name scope
+   (state <s> #^name scope
               ^phase simulate-input
               ^operator <o>
               ^simulated yes
-              ^simulate-task <event>)
-   (<event> -^next <next>)
+              ^simulate-task.current <current>)
+   (<current> -^next <next>)
 -->
    (write (crlf) |end|)
    (halt)
 }
 sp {x*finish*simulate*input
-   (state <s> ^name scope
+   (state <s> #^name scope
               ^phase simulate-input
               ^operator <o>
-              ^simulate-task <event>)
-   (<event> ^next <next>)
+              ^simulate-task <sim>)
+   (<sim> ^current <current>)
+   (<current> ^next <next>)
    (<o> ^name simulate-input)
 -->
-   (<s> ^simulate-task <event> -
-        ^simulate-task <next>)
+   (<sim> ^current <current> -
+        ^current <next>)
 }

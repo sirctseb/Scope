@@ -1,0 +1,19 @@
+# propose the subgoal do determine a strategy in response to a task that is trying to start
+sp {propose*release-decision
+   (state <s> ^name scope
+              ^io.input-link.task.release yes)
+-->
+   (<s> ^operator <o> +)
+   (<o> ^name release-decision)
+}
+
+# copy io and workload to new state when release-decision subgoal is created
+sp {elaborate*release-decision*state
+   (state <s> ^name release-decision
+              ^superstate <ts>)
+   (<ts> ^io <io>
+         ^workload <workload>)
+-->
+   (<s> ^io <io>
+        ^workload <workload>)
+}
