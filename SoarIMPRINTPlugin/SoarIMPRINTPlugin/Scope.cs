@@ -93,6 +93,10 @@ namespace SoarIMPRINTPlugin
 			int taskID = int.Parse(task.ID);
 			if (taskID > 0 && taskID < 999)
 			{
+				// if the strategy that allowed this task to begin was a perform-all returned
+				// to OnAfterReleaseCondition, then the strategy was submitted to the log but
+				// has not yet been entered to prevent multiple entries for the same perform-all.
+				// enter it to the log here
 				scopeData.CommitStrategy();
 				// find corresponding MAAD.IMPRINTPro.NetworkTask
 				MAAD.IMPRINTPro.NetworkTask nt = GetIMPRINTTaskFromRuntimeTask(task);
@@ -113,10 +117,11 @@ namespace SoarIMPRINTPlugin
 				RemoveTask(GetIMPRINTTaskFromRuntimeTask(task));
 			}
 
-			// check to see if we should resume suspended tasks
+			// check to see if we should resume interrupted tasks
 			foreach (MAAD.Simulator.IEntity entity in app.Executor.Simulation.IModel.Find("Tag", SUSPEND_TAG))
 			{
 				// add the task in release condition
+				// TODO may eventually do ^resume instead of ^release if we want to have separate reasoning
 				AddReleaseTask(executor.GetRuntimeTask(entity.ID));
 				// see what scope says
 				string output = agent.RunSelfTilOutput();
@@ -191,11 +196,6 @@ namespace SoarIMPRINTPlugin
 					string strategy = GetOutput("strategy", "name");
 					// execute the strategy
 					release = ApplyStrategy(strategy);
-					if (!release)
-					{
-						// mark KILL_TAG
-						executor.EventQueue.GetEntity().Tag = KILL_TAG;
-					}
 					// destroy the task input element
 					taskWME.DestroyWME();
 					// log the decision
@@ -241,7 +241,8 @@ namespace SoarIMPRINTPlugin
 			{
 				case "ignore-new":
 					this.log("Scope: Ignore new task");
-					// TODO mark entity to be killed
+					// mark KILL_TAG
+					app.Executor.EventQueue.GetEntity().Tag = KILL_TAG;
 					// return false because entity should not be released
 					return false;
 					break;
