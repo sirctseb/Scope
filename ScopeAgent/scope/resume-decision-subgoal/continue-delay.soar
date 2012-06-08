@@ -1,6 +1,6 @@
 # propose to continue delaying task
 sp {propose*continue-delay
-   (state <s> ^name resume-decision
+   (state <s> ^disable yes ^name resume-decision
               ^io.input-link.task <task>)
    (<task> ^delayed yes)
 -->
