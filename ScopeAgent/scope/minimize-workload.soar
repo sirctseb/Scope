@@ -42,7 +42,7 @@ sp {apply*delay-new*evaluate
    (<task> ^workload <task-workload>)
 -->
    # noop. workload wouldn't change if task delayed
-   (write (crlf) |Applying delay-new fo revaluation: | <workload>)
+   (write (crlf) |Applying delay-new for evaluation: | <workload>)
 }
 
 # evaluate the resulting state after applying a tried operator
@@ -55,27 +55,6 @@ sp {evaluate*state*workload*numeric
    (<s> ^numeric-value <workload>)
    (write (crlf) |Evaluation of operator is: | <workload>)
 }
-
-sp {evaluate*state*workload*success
-   (state <s> ^disable
-              ^desired <d>
-              ^top-state.io.input-link.threshold <threshold>
-              ^top-state <> <s>
-              # TODO I think we used < elsewhere
-              ^workload <= <threshold>)
--->
-   (<s> ^success <d>)
-}
-
-sp {evaluate*state*workload*failure
-   (state <s> ^disable
-              ^desired <d>
-              ^top-state.io.input-link.threshold <threshold>
-              ^workload > <threshold>)
--->
-   (<s> ^failure <d>)
-}
-
 # TODO duplicate state detection?
 
 # problem space def
