@@ -51,7 +51,7 @@ sp {prefer*ignore-if-otherwise-safe
               ^operator <o1> +
               ^operator <o2> +)
    (<o1> ^name ignore-new
-         ^new-workload < <threshold>)
+         ^new-workload <= <threshold>)
    (<o2> ^name interrupt-task)
 -->
    # prefer the ignore-new over the interrupt-tasks
