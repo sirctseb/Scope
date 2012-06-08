@@ -21,6 +21,7 @@ sp {elaborate*update-workload*remove
    (<s> ^workload-update <w>)
    (<w> ^task <task>
         ^action remove)
+   (write (crlf) |Noticed that task | <task> | was gone, need update|)
 }
 # elaboration to indicate that a workload update is needed
 # due to an added task
@@ -35,6 +36,7 @@ sp {elaborate*update-workload*add
    (<s> ^workload-update <w>)
    (<w> ^task <task>
         ^action add)
+   (write (crlf) |Noticed new active task | <task> | so we need update|)
 }
 
 # propose update workload subgoal when a task is added or removed
