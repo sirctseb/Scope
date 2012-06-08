@@ -5,8 +5,9 @@ sp {apply*ignore-new*evaluate
               ^workload <workload>)
    (<o> ^name ignore-new)
 -->
-   (<s> ^workload <workload> -
-        ^workload <workload>)
+   # TODO this was a noop
+   #(<s> ^workload <workload> -
+   #     ^workload <workload>)
 }
 
 sp {apply*interrupt-task*evaluate
@@ -21,6 +22,16 @@ sp {apply*interrupt-task*evaluate
    # update the state workload
    (<s> ^workload <workload> -
         ^workload (+ <new-workload> (- <workload> <task-workload>)))
+}
+
+sp {apply*delay-new*evaluate
+   (state <s> ^operator <o>
+              ^workload <workload>)
+   (<o> ^name delay-new
+        ^task <task>)
+   (<task> ^workload <task-workload>)
+-->
+   # noop. workload wouldn't change if task delayed
 }
 
 sp {evaluate*state*workload*numeric

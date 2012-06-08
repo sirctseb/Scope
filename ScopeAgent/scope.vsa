@@ -14,8 +14,8 @@ VERSION 4
 11	0	OPERATOR mark-new mark-new.soar 12
 12	0	OPERATOR minimize-workload minimize-workload.soar 13
 13	0	OPERATOR perform-all perform-all.soar 14
-14	0	OPERATOR release-decision-subgoal release-decision-subgoal.soar 21
-15	0	OPERATOR simulation-simulator simulation-simulator.soar 15
-16	0	OPERATOR workload workload.soar 16
-17	0	OPERATOR workload-threshold workload-threshold.soar 17
+14	0	OPERATOR release-decision-subgoal release-decision-subgoal.soar 15
+15	0	OPERATOR simulation-simulator simulation-simulator.soar 16
+16	0	OPERATOR workload workload.soar 17
+17	0	OPERATOR workload-threshold workload-threshold.soar 18
 END

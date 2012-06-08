@@ -97,17 +97,23 @@ sp {apply*increment-strategy-counter
 }
 
 # simulator effects for output commands
-# TODO
 sp {apply*perform-all*effects
-   (state <s> ^disable
-              ^name scope
+   (state <s> ^simulated yes
               ^operator <o>
-              ^io.input-link.task <task>)
-   (<o> ^name perform-all)
+              ^io.input-link.task <task>
+              ^io.output-link.strategy.name perform-all)
+   (<o> ^name simulate-input)
    (<task> ^release yes)
 -->
+   # remove release flag
    (<task> ^release yes -)
+   # add active flag
+   (<task> ^active yes)
 }
+
+#sp {apply*interrupt-task*effects
+#   (state <s> ^simulated yes
+#              ^operator <o>
 
 # set which test we want to perform
 sp {init*task*events
@@ -115,7 +121,7 @@ sp {init*task*events
               ^simulated yes)
    (<o> ^name initialize-scope)
 -->
-   (<o> ^test-name default)
+   (<o> ^test-name simultaneous-add-remove)
 }
 
 # copy down simulation commands into substates
@@ -139,30 +145,12 @@ sp {init*default
          ^ID 0
          ^release yes)
    (<n1> ^next <n2>)
-   # t=2 remove ^release
-   (<n2> ^remove <r1>)
-   (<r1> ^obj <t1>
-         ^attribute release
-         ^value yes)
-   # t=2 add ^active to first task
-   (<n2> ^add <a2>)
-   (<a2> ^obj <t1>
-         ^active yes)
    # t=2 add second task with ^release
    (<n2> ^task <t2>)
    (<t2> ^workload 4
          ^ID 1
          ^release yes)
    (<n2> ^next <n3>)
-   # t=3 remove ^release from second task
-   (<n3> ^remove <r2>)
-   (<r2> ^obj <t2>
-         ^attribute release
-         ^value yes)
-   # t=3 add ^active to second task
-   (<n3> ^add <a3>)
-   (<a3> ^obj <t2>
-         ^active yes)
    # t=3 add third task
    (<n3> ^task <t3>)
    (<t3> ^workload 4
@@ -196,30 +184,12 @@ sp {initialize*simultaneous*add*remove
    (<t2> ^workload 2
          ^ID 1
          ^release yes)
-   # t=2 remove release state of first task
-   (<n2> ^remove <r2>)
-   (<r2> ^obj <t1>
-         ^attribute release
-         ^value yes)
-   (<n2> ^next <n3>)
-   # t=2 add active state to first task
-   (<n2> ^add <a2-2>)
-   (<a2-2> ^obj <t1>
-           ^active yes)
+   (<n2> ^next <n3>))
    # t=3 remove the first task
    (<n3> ^remove <r3>)
    (<r3> ^obj <input>
          ^attribute task
          ^value <t1>)
-   # t=3 remove release state of second task
-   (<n3> ^remove <r3-2>)
-   (<r3-2> ^obj <t2>
-         ^attribute release
-         ^value yes)
-   # t=3 add active state to second task
-   (<n3> ^add <a3>)
-   (<a3> ^obj <t2>
-         ^active yes)
    # t=3 also add a brand new task
    (<n3> ^add <a3>)
    (<a3> ^obj <input>
@@ -229,6 +199,32 @@ sp {initialize*simultaneous*add*remove
          ^release yes)
    # add one more event so it doesn't kill it too early
    (<n3> ^next <n4>)
+}
+sp {initialize*tie*interrupt*delay*ignore
+   (state <s> ^operator <o>
+              ^io.input-link <input>
+              ^simulated yes)
+   (<o> ^name initialize-scope
+        ^test-name tie*interrupt*delay*ignore)
+-->
+   (<s> ^simulate-task <sim>)
+   (<sim> ^current <n1>)
+   # t=1 add first task
+   (<n1> ^add <a1>)
+   (<a1> ^obj <input>
+         ^task <t1>)
+   (<t1> ^ID 0
+         ^workload 5
+         ^release yes)
+   (<n1> ^next <n2>)
+   # t=2 add second task
+   (<n2> ^add <a2>)
+   (<a2> ^obj <input>
+         ^task <t2>)
+   (<t2> ^ID 1
+         ^workload 4
+         ^release yes)
+   (<n2> ^next <n3>)
 }
 
 # generalized rules
