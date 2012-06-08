@@ -115,7 +115,7 @@ sp {init*task*events
               ^simulated yes)
    (<o> ^name initialize-scope)
 -->
-   (<o> ^test-name simultaneous-add-remove)
+   (<o> ^test-name default)
 }
 sp {init*default
    (state <s> ^operator <o>
