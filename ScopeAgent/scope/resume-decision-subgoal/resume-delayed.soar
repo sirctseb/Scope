@@ -1,0 +1,47 @@
+# proposed to accept delayed task
+# TODO assumption: only one delayed task exists at a time
+sp {propose*resume-delayed
+   (state <s> ^name resume-decision
+              ^io.input-link.task <task>)
+   (<task> ^delayed yes)
+-->
+   (<s> ^operator <o> +)
+   (<o> ^name resume-delayed
+        ^task <task>)
+}
+# elaborate resume operator with workload if resumed
+sp {elaborate*resume*workload
+   (state <s> ^operator <o> +
+              ^workload <workload>)
+   (<o> ^name resume-delayed
+        ^task.workload <new-workload>)
+-->
+   (<o> ^workload (+ <workload> <new-workload>))
+}
+# prefer resume if it won't put us over the workload threshold
+sp {prefer*resume*under*threshold
+   (state <s> ^name resume-decision
+              ^operator <o1> +
+              ^operator <o2> +
+              ^io.input-link.threshold <threshold>)
+   (<o1> ^name resume-delayed
+         ^task <task>
+         ^workload <= <threshold>)
+   (<o2> ^name continue-delay
+         ^task <task>)
+-->
+   (<s> ^operator <o1> > <o2>)
+}
+# apply resume delayed
+sp {apply*resume-delayed
+   (state <s> ^name resume-decision
+              ^operator <o>
+              ^io.output-link <output>)
+   (<o> ^name resume-delayed
+        ^task <task>)
+-->
+   (<output> ^strategy <st>)
+   (<st> ^name resume-delayed
+         ^task <task>)
+   (write (crlf) |Resume delayed task|)
+}

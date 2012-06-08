@@ -67,7 +67,7 @@ sp {perform-all-test-init
 # TODO this should not be defined here because it's used in real operation
 sp {elaborate*strategy*operators
    (state <s> ^operator <o> +)
-   (<o> ^name << perform-all ignore-new interrupt-task delay-new >> )
+   (<o> ^name << perform-all ignore-new interrupt-task delay-new resume-delayed continue-delay >> )
 -->
    (<o> ^strategy yes)
 }
@@ -173,6 +173,43 @@ sp {apply*interrupt-task*effects
    (<strategy> ^complete yes)
 }
 
+sp {apply*delay-new*effects
+   (state <s> ^simulated yes
+              ^operator <o>
+              ^io.input-link.task <delay-task>
+              ^io.output-link.strategy <strategy>)
+   (<o> ^name simulate-input)
+   (<strategy> ^name delay-new
+               ^task <delay-task>
+              -^complete yes)
+-->
+   # remove release flag from new task
+   (<delay-task> ^release yes -)
+   # add delayed flag to new task
+   (<delay-task> ^delayed yes)
+   # mark as complete
+   (<strategy> ^complete yes)
+}
+
+sp {apply*continue-delay*effects
+   (state <s> ^simulated yes
+              ^operator.name simulate-input
+              ^io.output-link.strategy.name continue-delay)
+-->
+   # noop
+}
+
+sp {apply*resume-delayed*effects
+   (state <s> ^simulated yes
+              ^operator.name simulate-input
+              ^io.output-link.strategy <strategy>)
+   (<strategy> ^name resume-delayed
+               ^task <task>)
+-->
+   (<task> ^delayed yes -
+           ^active yes)
+}
+
 # set which test we want to perform
 sp {init*task*events
    (state <s> ^operator <o> +
@@ -246,8 +283,7 @@ sp {initialize*simultaneous*add*remove
    # t=3 remove the first task
    (<n3> ^remove <r3>)
    (<r3> ^obj <input>
-         ^attribute task
-         ^value <t1>)
+         ^task <t1>)
    # t=3 also add a brand new task
    (<n3> ^add <a3>)
    (<a3> ^obj <input>
@@ -272,7 +308,7 @@ sp {initialize*tie*interrupt*delay*ignore
    (<a1> ^obj <input>
          ^task <t1>)
    (<t1> ^ID 0
-         ^workload 5
+         ^workload 4
          ^release yes)
    (<n1> ^next <n2>)
    # t=2 add second task
@@ -280,7 +316,7 @@ sp {initialize*tie*interrupt*delay*ignore
    (<a2> ^obj <input>
          ^task <t2>)
    (<t2> ^ID 1
-         ^workload 4
+         ^workload 5
          ^release yes)
    (<n2> ^next <n3>)
    # t=3 add third task
@@ -288,25 +324,29 @@ sp {initialize*tie*interrupt*delay*ignore
    (<a3> ^obj <input>
          ^task <t3>)
    (<t3> ^ID 2
-         ^workload 4
+         ^workload 2
          ^release yes)
    (<n3> ^next <n4>)
+   # t=4 perform all
+   (<n4> ^next <n5>)
+   # t=5 remove first task
+   (<n5> ^remove <r5>)
+   (<r5> ^obj <input>
+         ^task <t1>)
+   # infinite loop
+   (<n5> ^next <n5>)
 }
 
 # generalized rules
 sp {apply*simulate-input*remove
-   (state <s> #^name scope
-              ^phase simulate-input
-              ^operator <o>
-              ^simulated yes
+   (state <s> ^operator.name simulate-input
+              ^simulated yes # redundant with above
               ^simulate-task.current <current>)
-   (<o> ^name simulate-input)
    (<current> ^remove <removal>)
    (<removal> ^obj <obj>
-              ^attribute <attr>
-              ^value <val>)
+              ^{<attr> <> <obj>} <value>)
 -->
-   (<obj> ^<attr> <val> -)
+   (<obj> ^<attr> <value> -)
 }
 sp {apply*simulate-input*add
    (state <s> #^name scope

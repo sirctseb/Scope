@@ -14,6 +14,10 @@ source mark-new.soar
 source minimize-workload.soar
 source perform-all.soar
 source release-decision-subgoal.soar
+source resume-decision-subgoal.soar
+pushd resume-decision-subgoal
+source resume-decision-subgoal_source.soar
+popd
 source simulation-simulator.soar
 source workload.soar
 source workload-threshold.soar

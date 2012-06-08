@@ -1,4 +1,4 @@
-260
+269
 SOAR_ID 0
 SOAR_ID 1
 SOAR_ID 2
@@ -259,7 +259,16 @@ SOAR_ID 256
 ENUMERATION 257 1 release-decision-subgoal
 SOAR_ID 258
 ENUMERATION 259 1 release-decision-subgoal
-260
+SOAR_ID 260
+ENUMERATION 261 1 resume-decision-subgoal
+SOAR_ID 262
+ENUMERATION 263 1 state
+ENUMERATION 264 1 resume-decision-subgoal
+ENUMERATION 265 1 resume-delayed
+SOAR_ID 266
+ENUMERATION 267 1 continue-delay
+SOAR_ID 268
+270
 0 desired 118
 0 disable 69
 0 failure 138
@@ -282,6 +291,7 @@ ENUMERATION 259 1 release-decision-subgoal
 0 operator 162
 0 operator 256
 0 operator 258
+0 operator 260
 0 phase 66
 0 problem-space 139
 0 simulate-task 152
@@ -520,3 +530,12 @@ ENUMERATION 259 1 release-decision-subgoal
 248 workload 253
 256 name 257
 258 name 259
+260 name 261
+262 name 264
+262 operator 266
+262 operator 268
+262 superstate 0
+262 top-state 0
+262 type 263
+266 name 265
+268 name 267

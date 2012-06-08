@@ -1,0 +1,40 @@
+# propose to continue delaying task
+sp {propose*continue-delay
+   (state <s> ^name resume-decision
+              ^io.input-link.task <task>)
+   (<task> ^delayed yes)
+-->
+   (<s> ^operator <o> +)
+   (<o> ^name continue-delay
+        ^task <task>)
+}
+
+# prefer continue delay if resuming will put us over the threshold
+sp {prefer*continue-delay*over*threshold
+   (state <s> ^name resume-decision
+              ^operator <o1> +
+              ^operator <o2> +
+              # TODO is workload copied here
+              ^io.input-link.threshold <threshold>)
+   (<o1> ^name resume-delayed
+         ^task <task>
+         ^workload > <threshold>)
+   (<o2> ^name continue-delay
+         ^task <task>)
+-->
+   (<s> ^operator <o1> < <o2>)
+}
+
+# apply continue delay
+sp {apply*continue-delay
+   (state <s> ^disable yes ^name resume-decision
+              ^operator <o>
+              ^io.output-link <output>)
+   (<o> ^name resume-delayed
+        ^task <task>)
+-->
+   (<output> ^strategy <st>)
+   (<st> ^name continue-delay
+         ^task <task>)
+   (write (crlf) |Continue delay|)
+}

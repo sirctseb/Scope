@@ -1,6 +1,6 @@
 # propose delay-new whenever a new task tries to start
 sp {propose*delay-new
-   (state <s> ^disable yes ^name release-decision
+   (state <s> ^name release-decision
               ^io.input-link.task <task>)
    (<task> ^release yes)
 -->
@@ -9,6 +9,33 @@ sp {propose*delay-new
         ^task <task>)
    # TODO ^task is unnecessary if we are guaranteed only
    # one new task per decision cycle
+}
+
+# micromodel: we only have procedural working memory enough
+# to delay one task at a time.
+# therefore, make delay-new proposals worst if there is already
+# a delayed task
+sp {elaborate*reject*delay-new*if*one*delayed
+   (state <s> ^name release-decision
+              ^io.input-link.task.delayed yes
+              ^operator <o> +)
+   (<o> ^name delay-new)
+-->
+   (<s> ^operator <o> <)
+}
+
+# micromodel: between delaying and ignoring a task,
+# prefer to delay it, so it doesn't get lost
+sp {elaborate*prefer*delay*to*ignore
+   (state <s> ^name release-decision
+              ^operator <o1> +
+              ^operator <o2> +)
+   (<o1> ^name delay-new
+         ^task <task>)
+   (<o2> ^name ignore-new
+         ^task <task>)
+-->
+   (<s> ^operator <o1> > <o2>)
 }
 
 # elaborate delay-new operators with the workload that would

@@ -1,0 +1,21 @@
+# prefer the release-decision-subgoal.
+# this means we only decide whether to resume
+# if there are no tasks in release condition
+sp {prefer*release-decision-subgoal
+   (state <s> ^operator <o1> +
+              ^operator <o2> +)
+   (<o1> ^name release-decision)
+   (<o2> ^name resume-decision)
+-->
+   (<s> ^operator <o1> > <o2>)
+}
+# copy io and workload to new state when resume-decision subgoal is created
+sp {elaborate*resume-decision*state
+   (state <s> ^name resume-decision
+              ^superstate <ts>)
+   (<ts> ^io <io>
+         ^workload <workload>)
+-->
+   (<s> ^io <io>
+        ^workload <workload>)
+}

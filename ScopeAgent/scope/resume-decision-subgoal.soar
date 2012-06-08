@@ -1,0 +1,12 @@
+# resume-task-subgoal is a subgoal where we decide if
+# we should start a task that was delayed
+# TODO may use this also for resuming interrupted tasks
+
+# proposed the resume task subgoal when there is a delayed task
+sp {propose*resume-decision
+   (state <s> ^name scope
+              ^io.input-link.task.delayed yes)
+-->
+   (<s> ^operator <o> +)
+   (<o> ^name resume-decision)
+}
