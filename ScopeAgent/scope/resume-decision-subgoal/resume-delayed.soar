@@ -20,7 +20,7 @@ sp {elaborate*resume*workload
 }
 # prefer resume if it won't put us over the workload threshold
 sp {prefer*resume*under*threshold
-   (state <s> ^name resume-decision
+   (state <s> ^disable yes ^name resume-decision
               ^operator <o1> +
               ^operator <o2> +
               ^io.input-link.threshold <threshold>)
@@ -31,6 +31,16 @@ sp {prefer*resume*under*threshold
          ^task <task>)
 -->
    (<s> ^operator <o1> > <o2>)
+}
+# reject resume if it puts us over the workload threshold
+sp {prefer*reject*resume*over*threshold
+   (state <s> ^name resume-decision
+              ^operator <o> +
+              ^io.input-link.threshold <threshold>)
+   (<o> ^name resume-delayed
+        ^workload > <threshold>)
+-->
+   (<s> ^operator <o> -)
 }
 # apply resume delayed
 sp {apply*resume-delayed

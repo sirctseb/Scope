@@ -1,0 +1,7 @@
+source elaborations.soar
+source default-test.soar
+source resume-none-test.soar
+source resume-tie-test.soar
+source simultaneous-add-remove-test.soar
+source tie-interrupt-delay-ignore-test.soar
+source wait-test.soar

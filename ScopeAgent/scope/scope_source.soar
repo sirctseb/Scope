@@ -20,5 +20,9 @@ pushd resume-decision-subgoal
 source resume-decision-subgoal_source.soar
 popd
 source simulation-simulator.soar
+pushd simulation-simulator
+source simulation-simulator_source.soar
+popd
+source wait.soar
 source workload.soar
 source workload-threshold.soar

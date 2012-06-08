@@ -1,0 +1,19 @@
+sp {init*wait-test
+   (state <s> ^operator <o>
+              ^io.input-link <input>
+              ^simulated yes)
+   (<o> ^name initialize-scope
+        ^test-name wait)
+-->
+   (<s> ^simulate-task <sim>)
+   (<sim> ^current <n1>)
+   # t=1 noop
+   (<n1> ^next <n2>)
+   # t=2 add a task
+   (<n2> ^task <t2>)
+   (<t2> ^workload 4
+         ^taskID 0
+         ^release yes)
+   (<n2> ^next <n3>)
+   (<n3> ^next <n4>)
+}

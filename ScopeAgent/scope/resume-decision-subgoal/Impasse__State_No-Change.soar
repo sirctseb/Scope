@@ -1,0 +1,21 @@
+# propose an operator to not resume any tasks if there
+# were no acceptable resume operators
+sp {resume-decision*propose*no*resume
+   (state <s> ^superstate <super>
+              ^attribute state
+              ^choices none)
+   (<super> ^name resume-decision)
+-->
+   (<super> ^operator <o> +)
+   (<o> ^name resume-none)
+}
+
+# apply the resume-none operator
+sp {apply*resume-none
+   (state <s> ^name resume-decision
+              ^operator.name resume-none
+              ^io.output-link <out>)
+-->
+   (<out> ^strategy <strategy>)
+   (<strategy> ^name resume-none)
+}

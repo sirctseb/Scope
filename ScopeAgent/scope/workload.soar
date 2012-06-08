@@ -26,10 +26,10 @@ sp {elaborate*update-workload*remove
    (write (crlf) |Noticed that task | <taskID> | was gone, need update|)
 }
 # elaboration to indicate that a workload update is needed
-# due to an added task
+# due to an added task (this also adds workload for resumed tasks)
 sp {elaborate*update-workload*add
    (state <s> ^name scope
-              ^io.input-link.task <task>
+              ^io.input-link.task (<task> ^active)
              -^tasks-accounted-for <task>)
    (<task> ^active yes)
    # for debug output
@@ -41,6 +41,22 @@ sp {elaborate*update-workload*add
    (<w> ^task <task>
         ^action add)
    (write (crlf) |Noticed new active task | <taskID> | so we need update|)
+}
+# elaboration to indicate that a workload update is needed
+# due to a delayed task
+sp {elaborate*update-workload*delayed
+   (state <s> ^name scope
+              ^tasks-accounted-for <task>
+              ^io.input-link.task (<task> ^delayed yes))
+   # for debug output
+   (<task> ^taskID <taskID>)
+-->
+   (<s> ^workload-update-needed yes)
+   # details on update neede
+   (<s> ^workload-update <w>)
+   (<w> ^task <task>
+        ^action remove)
+   (write (crlf) |Noticed that task | <taskID> | was delayed, need update|)
 }
 
 # propose update workload subgoal when a task is added or removed
@@ -69,7 +85,7 @@ sp {propose*workload-update
    (<ts> ^workload-update <w>)
 -->
    (<s> ^operator <o> + >)
-   (<o> ^name update-workload
+   (<o> ^name update-workload-action
         ^workload-update <w>)
 }
 # make all workload-update operators equal
@@ -77,8 +93,8 @@ sp {preference*update-workload*equal
    (state <s> ^name update-workload
               ^operator <o1> +
               ^operator {<o2> <> <o1>} +)
-   (<o1> ^name update-workload)
-   (<o2> ^name update-workload)
+   (<o1> ^name update-workload-action)
+   (<o2> ^name update-workload-action)
 -->
    (<s> ^operator <o1> = <o2>)
 }
@@ -88,7 +104,7 @@ sp {apply*update-workload*add
               ^top-state <ts>
               ^operator <o>)
    (<ts> ^workload <workload>)
-   (<o> ^name update-workload
+   (<o> ^name update-workload-action
         ^workload-update <w>)
    (<w> ^task <t>
         ^action add)
@@ -104,7 +120,7 @@ sp {apply*update-workload*remove
               ^top-state <ts>
               ^operator <o>)
    (<ts> ^workload <workload>)
-   (<o> ^name update-workload
+   (<o> ^name update-workload-action
         ^workload-update <w>)
    (<w> ^task <t>
         ^action remove)

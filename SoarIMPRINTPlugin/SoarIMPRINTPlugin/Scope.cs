@@ -23,7 +23,7 @@ namespace SoarIMPRINTPlugin
 		// TODO test when IMPRINT creates plugin objects
 		private static bool kernelInitialized = false;
 		private static sml.Kernel kernel = null;
-		private static sml.Agent agent = null;
+		public static sml.Agent agent = null;
 		public string ScopeOutput = null;
 		private bool eventsRegistered = false;
 
@@ -113,6 +113,7 @@ namespace SoarIMPRINTPlugin
 		}
 		private void OnAfterEndingEffect(MAAD.Simulator.Executor executor)
 		{
+			this.log("Top of OnAfterEndingEffect: " + executor.Simulation.GetTask().Properties.Name, 5);
 			MAAD.Simulator.Utilities.IRuntimeTask task = executor.EventQueue.GetTask();
 			// ignore first and last tasks
 			int taskID = int.Parse(task.ID);
@@ -120,9 +121,70 @@ namespace SoarIMPRINTPlugin
 			{
 				RemoveTask(GetIMPRINTTaskFromRuntimeTask(task));
 			}
+			
+			// run scope to decide if we should resume any delayed or interrupted tasks
+			string output = agent.RunSelfTilOutput();
+			// get result
+			sml.Identifier command = agent.GetCommand(0);
+			// get strategy name
+			string strategy = command.GetParameterValue("name");
+			if (strategy == "resume-delayed")
+			{
+				// scope says to resume a task
+				// find the task scope wants to resume
+				string taskIDString = command.FindIDByAttribute("task").FindStringByAttribute("taskID");
+				//app.Executor.Simulation.IModel.Resume("ID", taskIDString);
+				// search through entities in the task
+				foreach (MAAD.Simulator.IEntity entity in app.Executor.Simulation.IModel.Find("ID", taskIDString))
+				{
+					// check if it is in a suspended state
+					if (entity.Tag == DELAY_TAG)
+					{
+						// mark the entity to be resumed
+						this.log("Scope: Resume delayed");
+						// trace that we are resuming
+						app.AcceptTrace("Marking delayed task to be resumed: " + executor.GetRuntimeTask(entity.ID).Properties.Name);
+						// set tag to that release condition automatically accepts it
+						// TODO there is now a gap between marking to resume and actually starting the task
+						// TODO is this a problem?
+						entity.Tag = RESUME_DELAY_TAG;
+						// add the task as a real task
+						//AddActiveTask(executor.GetRuntimeTask(entity.ID));
+						// log that we resumed a task
+						scopeData.LogStrategy("Resume Delayed", app.Executor.Simulation.Clock);
+					}
+					else if (entity.Tag == INTERRUPT_TAG)
+					{
+						this.log("Scope: Resume interrupted");
+						// trace that we are resuming
+						app.AcceptTrace("Resuming task " + executor.GetRuntimeTask(entity.ID).Properties.Name + ": " + executor.Simulation.IModel.Resume("ID", entity.ID));
+						// TODO this should be restored from what it was before
+						entity.Tag = 0;
+						// add the task as a real task
+						//AddActiveTask(executor.GetRuntimeTask(entity.ID));
+						// log that we resumed a task
+						scopeData.LogStrategy("Resume", app.Executor.Simulation.Clock);
+						// log the decision that allowed for the resume
+						scopeData.LogStrategy(strategy, app.Executor.Simulation.Clock);
+						// force logging because there's no corresponding begin task
+						// TODO this is a bad way to do this
+						//scopeData.CommitStrategy();
+					}
+					// update flags in soar
+					if (entity.Tag == DELAY_TAG || entity.Tag == INTERRUPT_TAG)
+					{
+						// remove ^delayed from WME
+						command.FindIDByAttribute("task").FindByAttribute("delayed", 0).DestroyWME();
+						// add ^active
+						command.FindIDByAttribute("task").CreateStringWME("active", "yes");
+					}
+				}
+			}
+			command.AddStatusComplete();
+			agent.ClearOutputLinkChanges();
 
 			// check to see if we should resume interrupted tasks
-			foreach (MAAD.Simulator.IEntity entity in app.Executor.Simulation.IModel.Find("Tag", INTERRUPT_TAG))
+			/*foreach (MAAD.Simulator.IEntity entity in app.Executor.Simulation.IModel.Find("Tag", INTERRUPT_TAG))
 			{
 				// add the task in release condition
 				// TODO may eventually do ^resume instead of ^release if we want to have separate reasoning
@@ -175,7 +237,7 @@ namespace SoarIMPRINTPlugin
 					// log that we resumed a task
 					scopeData.LogStrategy("Resume Delayed", app.Executor.Simulation.Clock);
 				}
-			}
+			}*/
 		}
 		public void OnSimulationBegin(object sender, EventArgs e)
 		{
@@ -192,6 +254,8 @@ namespace SoarIMPRINTPlugin
 		}
 		public void OnAfterReleaseCondition(MAAD.Simulator.Executor executor, ref bool release)
 		{
+			this.log("Start OnAfterReleaseCondition: " + executor.Simulation.GetTask().Properties.Name, 5);
+
 			// kill any entities that have been marked
 			executor.Simulation.IModel.Abort("Tag", KILL_TAG);
 			// TODO suspend any entities that have been marked delayed
@@ -229,17 +293,29 @@ namespace SoarIMPRINTPlugin
 				MAAD.IMPRINTPro.NetworkTask nt = GetIMPRINTTaskFromRuntimeTask(task);
 				if (nt != null)
 				{
+					this.log("OARC: adding release task: " + nt.Name);
 					// add task props to Soar input
 					sml.Identifier taskWME = AddReleaseTask(nt);
 
 					// TODO make "run until it decides what to do" more robust
 					// run the agent until it decides what to do
+					this.log("Running scope",5);
 					string output = agent.RunSelfTilOutput();
-					string strategy = GetOutput("strategy", "name");
+					this.log("Scope returned", 5);
+					sml.Identifier command = agent.GetCommand(0);
+					// TODO if no command exists?
+					// if(!agent.Commands())
+					// get strategy name
+					string strategy = command.GetParameterValue("name");
+					// TODO if command isn't a strategy somehow?
+					// if(agent.GetCommandName() != "strategy")
+					//string strategy = GetOutput("strategy", "name");
 					//this.log("Output strategy was: " + strategy, 5);
-					//app.AcceptTrace(strategy);
 					// execute the strategy
 					release = ApplyStrategy(strategy, taskWME);
+					// mark the command as complete
+					command.AddStatusComplete();
+					agent.ClearOutputLinkChanges();
 					// log the decision
 					scopeData.LogStrategy(strategy, executor.Simulation.Clock);
 				}
@@ -316,18 +392,23 @@ namespace SoarIMPRINTPlugin
 					this.log("Scope: Interrupt task");
 
 					// get task which should be interrupted
-					string taskID = agent.GetOutputLink()
-											.FindIDByAttribute("strategy")
-											.FindIDByAttribute("interrupt-task")
-											.FindStringByAttribute("taskID");
+					sml.Identifier interruptedTaskWME = agent.GetOutputLink()
+															 .FindIDByAttribute("strategy")
+															 .FindIDByAttribute("interrupt-task");
+					string taskID = interruptedTaskWME.FindStringByAttribute("taskID");
 					// suspend entity(ies?) in task
 					// TODO this will abort all entities in task. should we include entity tag?
 					// suspend, and ask Scope if we can restart once in a while (in end effect?)
 					app.AcceptTrace("Interrupting " + app.Executor.Simulation.IModel.FindTask(taskID).Properties.Name + ": " + app.Executor.Simulation.IModel.Suspend("ID", taskID));
 					// remove task from Scope
 					// TODO should we actually annotate with ^suspend yes and to let Scope know more about what's happening?
-					RemoveTask(GetIMPRINTTaskFromRuntimeTask(app.Executor.Simulation.IModel.FindTask(taskID)));
-					// give entity the SUSPEND_TAG tag
+					//RemoveTask(GetIMPRINTTaskFromRuntimeTask(app.Executor.Simulation.IModel.FindTask(taskID)));
+					// TODO for some reason we have to remove ^active before adding ^delayed, otherwise it crashes. we should figure out why
+					// remove ^active from WME
+					this.log("Interrupt: remove ^active: " + interruptedTaskWME.FindByAttribute("active", 0).DestroyWME(), 5);
+					// add ^delayed yes to WME
+					this.log("Interrupt: add ^delayed: " + interruptedTaskWME.CreateStringWME("delayed", "yes").GetValue(), 5);
+					// give entity the INTERRUPT_TAG tag
 					// TODO this could be disruptive if the model is otherwise using tags
 					foreach (MAAD.Simulator.IEntity entity in app.Executor.Simulation.IModel.Find("ID", taskID))
 					{
@@ -373,7 +454,6 @@ namespace SoarIMPRINTPlugin
 				if (kernel.HadError()) return false;
 
 				// load scope productions
-				// TODO load test productions for now
 				agent.LoadProductions(source);
 				if (agent.HadError()) return false;
 			}
@@ -530,6 +610,7 @@ namespace SoarIMPRINTPlugin
 			sml.StringElement el = input.CreateStringWME(attribute, value);
 			return el != null;
 		}
+		// WARNING: DO NOT USE. only still used temporarily for test console app
 		public string GetOutput(string command, string parameter)
 		{
 			string output = null;

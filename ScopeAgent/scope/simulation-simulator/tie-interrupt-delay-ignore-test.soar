@@ -1,0 +1,42 @@
+sp {initialize*tie*interrupt*delay*ignore
+   (state <s> ^operator <o>
+              ^io.input-link <input>
+              ^simulated yes)
+   (<o> ^name initialize-scope
+        ^test-name tie*interrupt*delay*ignore)
+-->
+   (<s> ^simulate-task <sim>)
+   (<sim> ^current <n1>)
+   # t=1 add first task
+   (<n1> ^add <a1>)
+   (<a1> ^obj <input>
+         ^task <t1>)
+   (<t1> ^taskID 0
+         ^workload 4
+         ^release yes)
+   (<n1> ^next <n2>)
+   # t=2 add second task
+   (<n2> ^add <a2>)
+   (<a2> ^obj <input>
+         ^task <t2>)
+   (<t2> ^taskID 1
+         ^workload 5
+         ^release yes)
+   (<n2> ^next <n3>)
+   # t=3 add third task
+   (<n3> ^add <a3>)
+   (<a3> ^obj <input>
+         ^task <t3>)
+   (<t3> ^taskID 2
+         ^workload 2
+         ^release yes)
+   (<n3> ^next <n4>)
+   # t=4 perform all
+   (<n4> ^next <n5>)
+   # t=5 remove first task
+   (<n5> ^remove <r5>)
+   (<r5> ^obj <input>
+         ^task <t1>)
+   # infinite loop
+   (<n5> ^next <n5>)
+}

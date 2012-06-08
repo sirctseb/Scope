@@ -51,23 +51,12 @@ sp {apply*not-simulate-input
    (<ts> ^phase simulate-input)
 }
               
-# test choosing perform-all
-sp {perform-all-test-init
-   (state <s> ^disable
-              ^operator <o>
-              ^io.input-link <input>
-              ^simulated yes)
-   (<o> ^name initialize-scope)
--->
-   (<input> ^over-threshold no
-            ^task <t1> <t2>)
-}
-
 # elaborate operators to indicate that they are strategy operators
 # TODO this should not be defined here because it's used in real operation
 sp {elaborate*strategy*operators
    (state <s> ^operator <o> +)
-   (<o> ^name << perform-all ignore-new interrupt-task delay-new resume-delayed continue-delay >> )
+   (<o> ^name << perform-all ignore-new interrupt-task
+                 delay-new resume-delayed resume-none wait >> )
 -->
    (<o> ^strategy yes)
 }
@@ -165,10 +154,12 @@ sp {apply*interrupt-task*effects
    # TODO this would be easier if it was just flagged
    # and left there.
    # TODO simulate attempts to resume interrupted task
-   (<input> ^task <interrupt-task> -)
+   #(<input> ^task <interrupt-task> -)
+   (<interrupt-task> ^active yes -
+                     ^delayed yes)
    # store task in special place on top state
    # so that we many resume it some time
-   (<s> ^interrupted-task <interrupt-task>)
+#   (<s> ^interrupted-task <interrupt-task>)
    # mark as complete
    (<strategy> ^complete yes)
 }
@@ -216,7 +207,12 @@ sp {init*task*events
               ^simulated yes)
    (<o> ^name initialize-scope)
 -->
-   (<o> ^test-name tie*interrupt*delay*ignore)
+#   (<o> ^test-name wait)
+   (<o> ^test-name resume-tie)
+#   (<o> ^test-name resume-none)
+#   (<o> ^test-name tie*interrupt*delay*ignore)
+#   (<o> ^test-name default)
+#   (<o> ^test-name simultaneous-add-remove)
 }
 
 # copy down simulation commands into substates
@@ -224,117 +220,6 @@ sp {copy*simulation*state
    (state <s> ^superstate.simulate-task <st>)
 -->
    (<s> ^simulate-task <st>)
-}
-sp {init*default
-   (state <s> ^operator <o>
-              ^io.input-link <input>
-              ^simulated yes)
-   (<o> ^name initialize-scope
-        ^test-name default)
--->
-   (<s> ^simulate-task <sim>)
-   (<sim> ^current <n1>)
-   # t=1 add initial task with ^release
-   (<n1> ^task <t1>)
-   (<t1> ^workload 4
-         ^ID 0
-         ^release yes)
-   (<n1> ^next <n2>)
-   # t=2 add second task with ^release
-   (<n2> ^task <t2>)
-   (<t2> ^workload 4
-         ^ID 1
-         ^release yes)
-   (<n2> ^next <n3>)
-   # t=3 add third task
-   (<n3> ^task <t3>)
-   (<t3> ^workload 4
-         ^ID 3
-         ^release yes)
-   # add one more event
-   (<n3> ^next <end>)
-}
-
-sp {initialize*simultaneous*add*remove
-   (state <s> ^operator <o>
-              ^io.input-link <input>
-              ^simulated yes)
-   (<o> ^name initialize-scope
-        ^test-name simultaneous-add-remove)
--->
-   (<s> ^simulate-task <sim>)
-   (<sim> ^current <n1>)
-   # t=1 add the first task
-   (<n1> ^add <a1>)
-   (<a1> ^obj <input>
-         ^task <t1>)
-   (<t1> ^workload 3
-         ^ID 0
-         ^release yes)
-   (<n1> ^next <n2>)
-   # t=2 add the second task
-   (<n2> ^add <a2>)
-   (<a2> ^obj <input>
-         ^task <t2>)
-   (<t2> ^workload 2
-         ^ID 1
-         ^release yes)
-   (<n2> ^next <n3>))
-   # t=3 remove the first task
-   (<n3> ^remove <r3>)
-   (<r3> ^obj <input>
-         ^task <t1>)
-   # t=3 also add a brand new task
-   (<n3> ^add <a3>)
-   (<a3> ^obj <input>
-         ^task <t3>)
-   (<t3> ^workload 1
-         ^ID 2
-         ^release yes)
-   # add one more event so it doesn't kill it too early
-   (<n3> ^next <n4>)
-}
-sp {initialize*tie*interrupt*delay*ignore
-   (state <s> ^operator <o>
-              ^io.input-link <input>
-              ^simulated yes)
-   (<o> ^name initialize-scope
-        ^test-name tie*interrupt*delay*ignore)
--->
-   (<s> ^simulate-task <sim>)
-   (<sim> ^current <n1>)
-   # t=1 add first task
-   (<n1> ^add <a1>)
-   (<a1> ^obj <input>
-         ^task <t1>)
-   (<t1> ^ID 0
-         ^workload 4
-         ^release yes)
-   (<n1> ^next <n2>)
-   # t=2 add second task
-   (<n2> ^add <a2>)
-   (<a2> ^obj <input>
-         ^task <t2>)
-   (<t2> ^ID 1
-         ^workload 5
-         ^release yes)
-   (<n2> ^next <n3>)
-   # t=3 add third task
-   (<n3> ^add <a3>)
-   (<a3> ^obj <input>
-         ^task <t3>)
-   (<t3> ^ID 2
-         ^workload 2
-         ^release yes)
-   (<n3> ^next <n4>)
-   # t=4 perform all
-   (<n4> ^next <n5>)
-   # t=5 remove first task
-   (<n5> ^remove <r5>)
-   (<r5> ^obj <input>
-         ^task <t1>)
-   # infinite loop
-   (<n5> ^next <n5>)
 }
 
 # generalized rules

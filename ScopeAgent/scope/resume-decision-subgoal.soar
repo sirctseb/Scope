@@ -2,10 +2,18 @@
 # we should start a task that was delayed
 # TODO may use this also for resuming interrupted tasks
 
+# combine delayed tasks into a single flag
+sp {elaborate*delayed*tasks*exist
+   (state <s> ^name scope
+              ^io.input-link.task.delayed yes)
+-->
+   (<s> ^delayed-tasks-exist yes)
+}
 # proposed the resume task subgoal when there is a delayed task
 sp {propose*resume-decision
    (state <s> ^name scope
-              ^io.input-link.task.delayed yes)
+              #^io.input-link.task.delayed yes)
+              ^delayed-tasks-exist yes)
 -->
    (<s> ^operator <o> +)
    (<o> ^name resume-decision)

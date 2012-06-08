@@ -1,0 +1,29 @@
+sp {init*default
+   (state <s> ^operator <o>
+              ^io.input-link <input>
+              ^simulated yes)
+   (<o> ^name initialize-scope
+        ^test-name default)
+-->
+   (<s> ^simulate-task <sim>)
+   (<sim> ^current <n1>)
+   # t=1 add initial task with ^release
+   (<n1> ^task <t1>)
+   (<t1> ^workload 4
+         ^taskID 0
+         ^release yes)
+   (<n1> ^next <n2>)
+   # t=2 add second task with ^release
+   (<n2> ^task <t2>)
+   (<t2> ^workload 4
+         ^taskID 1
+         ^release yes)
+   (<n2> ^next <n3>)
+   # t=3 add third task
+   (<n3> ^task <t3>)
+   (<t3> ^workload 4
+         ^taskID 2
+         ^release yes)
+   # add one more event
+   (<n3> ^next <end>)
+}

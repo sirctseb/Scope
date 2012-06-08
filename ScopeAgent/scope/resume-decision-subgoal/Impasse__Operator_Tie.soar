@@ -1,0 +1,38 @@
+sp {apply*resume-delayed*evaluate
+   (state <s> ^operator <o>
+              ^workload <workload>
+              ^untried-tied-operator)
+   (<o> ^name resume-delayed
+        ^task.workload <task-workload>)
+-->
+   (<s> ^workload <workload> -
+        ^workload (+ <workload> <task-workload>))
+}
+sp {resume-decision*evaluate*state*workload*numeric
+   (state <s> ^desired <d>
+              ^problem-space.name resume-decision-space
+              ^tried-tied-operator
+              ^workload <workload>)
+-->
+   (<s> ^numeric-value <workload>)
+   (write (crlf) |Resume decision: Evaluation of operator is: | <workload>)
+}
+
+# problem space definition
+sp {resume-decision*problem-space
+   (state <s> ^name resume-decision)
+-->
+   (<s> ^problem-space <p>)
+   (<p> ^name resume-decision-space
+        ^one-level-attributes workload)
+}
+
+# put desired state info on resume-decision subgoal but only at top level
+# because it is copied down automatically
+sp {resume-decision*elaborate*desired*state
+   (state <s> ^name resume-decision
+              ^superstate.name scope)
+-->
+   (<s> ^desired <d>)
+   (<d> ^better lower)
+}

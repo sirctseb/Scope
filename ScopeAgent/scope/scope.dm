@@ -1,4 +1,4 @@
-271
+298
 SOAR_ID 0
 SOAR_ID 1
 SOAR_ID 2
@@ -270,7 +270,34 @@ ENUMERATION 267 1 continue-delay
 SOAR_ID 268
 SOAR_ID 269
 ENUMERATION 270 1 meta
-272
+SOAR_ID 271
+ENUMERATION 272 1 state
+ENUMERATION 273 1 Impasse__Operator_Tie
+SOAR_ID 274
+ENUMERATION 275 1 state
+ENUMERATION 276 1 Impasse__State_No-Change
+SOAR_ID 277
+ENUMERATION 278 1 state
+ENUMERATION 279 1 simulation-simulator
+ENUMERATION 280 1 default-test
+SOAR_ID 281
+ENUMERATION 282 1 simultaneous-add-remove-test
+SOAR_ID 283
+ENUMERATION 284 1 tie-interrupt-delay-ignore-test
+SOAR_ID 285
+ENUMERATION 286 1 resume-tie-test
+SOAR_ID 287
+ENUMERATION 288 1 resume-none-test
+SOAR_ID 289
+ENUMERATION 290 1 resume-tie-test
+SOAR_ID 291
+SOAR_ID 292
+ENUMERATION 293 1 wait
+ENUMERATION 294 1 wait
+SOAR_ID 295
+ENUMERATION 296 1 wait-test
+SOAR_ID 297
+302
 0 desired 118
 0 disable 69
 0 failure 138
@@ -295,6 +322,7 @@ ENUMERATION 270 1 meta
 0 operator 258
 0 operator 260
 0 operator 269
+0 operator 292
 0 phase 66
 0 problem-space 139
 0 simulate-task 152
@@ -543,3 +571,32 @@ ENUMERATION 270 1 meta
 266 name 265
 268 name 267
 269 name 270
+271 name 273
+271 superstate 262
+271 top-state 0
+271 type 272
+274 name 276
+274 superstate 262
+274 top-state 0
+274 type 275
+277 name 279
+277 operator 281
+277 operator 283
+277 operator 285
+277 operator 287
+277 operator 289
+277 operator 291
+277 operator 295
+277 operator 297
+277 superstate 0
+277 top-state 0
+277 type 278
+281 name 280
+283 name 282
+285 name 284
+287 name 286
+289 name 288
+291 name 290
+292 name 293
+295 name 294
+297 name 296
