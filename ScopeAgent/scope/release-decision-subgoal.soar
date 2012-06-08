@@ -1,14 +1,13 @@
 # propose the subgoal do determine a strategy in response to a task that is trying to start
 sp {propose*release-decision
    (state <s> ^name scope
-              ^io.input-link.task.release yes)
+              ^io.input-link.task (<task> ^release yes))
    # for debug output
-   (<s> ^io.input-link.task (^release yes
-                             ^taskID <taskID>))
+   (<task> ^taskID <taskID>)
 -->
    (<s> ^operator <o> +)
    (<o> ^name release-decision)
-   (write (crlf) |Noticed a task in release state: | <taskID> |, propose to figure out what to do|)
+   (write (crlf) |Noticed a task in release state: | <taskID> |(| <task> |), propose to figure out what to do|)
 }
 
 # copy io and workload to new state when release-decision subgoal is created
