@@ -108,6 +108,11 @@ namespace SoarIMPRINTPlugin
 				{
 					// add task props to Soar input
 					sml.Identifier taskWME = AddActiveTask(nt);
+					// run soar agent to let it update workload
+					/*agent.RunSelfTilOutput();
+					// clear output
+					agent.GetCommand(0).AddStatusComplete();
+					agent.ClearOutputLinkChanges();*/
 				}
 			}
 		}
@@ -182,62 +187,6 @@ namespace SoarIMPRINTPlugin
 			}
 			command.AddStatusComplete();
 			agent.ClearOutputLinkChanges();
-
-			// check to see if we should resume interrupted tasks
-			/*foreach (MAAD.Simulator.IEntity entity in app.Executor.Simulation.IModel.Find("Tag", INTERRUPT_TAG))
-			{
-				// add the task in release condition
-				// TODO may eventually do ^resume instead of ^release if we want to have separate reasoning
-				AddReleaseTask(executor.GetRuntimeTask(entity.ID));
-				// see what scope says
-				string output = agent.RunSelfTilOutput();
-				// get result
-				string strategy = GetOutput("strategy", "name");
-				// remove task as a release task
-				RemoveTask(executor.GetRuntimeTask(entity.ID));
-				// instead of returning release, resume the task if it is true
-				//if (release)
-				// TODO sometimes tasks are resumed by interrupting other tasks and that causes problems
-				if (strategy == "perform-all")
-				{
-					this.log("Scope: Perform all tasks");
-					// trace that we are resuming
-					app.AcceptTrace("Resuming task " + executor.GetRuntimeTask(entity.ID).Properties.Name + ": " + executor.Simulation.IModel.Resume("ID", entity.ID));
-					// TODO this should be restored from what it was before
-					entity.Tag = 0;
-					// add the task as a real task
-					AddActiveTask(executor.GetRuntimeTask(entity.ID));
-					// log that we resumed a task
-					scopeData.LogStrategy("Resume", app.Executor.Simulation.Clock);
-					// log the decision that allowed for the resume
-					scopeData.LogStrategy(strategy, app.Executor.Simulation.Clock);
-					// force logging because there's no corresponding begin task
-					// TODO this is a bad way to do this
-					scopeData.CommitStrategy();
-				}
-			}
-			// check to see if we should 'resume' delayed tasks
-			foreach (MAAD.Simulator.IEntity entity in app.Executor.Simulation.IModel.Find("Tag", DELAY_TAG))
-			{
-				// run scope
-				string output = agent.RunSelfTilOutput();
-				// get result
-				string strategy = GetOutput("strategy", "name");
-				if (strategy == "resume-delayed")
-				{
-					this.log("Scope: Resume delayed");
-					// trace that we are resuming
-					app.AcceptTrace("Marking delayed task to be resumed: " + executor.GetRuntimeTask(entity.ID).Properties.Name);
-					// set tag to that release condition automatically accepts it
-					// TODO there is now a gap between marking to resume and actually starting the task
-					// TODO is this a problem?
-					entity.Tag = RESUME_DELAY_TAG;
-					// add the task as a real task
-					AddActiveTask(executor.GetRuntimeTask(entity.ID));
-					// log that we resumed a task
-					scopeData.LogStrategy("Resume Delayed", app.Executor.Simulation.Clock);
-				}
-			}*/
 		}
 		public void OnSimulationBegin(object sender, EventArgs e)
 		{
