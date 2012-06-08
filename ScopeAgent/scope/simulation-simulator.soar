@@ -8,7 +8,7 @@ sp {simulator*indicator
 
 # test choosing ignore-new over interrupt-task
 # get the first one out of the way
-sp {start*simualtion*simulator
+sp {start*simulation*simulator
    (state <s> ^operator <o>
               ^simulated yes
               ^io.input-link <input>)
@@ -27,6 +27,8 @@ sp {propose*simulate-input
    (<s> ^operator <o> + !)
    (<o> ^name simulate-input)
 }
+# in the application of input simulation,
+# change phase back to real scope processing
 sp {apply*simulate-input
    (state <s> ^name scope
               ^phase simulate-input
@@ -36,6 +38,8 @@ sp {apply*simulate-input
 -->
    (<s> ^phase simulate-input -)
 }
+# in the application of real scope processing,
+# change phase back to input simulation
 sp {apply*not-simulate-input
    (state <s> ^name scope
               ^operator <o>
@@ -105,12 +109,20 @@ sp {apply*perform-all*effects
    (<task> ^release yes -)
 }
 
-# instead of having a rule for each
+# set which test we want to perform
 sp {init*task*events
+   (state <s> ^operator <o>
+              ^simulated yes)
+   (<o> ^name initialize-scope)
+-->
+   (<o> ^test-name simultaneous-add-remove)
+}
+sp {init*default
    (state <s> ^operator <o>
               ^io.input-link <input>
               ^simulated yes)
-   (<o> ^name initialize-scope)
+   (<o> ^name initialize-scope
+        ^test-name default)
 -->
    (<s> ^simulate-task <n1>)
    (<n1> ^task <t1>)
@@ -136,6 +148,50 @@ sp {init*task*events
          ^ID 3
          ^release yes)
    (<n3> ^next <end>)
+}
+
+sp {initialize*simultaneous*add*remove
+   (state <s> ^operator <o>
+              ^io.input-link <input>
+              ^simulated yes)
+   (<o> ^name initialize-scope
+        ^test-name simultaneous-add-remove)
+-->
+   (<s> ^simulate-task <n1>)
+   # t=1 add the first task
+   (<n1> ^task <t1>)
+   (<t1> ^workload 3
+         ^ID 0
+         ^release yes)
+   (<n1> ^next <n2>)
+   # t=2 add the second task
+   (<n2> ^task <t2>)
+   (<t2> ^workload 2
+         ^ID 1
+         ^release yes)
+   # t=2 remove release state of first task
+   (<n2> ^remove <r1>)
+   (<r1> ^obj <t1>
+         ^attribute release
+         ^value yes)
+   (<n2> ^next <n3>)
+   # t=3 remove the first task
+   (<n3> ^remove <r2>)
+   (<r2> ^obj <input>
+         ^attribute task
+         ^value <t1>)
+   # t=3 remove release state of second task
+   (<n3> ^remove <r3>)
+   (<r3> ^obj <t2>
+         ^attribute release
+         ^value yes)
+   # t=3 also add a brand new task
+   (<n3> ^task <t3>)
+   (<t3> ^workload 1
+         ^ID 2
+         ^release yes)
+   # add one more event so it doesn't kill it too early
+   (<n3> ^next <n4>)
 }
 
 # generalized rules
@@ -164,6 +220,17 @@ sp {apply*simulate-input*add*task
    (<event> ^task <task>)
 -->
    (<input> ^task <task>)
+}
+sp {apply*simulate-input*end
+   (state <s> ^name scope
+              ^phase simulate-input
+              ^operator <o>
+              ^simulated yes
+              ^simulate-task <event>)
+   (<event> -^next <next>)
+-->
+   (write (crlf) |end|)
+   (halt)
 }
 sp {x*finish*simulate*input
    (state <s> ^name scope

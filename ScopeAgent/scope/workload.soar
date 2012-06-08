@@ -8,40 +8,93 @@ sp {apply*initialize-workload
 -->
    (<s> ^workload 0)
 }
-# propose to update workload because a task was removed
-sp {propose*update-workload-value*remove
+
+# propose update workload subgoal when a task is added or removed
+sp {propose*update-workload-value*subgoal
+   (state <s> ^name scope)
+   (<s> ^workload-update-needed yes)
+-->
+   (<s> ^operator <o> + >)
+   (<o> ^name update-workload)
+}
+# elaboration to indicate that a workload update is needed
+# due to a removed task
+sp {elaborate*update-workload-value*remove
    (state <s> ^name scope
               ^tasks-accounted-for <task>
              -^io.input-link.task <task>)
 -->
-   (<s> ^operator <o> + >)
-   (<o> ^name update-workload
-        ^action remove
-        ^task <task>)
+   (<s> ^workload-update-needed yes)
+   # details on update needed
+   (<s> ^workload-update <w>)
+   (<w> ^task <task>
+        ^action remove)
 }
-# propose to update workload because a task was added
-sp {propose*update-workload-value*add
+# elaboration to indicate that a workload update is needed
+# due to an added task
+sp {elaborate*update-workload-value*add
    (state <s> ^name scope
               ^io.input-link.task <task>
              -^tasks-accounted-for <task>)
    (<task> -^release yes)
 -->
+   (<s> ^workload-update-needed yes)
+   # details on update needed
+   (<s> ^workload-update <w>)
+   (<w> ^task <task>
+        ^action add)
+}
+# new proposal under workload-update subgoal
+sp {propose*workload-update
+   (state <s> ^name update-workload
+              ^top-state <ts>)
+   (<ts> ^workload-update <w>)
+-->
    (<s> ^operator <o> + >)
    (<o> ^name update-workload
-        ^action add
-        ^task <task>)
+        ^workload-update <w>)
 }
-# make all update-workload-value operators equal
-sp {preference*update*equal
-   (state <s> ^name scope
-              ^operator <o> +
-              ^operator <o2> +)
-   (<o> ^name update-workload
-        ^task <t1>)
-   (<o2> ^name update-workload
-         ^task <> <t1>)
+# make all workload-update operators equal
+sp {preference*update-workload*equal
+   (state <s> ^name update-workload
+              ^operator <o1> +
+              ^operator {<o2> <> <o1>} +)
+   (<o1> ^name update-workload)
+   (<o2> ^name update-workload)
 -->
-   (<s> ^operator <o> = <o2>)
+   (<s> ^operator <o1> = <o2>)
+}
+# apply workload update in update-workload subgoal for add
+sp {apply*update-workload*add
+   (state <s> ^name update-workload
+              ^top-state <ts>
+              ^operator <o>)
+   (<ts> ^workload <workload>)
+   (<o> ^name update-workload
+        ^workload-update <w>)
+   (<w> ^task <t>
+        ^action add)
+   (<t> ^workload <new-workload>)
+-->
+   (<ts> ^workload <workload> -
+         ^workload (+ <workload> <new-workload>)
+         ^tasks-accounted-for <t>)
+}
+# apply workload update in update-workload subgoal for remove
+sp {apply*update-workload*remove
+   (state <s> ^name update-workload
+              ^top-state <ts>
+              ^operator <o>)
+   (<ts> ^workload <workload>)
+   (<o> ^name update-workload
+        ^workload-update <w>)
+   (<w> ^task <t>
+        ^action remove)
+   (<t> ^workload <new-workload>)
+-->
+   (<ts> ^workload <workload> -
+        ^workload (- <workload> <new-workload>)
+        ^tasks-accounted-for <t> -)
 }
 # make remove-workload-value operators better than any strategy
 sp {preference*update*better*than*strategy
@@ -52,34 +105,4 @@ sp {preference*update*better*than*strategy
    (<o2> ^strategy yes)
 -->
    (<s> ^operator <o> > <o2>)
-}
-# apply remove workload operator
-sp {apply*update-workload-remove
-   (state <s> ^name scope
-              ^operator <o>
-              ^workload <workload>
-              ^tasks-accounted-for <task>)
-   (<o> ^name update-workload
-        ^action remove
-        ^task <task>)
-   (<task> ^workload <new-workload>)
--->
-   (<s> ^workload <workload> -
-        ^workload (- <workload> <new-workload>)
-        ^tasks-accounted-for <task> -)
-}
-# apply add workload operator
-sp {apply*update-workload-add
-   (state <s> ^name scope
-              ^operator <o>
-              ^workload <workload>
-             -^tasks-accounted-for <task>)
-   (<o> ^name update-workload
-        ^action add
-        ^task <task>)
-   (<task> ^workload <new-workload>)
--->
-   (<s> ^workload <workload> -
-        ^workload (+ <workload> <new-workload>)
-        ^tasks-accounted-for <task>)
 }
