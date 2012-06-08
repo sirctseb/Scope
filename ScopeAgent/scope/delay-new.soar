@@ -1,6 +1,6 @@
 # propose delay-new whenever a new task tries to start
 sp {propose*delay-new
-   (state <s> ^name delay-decision
+   (state <s> ^disable yes ^name release-decision
               ^io.input-link.task <task>)
    (<task> ^release yes)
 -->
@@ -14,7 +14,7 @@ sp {propose*delay-new
 # elaborate delay-new operators with the workload that would
 # result if they were accepted and nothing interrupted
 sp {elaborate*delay-new*workload
-   (state <s> ^name delay-decision
+   (state <s> ^name release-decision
               ^operator <o> +
               ^workload <workload>)
    (<o> ^name delay-new
@@ -26,7 +26,7 @@ sp {elaborate*delay-new*workload
 # apply the delay-new operator
 # set the output command
 sp {apply*delay-new
-   (state <s> ^name delay-decision
+   (state <s> ^name release-decision
               ^operator <o>
               ^io.output-link <output>)
    (<o> ^name delay-new
