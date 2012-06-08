@@ -6,6 +6,7 @@ pushd elaborations
 source elaborations_source.soar
 popd
 source debug.soar
+source delay-new.soar
 source ignore-new.soar
 source initialize-scope.soar
 source interrupt-task.soar

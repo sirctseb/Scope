@@ -1,0 +1,39 @@
+# propose delay-new whenever a new task tries to start
+sp {propose*delay-new
+   (state <s> ^name scope
+              ^io.input-link.task <task>)
+   (<task> ^release yes)
+-->
+   (<s> ^operator <o> +)
+   (<o> ^name delay-new
+        ^task <task>)
+   # TODO ^task is unnecessary if we are guaranteed only
+   # one new task per decision cycle
+}
+
+# elaborate delay-new operators with the workload that would
+# result if they were accepted and nothing interrupted
+sp {elaborate*delay-new*workload
+   (state <s> ^name scope
+              ^operator <o> +
+              ^workload <workload>)
+   (<o> ^name delay-new
+        ^task.workload <new-workload>)
+-->
+   (<o> ^workload (+ <workload> <new-workload>))
+}
+
+# apply the delay-new operator
+# set the output command
+sp {apply*delay-new
+   (state <s> ^name scope
+              ^operator <o>
+              ^io.output-link <output>)
+   (<o> ^name delay-new
+        ^task <task>)
+-->
+   (<output> ^strategy <st>)
+   (<st> ^name delay-new
+         ^task <task>)
+   (write (crlf) |Delay new task|)
+}
