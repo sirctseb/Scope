@@ -121,7 +121,7 @@ sp {init*task*events
               ^simulated yes)
    (<o> ^name initialize-scope)
 -->
-   (<o> ^test-name simultaneous-add-remove)
+   (<o> ^test-name tie*interrupt*delay*ignore)
 }
 
 # copy down simulation commands into substates
@@ -225,6 +225,14 @@ sp {initialize*tie*interrupt*delay*ignore
          ^workload 4
          ^release yes)
    (<n2> ^next <n3>)
+   # t=3 add third task
+   (<n3> ^add <a3>)
+   (<a3> ^obj <input>
+         ^task <t3>)
+   (<t3> ^ID 2
+         ^workload 4
+         ^release yes)
+   (<n3> ^next <n4>)
 }
 
 # generalized rules

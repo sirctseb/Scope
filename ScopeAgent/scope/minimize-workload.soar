@@ -66,9 +66,11 @@ sp {evaluate*state*workload*failure
 
 # problem space def
 sp {scope*elaborate*problem-space
-   (state <s> ^name scope)
+   (state <s> ^name release-decision)
 -->
    (<s> ^problem-space <p>)
    (<p> ^name scope-space
         ^one-level-attributes workload)
+   (<s> ^desired <d>)
+   (<d> ^better lower)
 }
