@@ -1,4 +1,4 @@
-269
+271
 SOAR_ID 0
 SOAR_ID 1
 SOAR_ID 2
@@ -268,7 +268,9 @@ ENUMERATION 265 1 resume-delayed
 SOAR_ID 266
 ENUMERATION 267 1 continue-delay
 SOAR_ID 268
-270
+SOAR_ID 269
+ENUMERATION 270 1 meta
+272
 0 desired 118
 0 disable 69
 0 failure 138
@@ -292,6 +294,7 @@ SOAR_ID 268
 0 operator 256
 0 operator 258
 0 operator 260
+0 operator 269
 0 phase 66
 0 problem-space 139
 0 simulate-task 152
@@ -539,3 +542,4 @@ SOAR_ID 268
 262 type 263
 266 name 265
 268 name 267
+269 name 270

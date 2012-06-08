@@ -1,0 +1,3 @@
+# set max-nil-output-cycles high
+# because some ties take a while to resolve
+max-nil-output-cycles 100

@@ -1,18 +1,26 @@
 # resolve ties by examining which will result in lowest workload
 
+# simulate the effects of each operator on the workload
+# TODO we are doing this immediately, during the application of the operator
+# instead of in a simulate-input operator. this allows us to simply
+# test ^tried-tied-operator and evaluate the state then
+# workload effects of ignore-new
 sp {apply*ignore-new*evaluate
    (state <s> ^operator <o>
-              ^workload <workload>)
+              ^workload <workload>
+              ^untried-tied-operator)
    (<o> ^name ignore-new)
 -->
    # TODO this was a noop
    #(<s> ^workload <workload> -
    #     ^workload <workload>)
+   (write (crlf) |Applying ignore-new for evaluation: | <workload>)
 }
-
+# workload effects of interrupt-task
 sp {apply*interrupt-task*evaluate
    (state <s> ^operator <o>
-              ^workload <workload>)
+              ^workload <workload>
+              ^untried-tied-operator)
    (<o> ^name interrupt-task
         ^interrupt-task <task>
         ^new-task <new-task>)
@@ -22,24 +30,30 @@ sp {apply*interrupt-task*evaluate
    # update the state workload
    (<s> ^workload <workload> -
         ^workload (+ <new-workload> (- <workload> <task-workload>)))
+   (write (crlf) |Applying interrupt-task for evaluation: | (+ <new-workload> (- <workload> <task-workload>)))
 }
-
+# workload effects of delay-new
 sp {apply*delay-new*evaluate
    (state <s> ^operator <o>
-              ^workload <workload>)
+              ^workload <workload>
+              ^untried-tied-operator)
    (<o> ^name delay-new
         ^task <task>)
    (<task> ^workload <task-workload>)
 -->
    # noop. workload wouldn't change if task delayed
+   (write (crlf) |Applying delay-new fo revaluation: | <workload>)
 }
 
+# evaluate the resulting state after applying a tried operator
 sp {evaluate*state*workload*numeric
    (state <s> ^desired <d>
+              ^problem-space.name scope-space #TODO rename
               ^tried-tied-operator
               ^workload <workload>)
 -->
    (<s> ^numeric-value <workload>)
+   (write (crlf) |Evaluation of operator is: | <workload>)
 }
 
 sp {evaluate*state*workload*success
@@ -70,7 +84,16 @@ sp {scope*elaborate*problem-space
 -->
    (<s> ^problem-space <p>)
    (<p> ^name scope-space
+#        ^default-state-copy no
         ^one-level-attributes workload)
+}
+
+# put desired state info on release-decision subgoal but only at top level
+# because it is copied down automatically
+sp {scope*elaborate*desired*state
+   (state <s> ^name release-decision
+              ^superstate.name scope)
+-->
    (<s> ^desired <d>)
    (<d> ^better lower)
 }

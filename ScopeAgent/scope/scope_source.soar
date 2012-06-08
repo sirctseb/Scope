@@ -11,6 +11,7 @@ source ignore-new.soar
 source initialize-scope.soar
 source interrupt-task.soar
 source mark-new.soar
+source meta.soar
 source minimize-workload.soar
 source perform-all.soar
 source release-decision-subgoal.soar
