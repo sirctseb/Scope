@@ -36,10 +36,10 @@ namespace Utility
 			get { return this.GetTaskList(); }
 		}
 
-		public IEnumerable<MAAD.IMPRINTPro.Interfaces.IRIPairConflict> GetRIPairConflictList()
+		/*public IEnumerable<MAAD.IMPRINTPro.Interfaces.IRIPairConflict> GetRIPairConflictList()
 		{
 			return (IEnumerable<MAAD.IMPRINTPro.Interfaces.IRIPairConflict>)R.GetMember(app, "TaskNetwork.Analysis.CurrentMission.RIPairConflictList.GetIRIPairConflicts");
-		}
+		}*/
 
 	}
 }

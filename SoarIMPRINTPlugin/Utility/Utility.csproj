@@ -34,19 +34,19 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="MAAD.IMPRINTPro.EditableBase">
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\IMPRINT Pro 3.0\MAAD.IMPRINTPro.EditableBase.dll</HintPath>
+      <HintPath>..\..\..\..\..\Desktop\IMPRINT Pro 3.1\MAAD.IMPRINTPro.EditableBase.dll</HintPath>
     </Reference>
     <Reference Include="MAAD.IMPRINTPro.GuiMain">
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\IMPRINT Pro 3.0\MAAD.IMPRINTPro.GuiMain.dll</HintPath>
+      <HintPath>..\..\..\..\..\Desktop\IMPRINT Pro 3.1\MAAD.IMPRINTPro.GuiMain.dll</HintPath>
     </Reference>
     <Reference Include="MAAD.Network">
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\IMPRINT Pro 3.0\MAAD.Network.dll</HintPath>
+      <HintPath>..\..\..\..\..\Desktop\IMPRINT Pro 3.1\MAAD.Network.dll</HintPath>
     </Reference>
     <Reference Include="MAAD.Simulator">
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\IMPRINT Pro 3.0\MAAD.Simulator.dll</HintPath>
+      <HintPath>..\..\..\..\..\Desktop\IMPRINT Pro 3.1\MAAD.Simulator.dll</HintPath>
     </Reference>
     <Reference Include="MAAD.Utilities">
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\IMPRINT Pro 3.0\MAAD.Utilities.dll</HintPath>
+      <HintPath>..\..\..\..\..\Desktop\IMPRINT Pro 3.1\MAAD.Utilities.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />

@@ -31,7 +31,7 @@ namespace SoarIMPRINTPlugin
 
 		public Scope()
 		{
-			app.AcceptTrace("Scope Constructor");
+			//app.AcceptTrace("Scope Constructor");
 			logger = new IMPRINTLogger();
 			this.enable("debug");
 		}
@@ -114,7 +114,7 @@ namespace SoarIMPRINTPlugin
 			}
 
 			// check to see if we should resume suspended tasks
-			foreach (MAAD.Simulator.IEntity entity in app.Executor.Simulation.Model.Find("Tag", SUSPEND_TAG))
+			foreach (MAAD.Simulator.IEntity entity in app.Executor.Simulation.IModel.Find("Tag", SUSPEND_TAG))
 			{
 				// add the task in release condition
 				AddReleaseTask(executor.GetRuntimeTask(entity.ID));
@@ -127,12 +127,12 @@ namespace SoarIMPRINTPlugin
 				// instead of returning release, resume the task if it is true
 				//if (release)
 				// TODO sometimes tasks are resumed by interrupting other tasks and that causes problems
-				if(strategy == "perform-all")
+				if (strategy == "perform-all")
 				{
 					// TODO we should probably write a separate method for this when resuming
 					bool release = ApplyStrategy(strategy);
 					// trace that we are resuming
-					app.AcceptTrace("Resuming task " + executor.GetRuntimeTask(entity.ID).Properties.Name + ": " + executor.Simulation.Model.Resume("ID", entity.ID));
+					app.AcceptTrace("Resuming task " + executor.GetRuntimeTask(entity.ID).Properties.Name + ": " + executor.Simulation.IModel.Resume("ID", entity.ID));
 					// TODO this should be restored from what it was before
 					entity.Tag = 0;
 					// add the task as a real task
@@ -157,13 +157,13 @@ namespace SoarIMPRINTPlugin
 			// TODO when to shutdown kernel?
 			UnregisterEvents();
 			// write data
-			scopeData.WriteCounts("C:\\Users\\cjbest\\Desktop\\Coping\\ScopeData\\scope_counts.txt");
-			scopeData.WriteTrace("C:\\Users\\cjbest\\Desktop\\Coping\\ScopeData\\scope_trace.txt");
+			scopeData.WriteCounts("C:\\Users\\christopher.j.best2\\Documents\\ScopeData\\scope_counts.txt");
+			scopeData.WriteTrace("C:\\Users\\christopher.j.best2\\Documents\\ScopeData\\scope_trace.txt");
 		}
 		public void OnAfterReleaseCondition(MAAD.Simulator.Executor executor, ref bool release)
 		{
 			// kill any entities that have been marked
-			executor.Simulation.Model.Abort("Tag", KILL_TAG);
+			executor.Simulation.IModel.Abort("Tag", KILL_TAG);
 
 			// check that entity hasn't been marked KILL_TAG yet
 			if (executor.EventQueue.GetEntity().Tag == KILL_TAG)
@@ -262,13 +262,13 @@ namespace SoarIMPRINTPlugin
 					// suspend entity(ies?) in task
 					// TODO this will abort all entities in task. should we include entity tag?
 					// suspend, and ask Scope if we can restart once in a while (in end effect?)
-					app.AcceptTrace("Interrupting " + app.Executor.Simulation.Model.FindTask(taskID).Properties.Name + ": " + app.Executor.Simulation.Model.Suspend("ID", taskID));
+					app.AcceptTrace("Interrupting " + app.Executor.Simulation.IModel.FindTask(taskID).Properties.Name + ": " + app.Executor.Simulation.IModel.Suspend("ID", taskID));
 					// remove task from Scope
 					// TODO should we actually annotate with ^suspend yes and to let Scope know more about what's happening?
-					RemoveTask(GetIMPRINTTaskFromRuntimeTask(app.Executor.Simulation.Model.FindTask(taskID)));
+					RemoveTask(GetIMPRINTTaskFromRuntimeTask(app.Executor.Simulation.IModel.FindTask(taskID)));
 					// give entity the SUSPEND_TAG tag
 					// TODO this could be disruptive if the model is otherwise using tags
-					foreach (MAAD.Simulator.IEntity entity in app.Executor.Simulation.Model.Find("ID", taskID))
+					foreach (MAAD.Simulator.IEntity entity in app.Executor.Simulation.IModel.Find("ID", taskID))
 					{
 						// TODO at the very least, we should restore the original tag when we resume
 						entity.Tag = SUSPEND_TAG;
@@ -407,7 +407,10 @@ namespace SoarIMPRINTPlugin
 			taskLink.CreateStringWME("taskID", task.ID);
 
 			double totalWorkload = 0;
-			foreach (MAAD.IMPRINTPro.Interfaces.ITaskDemand demand in task.TaskDemandList.GetITaskDemands)
+			//foreach (MAAD.IMPRINTPro.Interfaces.ITaskDemand demand in task.TaskDemandList.GetITaskDemands())
+			// Looks like GetITaskDemands doesn't exist in 3.1.0.86. Using Active instead, hopefully it's the same
+			// similarly, MAAD.IMPRINTPro.Interfaces.ITaskDemand -> MAAD.IMPRINTPro.TaskDemand
+			foreach (MAAD.IMPRINTPro.TaskDemand demand in task.TaskDemandList.Active)
 			{
 				// get workload attributes
 				string name = demand.RIPair.Resource.Name;
