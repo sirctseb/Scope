@@ -392,9 +392,10 @@ namespace SoarIMPRINTPlugin
 					this.log("Scope: Interrupt task");
 
 					// get task which should be interrupted
-					sml.Identifier interruptedTaskWME = agent.GetOutputLink()
+					/*sml.Identifier interruptedTaskWME = agent.GetOutputLink()
 															 .FindIDByAttribute("strategy")
-															 .FindIDByAttribute("interrupt-task");
+															 .FindIDByAttribute("interrupt-task");*/
+					sml.Identifier interruptedTaskWME = agent.GetOutputLink().GetIDAtAttributePath("strategy.interrupt-task");
 					string taskID = interruptedTaskWME.FindStringByAttribute("taskID");
 					// suspend entity(ies?) in task
 					// TODO this will abort all entities in task. should we include entity tag?

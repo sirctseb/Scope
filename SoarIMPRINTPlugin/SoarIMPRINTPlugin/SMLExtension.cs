@@ -155,5 +155,62 @@ namespace SoarIMPRINTPlugin
 				where child.GetValueType() == "string"
 				select child.ConvertToStringElement().GetValue();
 		}
+
+		// return a WMElement at an attribute path in soar syntax
+		// at each entry in the path, the first child at the attribute is used
+		public static sml.WMElement GetChildAtAttributePath(this sml.Identifier element, string attributePath)
+		{
+			string[] members = attributePath.Split(new[] { '.', '[', ']' }, StringSplitOptions.RemoveEmptyEntries);
+			return GetChildAtAttributePathComponents(element, members);
+		}
+		// return a value at a path of member names held in the members array
+		private static sml.WMElement GetChildAtAttributePathComponents(sml.Identifier element, string[] attributes)
+		{
+			// go through path and get children
+			sml.Identifier current = element;
+			foreach (string attribute in attributes.Take(attributes.Length - 1))
+			{
+				current = current.FindIDByAttribute(attribute);
+				// if there was no Identifier found there, return null
+				if (current == null)
+				{
+					return null;
+				}
+			}
+			// get the last element
+			return current.FindByAttribute(attributes.Last(),0);
+		}
+		// return typed values at attribute paths
+		public static long GetIntAtAttributePath(this sml.Identifier element, string attributePath)
+		{
+			sml.IntElement intElement = GetChildAtAttributePath(element, attributePath).ConvertToIntElement();
+			if (intElement == null)
+			{
+				throw new InvalidElementTypeException("int", GetChildAtAttributePath(element, attributePath));
+			}
+			return intElement.GetValue();
+		}
+		public static double GetFloatAtAttributePath(this sml.Identifier element, string attributePath)
+		{
+			sml.FloatElement floatElement = GetChildAtAttributePath(element, attributePath).ConvertToFloatElement();
+			if (floatElement == null)
+			{
+				throw new InvalidElementTypeException("float", GetChildAtAttributePath(element, attributePath));
+			}
+			return floatElement.GetValue();
+		}
+		public static string GetStringAtAttributePath(this sml.Identifier element, string attributePath)
+		{
+			sml.StringElement stringElement = GetChildAtAttributePath(element, attributePath).ConvertToStringElement();
+			if (stringElement == null)
+			{
+				return null;
+			}
+			return stringElement.GetValue();
+		}
+		public static sml.Identifier GetIDAtAttributePath(this sml.Identifier element, string attributePath)
+		{
+			return GetChildAtAttributePath(element, attributePath).ConvertToIdentifier();
+		}
 	}
 }
