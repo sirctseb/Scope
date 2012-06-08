@@ -28,7 +28,7 @@ sp {elaborate*update-workload*add
    (state <s> ^name scope
               ^io.input-link.task <task>
              -^tasks-accounted-for <task>)
-   (<task> -^release yes)
+   (<task> ^active yes)
 -->
    (<s> ^workload-update-needed yes)
    # details on update needed

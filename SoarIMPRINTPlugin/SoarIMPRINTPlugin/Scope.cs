@@ -16,7 +16,8 @@ namespace SoarIMPRINTPlugin
 
 		private ScopeData scopeData = new ScopeData();
 		private const int KILL_TAG = 1953;
-		private const int SUSPEND_TAG = 1954;
+		private const int INTERRUPT_TAG = 1954;
+		private const int DELAY_TAG = 1955;
 
 		// TODO test when IMPRINT creates plugin objects
 		private static bool kernelInitialized = false;
@@ -103,7 +104,7 @@ namespace SoarIMPRINTPlugin
 				if (nt != null)
 				{
 					// add task props to Soar input
-					sml.Identifier taskWME = AddRealTask(nt);
+					sml.Identifier taskWME = AddActiveTask(nt);
 				}
 			}
 		}
@@ -118,7 +119,7 @@ namespace SoarIMPRINTPlugin
 			}
 
 			// check to see if we should resume interrupted tasks
-			foreach (MAAD.Simulator.IEntity entity in app.Executor.Simulation.IModel.Find("Tag", SUSPEND_TAG))
+			foreach (MAAD.Simulator.IEntity entity in app.Executor.Simulation.IModel.Find("Tag", INTERRUPT_TAG))
 			{
 				// add the task in release condition
 				// TODO may eventually do ^resume instead of ^release if we want to have separate reasoning
@@ -135,13 +136,14 @@ namespace SoarIMPRINTPlugin
 				if (strategy == "perform-all")
 				{
 					// TODO we should probably write a separate method for this when resuming
-					bool release = ApplyStrategy(strategy);
+					//bool release = ApplyStrategy(strategy);
+					this.log("Scope: Perform all tasks");
 					// trace that we are resuming
 					app.AcceptTrace("Resuming task " + executor.GetRuntimeTask(entity.ID).Properties.Name + ": " + executor.Simulation.IModel.Resume("ID", entity.ID));
 					// TODO this should be restored from what it was before
 					entity.Tag = 0;
 					// add the task as a real task
-					AddRealTask(executor.GetRuntimeTask(entity.ID));
+					AddActiveTask(executor.GetRuntimeTask(entity.ID));
 					// log that we resumed a task
 					scopeData.LogStrategy("Resume", app.Executor.Simulation.Clock);
 					// log the decision that allowed for the resume
@@ -151,6 +153,14 @@ namespace SoarIMPRINTPlugin
 					scopeData.CommitStrategy();
 				}
 			}
+			// check to see if we should 'resume' delayed tasks
+			/*foreach (MAAD.Simulator.IEntity entity in app.Executor.Simulation.IModel.Find("Tag", DELAY_TAG))
+			{
+				// run scope
+				string output = agent.RunSelfTilOutput();
+				// get result
+				string strategy = GetOutput("strategy", "name");
+			}*/
 		}
 		public void OnSimulationBegin(object sender, EventArgs e)
 		{
@@ -169,9 +179,16 @@ namespace SoarIMPRINTPlugin
 		{
 			// kill any entities that have been marked
 			executor.Simulation.IModel.Abort("Tag", KILL_TAG);
+			// TODO suspend any entities that have been marked delayed
 
 			// check that entity hasn't been marked KILL_TAG yet
 			if (executor.EventQueue.GetEntity().Tag == KILL_TAG)
+			{
+				release = false;
+				return;
+			}
+			// check that entity isn't marked delayed
+			if (executor.EventQueue.GetEntity().Tag == DELAY_TAG)
 			{
 				release = false;
 				return;
@@ -194,10 +211,9 @@ namespace SoarIMPRINTPlugin
 					// run the agent until it decides what to do
 					string output = agent.RunSelfTilOutput();
 					string strategy = GetOutput("strategy", "name");
+					//app.AcceptTrace(strategy);
 					// execute the strategy
-					release = ApplyStrategy(strategy);
-					// destroy the task input element
-					taskWME.DestroyWME();
+					release = ApplyStrategy(strategy, taskWME);
 					// log the decision
 					scopeData.LogStrategy(strategy, executor.Simulation.Clock);
 				}
@@ -232,23 +248,40 @@ namespace SoarIMPRINTPlugin
 		}
 
 		#region IMPRINT communication stuff
-		private bool ApplyStrategy(string strategy)
+		private bool ApplyStrategy(string strategy, sml.Identifier taskWME)
 		{
 			// get the strategy name
 			//string strategy = GetOutput("strategy", "name");
 			// TODO make a class to handle this stuff
 			switch (strategy)
 			{
+				case "delay-new":
+					this.log("Scope: Delay new task");
+					// mark DELAY_TAG
+					app.Executor.EventQueue.GetEntity().Tag = DELAY_TAG;
+					// add ^delayed yes to WME
+					taskWME.CreateStringWME("delayed", "yes");
+					// remove ^release from WME
+					taskWME.FindByAttribute("release", 0).DestroyWME();
+					// TODO can an entity be suspended in release condition event? NOPE
+					//app.AcceptTrace("Suspend for delay: " + app.Executor.Simulation.IModel.Suspend("Tag", DELAY_TAG));
+					// return false so the entity is not released
+					return false;
+					break;
 				case "ignore-new":
 					this.log("Scope: Ignore new task");
 					// mark KILL_TAG
 					app.Executor.EventQueue.GetEntity().Tag = KILL_TAG;
+					// destroy the task input element
+					taskWME.DestroyWME();
 					// return false because entity should not be released
 					return false;
 					break;
 				case "perform-all":
 					// no action needed
 					this.log("Scope: Perform all tasks");
+					// destroy the task input element and it will be added later on task begin
+					taskWME.DestroyWME();
 					// return true because entity should be released
 					return true;
 					break;
@@ -272,8 +305,10 @@ namespace SoarIMPRINTPlugin
 					foreach (MAAD.Simulator.IEntity entity in app.Executor.Simulation.IModel.Find("ID", taskID))
 					{
 						// TODO at the very least, we should restore the original tag when we resume
-						entity.Tag = SUSPEND_TAG;
+						entity.Tag = INTERRUPT_TAG;
 					}
+					// destroy the task input element and it will be added later on task begin
+					taskWME.DestroyWME();
 					// return true because entity should be released
 					return true;
 					break;
@@ -392,11 +427,7 @@ namespace SoarIMPRINTPlugin
 			}*/
 			return true;
 		}
-		public sml.Identifier AddRealTask(MAAD.Simulator.Utilities.IRuntimeTask task)
-		{
-			return AddRealTask(GetIMPRINTTaskFromRuntimeTask(task));
-		}
-		public sml.Identifier AddRealTask(MAAD.IMPRINTPro.NetworkTask task)
+		public sml.Identifier AddTask(MAAD.IMPRINTPro.NetworkTask task)
 		{
 			// get input link
 			sml.Identifier input = agent.GetInputLink();
@@ -442,13 +473,24 @@ namespace SoarIMPRINTPlugin
 			//return !agent.HadError();
 			return taskLink;
 		}
+		public sml.Identifier AddActiveTask(MAAD.Simulator.Utilities.IRuntimeTask task)
+		{
+			return AddActiveTask(GetIMPRINTTaskFromRuntimeTask(task));
+		}
+		public sml.Identifier AddActiveTask(MAAD.IMPRINTPro.NetworkTask task)
+		{
+			sml.Identifier taskWME = AddTask(task);
+			// add active attribute
+			taskWME.CreateStringWME("active", "yes");
+			return taskWME;
+		}
 		public sml.Identifier AddReleaseTask(MAAD.Simulator.Utilities.IRuntimeTask task)
 		{
 			return AddReleaseTask(GetIMPRINTTaskFromRuntimeTask(task));
 		}
 		public sml.Identifier AddReleaseTask(MAAD.IMPRINTPro.NetworkTask task)
 		{
-			sml.Identifier taskWME = AddRealTask(task);
+			sml.Identifier taskWME = AddTask(task);
 			// add release attribute
 			taskWME.CreateStringWME("release", "yes");
 			return taskWME;

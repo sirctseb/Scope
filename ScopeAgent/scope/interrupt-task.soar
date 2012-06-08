@@ -3,7 +3,7 @@ sp {propose*interrupt-task
    (state <s> ^name scope
               ^io.input-link.task <task1>
               ^io.input-link.task <task2>)
-   (<task1> -^release yes)
+   (<task1> ^active yes)
    (<task2> ^release yes)
 -->
    # propose interrupting task1 in favor of task2
