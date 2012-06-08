@@ -115,7 +115,7 @@ sp {init*task*events
               ^simulated yes)
    (<o> ^name initialize-scope)
 -->
-   (<o> ^test-name simultaneous-add-remove)
+   (<o> ^test-name default)
 }
 
 # copy down simulation commands into substates
@@ -133,28 +133,42 @@ sp {init*default
 -->
    (<s> ^simulate-task <sim>)
    (<sim> ^current <n1>)
+   # t=1 add initial task with ^release
    (<n1> ^task <t1>)
    (<t1> ^workload 4
          ^ID 0
          ^release yes)
    (<n1> ^next <n2>)
+   # t=2 remove ^release
    (<n2> ^remove <r1>)
    (<r1> ^obj <t1>
          ^attribute release
          ^value yes)
+   # t=2 add ^active to first task
+   (<n2> ^add <a2>)
+   (<a2> ^obj <t1>
+         ^active yes)
+   # t=2 add second task with ^release
    (<n2> ^task <t2>)
    (<t2> ^workload 4
          ^ID 1
          ^release yes)
    (<n2> ^next <n3>)
+   # t=3 remove ^release from second task
    (<n3> ^remove <r2>)
    (<r2> ^obj <t2>
          ^attribute release
          ^value yes)
+   # t=3 add ^active to second task
+   (<n3> ^add <a3>)
+   (<a3> ^obj <t2>
+         ^active yes)
+   # t=3 add third task
    (<n3> ^task <t3>)
    (<t3> ^workload 4
          ^ID 3
          ^release yes)
+   # add one more event
    (<n3> ^next <end>)
 }
 
