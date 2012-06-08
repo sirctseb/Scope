@@ -18,6 +18,7 @@ namespace SoarIMPRINTPlugin
 		private const int KILL_TAG = 1953;
 		private const int INTERRUPT_TAG = 1954;
 		private const int DELAY_TAG = 1955;
+		private const int RESUME_DELAY_TAG = 1956;
 
 		// TODO test when IMPRINT creates plugin objects
 		private static bool kernelInitialized = false;
@@ -135,8 +136,6 @@ namespace SoarIMPRINTPlugin
 				// TODO sometimes tasks are resumed by interrupting other tasks and that causes problems
 				if (strategy == "perform-all")
 				{
-					// TODO we should probably write a separate method for this when resuming
-					//bool release = ApplyStrategy(strategy);
 					this.log("Scope: Perform all tasks");
 					// trace that we are resuming
 					app.AcceptTrace("Resuming task " + executor.GetRuntimeTask(entity.ID).Properties.Name + ": " + executor.Simulation.IModel.Resume("ID", entity.ID));
@@ -154,13 +153,27 @@ namespace SoarIMPRINTPlugin
 				}
 			}
 			// check to see if we should 'resume' delayed tasks
-			/*foreach (MAAD.Simulator.IEntity entity in app.Executor.Simulation.IModel.Find("Tag", DELAY_TAG))
+			foreach (MAAD.Simulator.IEntity entity in app.Executor.Simulation.IModel.Find("Tag", DELAY_TAG))
 			{
 				// run scope
 				string output = agent.RunSelfTilOutput();
 				// get result
 				string strategy = GetOutput("strategy", "name");
-			}*/
+				if (strategy == "resume-delayed")
+				{
+					this.log("Scope: Resume delayed");
+					// trace that we are resuming
+					app.AcceptTrace("Marking delayed task to be resumed: " + executor.GetRuntimeTask(entity.ID).Properties.Name);
+					// set tag to that release condition automatically accepts it
+					// TODO there is now a gap between marking to resume and actually starting the task
+					// TODO is this a problem?
+					entity.Tag = RESUME_DELAY_TAG;
+					// add the task as a real task
+					AddActiveTask(executor.GetRuntimeTask(entity.ID));
+					// log that we resumed a task
+					scopeData.LogStrategy("Resume Delayed", app.Executor.Simulation.Clock);
+				}
+			}
 		}
 		public void OnSimulationBegin(object sender, EventArgs e)
 		{
@@ -191,6 +204,13 @@ namespace SoarIMPRINTPlugin
 			if (executor.EventQueue.GetEntity().Tag == DELAY_TAG)
 			{
 				release = false;
+				return;
+			}
+
+			// if entity is marked to resume after delay, return true
+			if (executor.EventQueue.GetEntity().Tag == RESUME_DELAY_TAG)
+			{
+				release = true;
 				return;
 			}
 
