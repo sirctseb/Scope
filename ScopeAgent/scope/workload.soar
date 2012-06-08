@@ -9,17 +9,9 @@ sp {apply*initialize-workload
    (<s> ^workload 0)
 }
 
-# propose update workload subgoal when a task is added or removed
-sp {propose*update-workload-value*subgoal
-   (state <s> ^name scope)
-   (<s> ^workload-update-needed yes)
--->
-   (<s> ^operator <o> + >)
-   (<o> ^name update-workload)
-}
 # elaboration to indicate that a workload update is needed
 # due to a removed task
-sp {elaborate*update-workload-value*remove
+sp {elaborate*update-workload*remove
    (state <s> ^name scope
               ^tasks-accounted-for <task>
              -^io.input-link.task <task>)
@@ -32,7 +24,7 @@ sp {elaborate*update-workload-value*remove
 }
 # elaboration to indicate that a workload update is needed
 # due to an added task
-sp {elaborate*update-workload-value*add
+sp {elaborate*update-workload*add
    (state <s> ^name scope
               ^io.input-link.task <task>
              -^tasks-accounted-for <task>)
@@ -44,7 +36,27 @@ sp {elaborate*update-workload-value*add
    (<w> ^task <task>
         ^action add)
 }
-# new proposal under workload-update subgoal
+
+# propose update workload subgoal when a task is added or removed
+sp {propose*update-workload-value*subgoal
+   (state <s> ^name scope)
+   (<s> ^workload-update-needed yes)
+-->
+   (<s> ^operator <o> + >)
+   (<o> ^name update-workload)
+}
+# make remove-workload-value operators better than any strategy
+sp {preference*update*better*than*strategy
+   (state <s> ^name scope
+              ^operator <o> +
+              ^operator <o2> +)
+   (<o> ^name update-workload)
+   (<o2> ^strategy yes)
+-->
+   (<s> ^operator <o> > <o2>)
+}
+
+# propose update workload operator under update-workload subgoal
 sp {propose*workload-update
    (state <s> ^name update-workload
               ^top-state <ts>)
@@ -95,14 +107,4 @@ sp {apply*update-workload*remove
    (<ts> ^workload <workload> -
         ^workload (- <workload> <new-workload>)
         ^tasks-accounted-for <t> -)
-}
-# make remove-workload-value operators better than any strategy
-sp {preference*update*better*than*strategy
-   (state <s> ^name scope
-              ^operator <o> +
-              ^operator <o2> +)
-   (<o> ^name update-workload)
-   (<o2> ^strategy yes)
--->
-   (<s> ^operator <o> > <o2>)
 }
