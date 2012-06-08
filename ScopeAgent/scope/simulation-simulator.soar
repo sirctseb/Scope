@@ -66,7 +66,7 @@ sp {perform-all-test-init
 # TODO this should not be defined here because it's used in real operation
 sp {elaborate*strategy*operators
    (state <s> ^operator <o> +)
-   (<o> ^name << perform-all ignore-new interrupt-task >> )
+   (<o> ^name << perform-all ignore-new interrupt-task delay-new >> )
 -->
    (<o> ^strategy yes)
 }
@@ -115,7 +115,7 @@ sp {init*task*events
               ^simulated yes)
    (<o> ^name initialize-scope)
 -->
-   (<o> ^test-name default)
+   (<o> ^test-name simultaneous-add-remove)
 }
 sp {init*default
    (state <s> ^operator <o>
@@ -159,34 +159,48 @@ sp {initialize*simultaneous*add*remove
 -->
    (<s> ^simulate-task <n1>)
    # t=1 add the first task
-   (<n1> ^task <t1>)
+   (<n1> ^add <a1>)
+   (<a1> ^obj <input>
+         ^task <t1>)
    (<t1> ^workload 3
          ^ID 0
          ^release yes)
    (<n1> ^next <n2>)
    # t=2 add the second task
-   (<n2> ^task <t2>)
+   (<n2> ^add <a2>)
+   (<a2> ^obj <input>
+         ^task <t2>)
    (<t2> ^workload 2
          ^ID 1
          ^release yes)
    # t=2 remove release state of first task
-   (<n2> ^remove <r1>)
-   (<r1> ^obj <t1>
+   (<n2> ^remove <r2>)
+   (<r2> ^obj <t1>
          ^attribute release
          ^value yes)
    (<n2> ^next <n3>)
+   # t=2 add active state to first task
+   (<n2> ^add <a2-2>)
+   (<a2-2> ^obj <t1>
+           ^active yes)
    # t=3 remove the first task
-   (<n3> ^remove <r2>)
-   (<r2> ^obj <input>
+   (<n3> ^remove <r3>)
+   (<r3> ^obj <input>
          ^attribute task
          ^value <t1>)
    # t=3 remove release state of second task
-   (<n3> ^remove <r3>)
-   (<r3> ^obj <t2>
+   (<n3> ^remove <r3-2>)
+   (<r3-2> ^obj <t2>
          ^attribute release
          ^value yes)
+   # t=3 add active state to second task
+   (<n3> ^add <a3>)
+   (<a3> ^obj <t2>
+         ^active yes)
    # t=3 also add a brand new task
-   (<n3> ^task <t3>)
+   (<n3> ^add <a3>)
+   (<a3> ^obj <input>
+         ^task <t3>)
    (<t3> ^workload 1
          ^ID 2
          ^release yes)
@@ -208,6 +222,19 @@ sp {apply*simulate-input*remove
               ^value <val>)
 -->
    (<obj> ^<attr> <val> -)
+}
+sp {apply*simulate-input*add
+   (state <s> ^name scope
+              ^phase simulate-input
+              ^operator <o>
+              ^simulated yes
+              ^simulate-task <event>)
+   (<o> ^name simulate-input)
+   (<event> ^add <addition>)
+   (<addition> ^obj <obj>
+               ^{<attr> <> obj} <val>)
+-->
+   (<obj> ^<attr> <val>)
 }
 sp {apply*simulate-input*add*task
    (state <s> ^name scope
