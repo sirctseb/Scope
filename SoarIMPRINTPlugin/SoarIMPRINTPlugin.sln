@@ -1,11 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+# Visual C# Express 2010
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SoarIMPRINTPlugin", "SoarIMPRINTPlugin\SoarIMPRINTPlugin.csproj", "{2A40D0DB-CC7F-43F5-834B-4C03420568E5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommandLinePluginTest", "CommandLinePluginTest\CommandLinePluginTest.csproj", "{9247D5F7-A334-4732-9E62-A252BFFEB89D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Utility", "Utility\Utility.csproj", "{037FE73F-B98D-443D-8CA5-C67E7F8D249F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SMLExtension", "SMLExtension\SMLExtension.csproj", "{2F17A010-320F-45DD-8828-41DBD6ED108F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -47,6 +49,16 @@ Global
 		{037FE73F-B98D-443D-8CA5-C67E7F8D249F}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{037FE73F-B98D-443D-8CA5-C67E7F8D249F}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{037FE73F-B98D-443D-8CA5-C67E7F8D249F}.Release|x86.ActiveCfg = Release|Any CPU
+		{2F17A010-320F-45DD-8828-41DBD6ED108F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2F17A010-320F-45DD-8828-41DBD6ED108F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2F17A010-320F-45DD-8828-41DBD6ED108F}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{2F17A010-320F-45DD-8828-41DBD6ED108F}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{2F17A010-320F-45DD-8828-41DBD6ED108F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2F17A010-320F-45DD-8828-41DBD6ED108F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2F17A010-320F-45DD-8828-41DBD6ED108F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2F17A010-320F-45DD-8828-41DBD6ED108F}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{2F17A010-320F-45DD-8828-41DBD6ED108F}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{2F17A010-320F-45DD-8828-41DBD6ED108F}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
