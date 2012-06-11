@@ -107,6 +107,7 @@ namespace SoarIMPRINTPlugin
 				if (nt != null)
 				{
 					// add task props to Soar input
+					this.log("Begin: Adding task " + nt.ID + " as an active task", 5);
 					sml.Identifier taskWME = AddActiveTask(nt);
 					// run soar agent to let it update workload
 					/*agent.RunSelfTilOutput();
@@ -124,6 +125,7 @@ namespace SoarIMPRINTPlugin
 			int taskID = int.Parse(task.ID);
 			if (taskID > 0 && taskID < 999)
 			{
+				this.log("End: Removing task " + task.ID + " from input", 5);
 				RemoveTask(GetIMPRINTTaskFromRuntimeTask(task));
 			}
 			
@@ -132,6 +134,7 @@ namespace SoarIMPRINTPlugin
 			if (executor.Simulation.IModel.Find("Tag", DELAY_TAG).Count > 0 ||
 				executor.Simulation.IModel.Find("Tag", INTERRUPT_TAG).Count > 0)
 			{
+				this.log("End: found delayed or interrupted tasks, running scope for resume decision", 5);
 				// run scope to decide if we should resume any delayed or interrupted tasks
 				string output = agent.RunSelfTilOutput();
 				// get result
@@ -140,6 +143,7 @@ namespace SoarIMPRINTPlugin
 				{
 					// get strategy name
 					string strategy = command.GetParameterValue("name");
+					this.log("End: scope responds with: " + strategy, 5);
 					if (strategy == "resume-delayed")
 					{
 						// scope says to resume a task
@@ -165,13 +169,14 @@ namespace SoarIMPRINTPlugin
 								// log that we resumed a task
 								scopeData.LogStrategy("Resume Delayed", app.Executor.Simulation.Clock);
 								// remove task from input, and it will be added as active in begin event
+								this.log("End: removing DELAY task " + entity.ID + " and marking RESUME_DELAY", 5);
 								RemoveTask(executor.GetRuntimeTask(entity.ID));
 							}
 							else if (entity.Tag == INTERRUPT_TAG)
 							{
 								this.log("Scope: Resume interrupted");
 								// trace that we are resuming
-								app.AcceptTrace("Resuming task " + executor.GetRuntimeTask(entity.ID).Properties.Name + ": " + executor.Simulation.IModel.Resume("ID", entity.ID));
+								app.AcceptTrace("Resuming task " + entity.ID + ": " + executor.Simulation.IModel.Resume("ID", entity.ID));
 								// TODO this should be restored from what it was before
 								entity.Tag = 0;
 								// add the task as a real task
@@ -183,10 +188,7 @@ namespace SoarIMPRINTPlugin
 								// force logging because there's no corresponding begin task
 								// TODO this is a bad way to do this
 								//scopeData.CommitStrategy();
-							}
-							// update flags in soar
-							if (entity.Tag == DELAY_TAG || entity.Tag == INTERRUPT_TAG)
-							{
+
 								// remove ^delayed from WME
 								command.FindIDByAttribute("task").FindByAttribute("delayed", 0).DestroyWME();
 								// add ^active
@@ -256,20 +258,20 @@ namespace SoarIMPRINTPlugin
 				MAAD.IMPRINTPro.NetworkTask nt = GetIMPRINTTaskFromRuntimeTask(task);
 				if (nt != null)
 				{
-					this.log("OARC: adding release task: " + nt.Name);
+					this.log("Release: adding release task: " + nt.ID);
 					// add task props to Soar input
 					sml.Identifier taskWME = AddReleaseTask(nt);
 
 					// TODO make "run until it decides what to do" more robust
 					// run the agent until it decides what to do
-					this.log("Running scope",5);
+					this.log("Release: Running scope to get release decision",5);
 					string output = agent.RunSelfTilOutput();
-					this.log("Scope returned", 5);
 					sml.Identifier command = agent.GetCommand(0);
 					// TODO if no command exists?
 					// if(!agent.Commands())
 					// get strategy name
 					string strategy = command.GetParameterValue("name");
+					this.log("Release: Scope returned: " + strategy, 5);
 					// TODO if command isn't a strategy somehow?
 					// if(agent.GetCommandName() != "strategy")
 					//string strategy = GetOutput("strategy", "name");
