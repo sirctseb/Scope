@@ -38,7 +38,7 @@ namespace Utility
 		}
 		public void log(object msg, int logLevel)
 		{
-			if (logLevel >= LogLevel)
+			if (LogLevel >= logLevel)
 			{
 				log(msg);
 			}
