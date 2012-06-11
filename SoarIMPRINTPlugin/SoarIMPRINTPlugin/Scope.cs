@@ -127,66 +127,75 @@ namespace SoarIMPRINTPlugin
 				RemoveTask(GetIMPRINTTaskFromRuntimeTask(task));
 			}
 			
-			// run scope to decide if we should resume any delayed or interrupted tasks
-			string output = agent.RunSelfTilOutput();
-			// get result
-			sml.Identifier command = agent.GetCommand(0);
-			// get strategy name
-			string strategy = command.GetParameterValue("name");
-			if (strategy == "resume-delayed")
+			// check that there are any delayed tasks before trying to resume them
+			// if we don't check, the scope agent can get confused
+			if (executor.Simulation.IModel.Find("Tag", DELAY_TAG).Count > 0 ||
+				executor.Simulation.IModel.Find("Tag", INTERRUPT_TAG).Count > 0)
 			{
-				// scope says to resume a task
-				// find the task scope wants to resume
-				string taskIDString = command.FindIDByAttribute("task").FindStringByAttribute("taskID");
-				//app.Executor.Simulation.IModel.Resume("ID", taskIDString);
-				// search through entities in the task
-				foreach (MAAD.Simulator.IEntity entity in app.Executor.Simulation.IModel.Find("ID", taskIDString))
+				// run scope to decide if we should resume any delayed or interrupted tasks
+				string output = agent.RunSelfTilOutput();
+				// get result
+				sml.Identifier command = agent.GetCommand(0);
+				if (command != null)
 				{
-					// check if it is in a suspended state
-					if (entity.Tag == DELAY_TAG)
+					// get strategy name
+					string strategy = command.GetParameterValue("name");
+					if (strategy == "resume-delayed")
 					{
-						// mark the entity to be resumed
-						this.log("Scope: Resume delayed");
-						// trace that we are resuming
-						app.AcceptTrace("Marking delayed task to be resumed: " + executor.GetRuntimeTask(entity.ID).Properties.Name);
-						// set tag to that release condition automatically accepts it
-						// TODO there is now a gap between marking to resume and actually starting the task
-						// TODO is this a problem?
-						entity.Tag = RESUME_DELAY_TAG;
-						// add the task as a real task
-						//AddActiveTask(executor.GetRuntimeTask(entity.ID));
-						// log that we resumed a task
-						scopeData.LogStrategy("Resume Delayed", app.Executor.Simulation.Clock);
+						// scope says to resume a task
+						// find the task scope wants to resume
+						string taskIDString = command.FindIDByAttribute("task").FindStringByAttribute("taskID");
+						//app.Executor.Simulation.IModel.Resume("ID", taskIDString);
+						// search through entities in the task
+						foreach (MAAD.Simulator.IEntity entity in app.Executor.Simulation.IModel.Find("ID", taskIDString))
+						{
+							// check if it is in a suspended state
+							if (entity.Tag == DELAY_TAG)
+							{
+								// mark the entity to be resumed
+								this.log("Scope: Resume delayed");
+								// trace that we are resuming
+								app.AcceptTrace("Marking delayed task to be resumed: " + executor.GetRuntimeTask(entity.ID).Properties.Name);
+								// set tag to that release condition automatically accepts it
+								// TODO there is now a gap between marking to resume and actually starting the task
+								// TODO is this a problem?
+								entity.Tag = RESUME_DELAY_TAG;
+								// add the task as a real task
+								//AddActiveTask(executor.GetRuntimeTask(entity.ID));
+								// log that we resumed a task
+								scopeData.LogStrategy("Resume Delayed", app.Executor.Simulation.Clock);
+							}
+							else if (entity.Tag == INTERRUPT_TAG)
+							{
+								this.log("Scope: Resume interrupted");
+								// trace that we are resuming
+								app.AcceptTrace("Resuming task " + executor.GetRuntimeTask(entity.ID).Properties.Name + ": " + executor.Simulation.IModel.Resume("ID", entity.ID));
+								// TODO this should be restored from what it was before
+								entity.Tag = 0;
+								// add the task as a real task
+								//AddActiveTask(executor.GetRuntimeTask(entity.ID));
+								// log that we resumed a task
+								scopeData.LogStrategy("Resume", app.Executor.Simulation.Clock);
+								// log the decision that allowed for the resume
+								scopeData.LogStrategy(strategy, app.Executor.Simulation.Clock);
+								// force logging because there's no corresponding begin task
+								// TODO this is a bad way to do this
+								//scopeData.CommitStrategy();
+							}
+							// update flags in soar
+							if (entity.Tag == DELAY_TAG || entity.Tag == INTERRUPT_TAG)
+							{
+								// remove ^delayed from WME
+								command.FindIDByAttribute("task").FindByAttribute("delayed", 0).DestroyWME();
+								// add ^active
+								command.FindIDByAttribute("task").CreateStringWME("active", "yes");
+							}
+						}
 					}
-					else if (entity.Tag == INTERRUPT_TAG)
-					{
-						this.log("Scope: Resume interrupted");
-						// trace that we are resuming
-						app.AcceptTrace("Resuming task " + executor.GetRuntimeTask(entity.ID).Properties.Name + ": " + executor.Simulation.IModel.Resume("ID", entity.ID));
-						// TODO this should be restored from what it was before
-						entity.Tag = 0;
-						// add the task as a real task
-						//AddActiveTask(executor.GetRuntimeTask(entity.ID));
-						// log that we resumed a task
-						scopeData.LogStrategy("Resume", app.Executor.Simulation.Clock);
-						// log the decision that allowed for the resume
-						scopeData.LogStrategy(strategy, app.Executor.Simulation.Clock);
-						// force logging because there's no corresponding begin task
-						// TODO this is a bad way to do this
-						//scopeData.CommitStrategy();
-					}
-					// update flags in soar
-					if (entity.Tag == DELAY_TAG || entity.Tag == INTERRUPT_TAG)
-					{
-						// remove ^delayed from WME
-						command.FindIDByAttribute("task").FindByAttribute("delayed", 0).DestroyWME();
-						// add ^active
-						command.FindIDByAttribute("task").CreateStringWME("active", "yes");
-					}
+					command.AddStatusComplete();
+					agent.ClearOutputLinkChanges();
 				}
 			}
-			command.AddStatusComplete();
-			agent.ClearOutputLinkChanges();
 		}
 		public void OnSimulationBegin(object sender, EventArgs e)
 		{
@@ -228,6 +237,9 @@ namespace SoarIMPRINTPlugin
 			if (executor.EventQueue.GetEntity().Tag == RESUME_DELAY_TAG)
 			{
 				this.log("RESUME_DELAY_TAG coming through release condition, accepting", 3);
+				// set tag to normal
+				// TODO this should reset tag to what is was before
+				executor.Simulation.GetEntity().Tag = 0;
 				release = true;
 				return;
 			}
