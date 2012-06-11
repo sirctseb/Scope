@@ -164,6 +164,8 @@ namespace SoarIMPRINTPlugin
 								//AddActiveTask(executor.GetRuntimeTask(entity.ID));
 								// log that we resumed a task
 								scopeData.LogStrategy("Resume Delayed", app.Executor.Simulation.Clock);
+								// remove task from input, and it will be added as active in begin event
+								RemoveTask(executor.GetRuntimeTask(entity.ID));
 							}
 							else if (entity.Tag == INTERRUPT_TAG)
 							{
