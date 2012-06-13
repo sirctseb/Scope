@@ -451,7 +451,15 @@ namespace SoarIMPRINTPlugin
 				element.DestroyWME();
 			}
 
+			// start run agent forever
+			System.Threading.Thread thread = new System.Threading.Thread(new System.Threading.ThreadStart(this.RunKernelForever));
+			thread.Start();
+
 			return !agent.HadError();
+		}
+		public void RunKernelForever()
+		{
+			kernel.RunAllAgentsForever();
 		}
 
 		public bool RunAgent(int steps)
