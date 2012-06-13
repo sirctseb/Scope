@@ -19,7 +19,7 @@ sp {copy*io*for*wait
 }
 # apply the resume-none operator
 sp {apply*wait
-   (state <s> ^operator.name wait
+   (state <s> ^disable yes ^operator.name wait
               ^io.output-link <out>)
 -->
    (<out> ^strategy <strategy>)
@@ -30,10 +30,20 @@ sp {apply*wait
 
 # propose wait if no release or delayed tasks exist
 sp {propose*wait*no*tasks
-   (state <s> ^name scope
+   (state <s> ^disable yes
+              ^name scope
              -^io.input-link.task.delayed
              -^io.input-link.task.release)
 -->
-   (<s> ^operator <o> +)
+   (<s> ^operator <o> + <)
+   (<o> ^name wait)
+}
+
+# OG wait operator
+sp {scope*propose*wait*OG
+   (state <s> ^superstate
+              -^operator.name wait)
+-->
+   (<s> ^operator <o> + <)
    (<o> ^name wait)
 }

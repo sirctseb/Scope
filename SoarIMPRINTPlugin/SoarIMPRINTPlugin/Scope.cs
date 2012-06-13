@@ -33,6 +33,9 @@ namespace SoarIMPRINTPlugin
 		private string lastStrategyDecision;
 		private double lastStrategyDecisionTime;
 
+		private MAAD.Simulator.IEntity releaseEntity = null;
+		private System.Threading.Thread thread;
+
 		public Scope()
 		{
 			//app.AcceptTrace("Scope Constructor");
@@ -84,6 +87,7 @@ namespace SoarIMPRINTPlugin
 		//public delegate void DNetworkEvent(object sender, EventArgs e);
 		private void OnBeforeBeginningEffect(MAAD.Simulator.Executor executor)
 		{
+			return;
 			app.AcceptTrace("Before begin effect: " + executor.Simulation.GetTask().Properties.Name);
 			// TODO if a KILL_TAG entity gets here, something has gone wrong
 			// check that entity hasn't been marked KILL_TAG yet
@@ -110,7 +114,7 @@ namespace SoarIMPRINTPlugin
 				{
 					// add task props to Soar input
 					this.log("Begin: Adding task " + nt.ID + " as an active task", 5);
-					sml.Identifier taskWME = AddActiveTask(nt);
+					//sml.Identifier taskWME = AddActiveTask(nt);
 					// run soar agent to let it update workload
 					/*agent.RunSelfTilOutput();
 					// clear output
@@ -121,6 +125,7 @@ namespace SoarIMPRINTPlugin
 		}
 		private void OnAfterEndingEffect(MAAD.Simulator.Executor executor)
 		{
+			return;
 			this.log("Top of OnAfterEndingEffect: " + executor.Simulation.GetTask().Properties.Name, 5);
 			MAAD.Simulator.Utilities.IRuntimeTask task = executor.EventQueue.GetTask();
 			// ignore first and last tasks
@@ -205,7 +210,7 @@ namespace SoarIMPRINTPlugin
 		}
 		public void OnSimulationBegin(object sender, EventArgs e)
 		{
-			ResetSoar();
+			//ResetSoar();
 		}
 		public void OnSimulationComplete(object sender, EventArgs e)
 		{
@@ -215,9 +220,27 @@ namespace SoarIMPRINTPlugin
 			// write data
 			scopeData.WriteCounts("C:\\Users\\christopher.j.best2\\Documents\\ScopeData\\scope_counts.txt");
 			scopeData.WriteTrace("C:\\Users\\christopher.j.best2\\Documents\\ScopeData\\scope_trace.txt");
+			KillKernel();
+		}
+		public bool IsRealTask(MAAD.Simulator.Utilities.IRuntimeTask task)
+		{
+			int taskID = int.Parse(task.ID);
+			return taskID > 0 && taskID < 999;
+		}
+		public void OnBeforeReleaseCondition(MAAD.Simulator.Executor executor)
+		{
+			return;
+			this.log("on before release condition");
+			if (IsRealTask(executor.Simulation.GetTask()))
+			{
+				this.log("setting entity as releaseEntity");
+				// set the current entity to be added to soar input when its ready
+				this.releaseEntity = executor.Simulation.GetEntity();
+			}
 		}
 		public void OnAfterReleaseCondition(MAAD.Simulator.Executor executor, ref bool release)
 		{
+			return;
 			this.log("Start OnAfterReleaseCondition: " + executor.Simulation.GetTask().Properties.Name, 5);
 
 			// kill any entities that have been marked
@@ -262,33 +285,34 @@ namespace SoarIMPRINTPlugin
 				{
 					this.log("Release: adding release task: " + nt.ID);
 					// add task props to Soar input
-					sml.Identifier taskWME = AddReleaseTask(nt);
+					//sml.Identifier taskWME = AddReleaseTask(nt);
 
 					// TODO make "run until it decides what to do" more robust
 					// run the agent until it decides what to do
 					this.log("Release: Running scope to get release decision",5);
-					string output = agent.RunSelfTilOutput();
-					sml.Identifier command = agent.GetCommand(0);
+					//string output = agent.RunSelfTilOutput();
+					//sml.Identifier command = agent.GetCommand(0);
 					// TODO if no command exists?
 					// if(!agent.Commands())
 					// get strategy name
-					string strategy = command.GetParameterValue("name");
-					this.log("Release: Scope returned: " + strategy, 5);
+					//string strategy = command.GetParameterValue("name");
+					//this.log("Release: Scope returned: " + strategy, 5);
 					// TODO if command isn't a strategy somehow?
 					// if(agent.GetCommandName() != "strategy")
 					//string strategy = GetOutput("strategy", "name");
 					//this.log("Output strategy was: " + strategy, 5);
 					// execute the strategy
-					release = ApplyStrategy(strategy, taskWME);
+					//release = ApplyStrategy(strategy, taskWME);
 					// mark the command as complete
-					command.AddStatusComplete();
-					agent.ClearOutputLinkChanges();
+					//command.AddStatusComplete();
+					//agent.ClearOutputLinkChanges();
 					// log the decision
-					scopeData.LogStrategy(strategy, executor.Simulation.Clock);
+					//scopeData.LogStrategy(strategy, executor.Simulation.Clock);
 				}
 			}
 		}
 
+		private MAAD.Simulator.Utilities.DSimulationEvent OBRC;
 		private MAAD.Simulator.Utilities.DSimulationEvent OBBE;
 		private MAAD.Simulator.Utilities.DSimulationBoolEvent OARC;
 		private MAAD.Simulator.Utilities.DSimulationEvent OAEE;
@@ -296,6 +320,8 @@ namespace SoarIMPRINTPlugin
 		private MAAD.Simulator.Utilities.DNetworkEvent OSC;
 		public void RegisterEvents()
 		{
+			app.Generator.OnBeforeReleaseCondition +=
+				OBRC = new MAAD.Simulator.Utilities.DSimulationEvent(OnBeforeReleaseCondition);
 			app.Generator.OnAfterReleaseCondition +=
 				OARC = new MAAD.Simulator.Utilities.DSimulationBoolEvent(OnAfterReleaseCondition);
 			app.Generator.OnBeforeBeginningEffect +=
@@ -309,6 +335,7 @@ namespace SoarIMPRINTPlugin
 		}
 		public void UnregisterEvents()
 		{
+			app.Generator.OnBeforeReleaseCondition -= OBRC;
 			app.Generator.OnAfterReleaseCondition -= OARC;
 			app.Generator.OnBeforeBeginningEffect -= OBBE;
 			app.Generator.OnSimulationBegin -= OSB;
@@ -451,15 +478,47 @@ namespace SoarIMPRINTPlugin
 				element.DestroyWME();
 			}
 
+			// register for soar events
+			kernel.RegisterForUpdateEvent(sml.smlUpdateEventId.smlEVENT_AFTER_ALL_OUTPUT_PHASES, this.GeneralOutputCallbackHandler, null);
+			agent.AddOutputHandler("strategy", this.StrategyCallbackHandler, null);
 			// start run agent forever
-			System.Threading.Thread thread = new System.Threading.Thread(new System.Threading.ThreadStart(this.RunKernelForever));
-			thread.Start();
+			System.Threading.Thread t = new System.Threading.Thread(new System.Threading.ThreadStart(this.RunKernelForever));
+			t.Start();
+			//this.RunKernelForever();
 
 			return !agent.HadError();
 		}
+		//public delegate void Kernel::UpdateEventCallback(smlUpdateEventId eventID, IntPtr callbackData, IntPtr kernel, smlRunFlags runFlags);
+		public void GeneralOutputCallbackHandler(sml.smlUpdateEventId eventID, IntPtr callbackData, IntPtr kernel, sml.smlRunFlags runFlags)
+		{
+			return;
+			// update world
+			// if there is an entity marked to be release, add it to soar input
+			if (this.releaseEntity != null)
+			{
+				this.log("--- putting entity on input");
+				AddReleaseTask(app.Executor.Simulation.IModel.FindTask(releaseEntity.ID));
+				this.releaseEntity = null;
+			}
+		}
+		public void StrategyCallbackHandler(IntPtr callbackData, IntPtr agent, string commandName, IntPtr outputWME)
+		{
+			return;
+			this.log("Got strategy output!");
+			//throw new Exception("Got strategy output!");
+		}
 		public void RunKernelForever()
 		{
-			kernel.RunAllAgentsForever();
+			this.log("starting run forever");
+			try
+			{
+				kernel.RunAllAgentsForever();
+			}
+			catch (Exception e)
+			{
+				this.log("exception in run forever");
+				this.log(e.Message);
+			}
 		}
 
 		public bool RunAgent(int steps)
@@ -611,6 +670,8 @@ namespace SoarIMPRINTPlugin
 		{
 			//this.log("killing kernel", "debug");
 			kernel.Shutdown();
+			thread.Abort();
+			thread = null;
 			return true;
 		}
 		#endregion
