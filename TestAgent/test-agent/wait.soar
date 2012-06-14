@@ -1,7 +1,27 @@
 sp {propose*wait
-   (state <s> ^superstate
-             -^operator.name wait)
+   (state <s> ^superstate nil)
 -->
    (<s> ^operator <o> + <)
    (<o> ^name wait)
+}
+
+sp {apply*wait
+   (state <s> ^name test-agent
+              ^operator.name wait
+              ^io.output-link <out>)
+  -{(<out> ^command <command>)
+    (<command> -^status complete)}
+-->
+   (<out> ^command <comm>)
+   (<comm> ^name wait)
+}
+
+sp {propose*kill*wait
+   (state <s> ^impasse no-change
+              ^type state
+              ^top-state <s1>)
+   (<s1> ^operator.name wait)
+-->
+   (<s1> ^operator <o> + >)
+   (<o> ^name kill-wait)
 }

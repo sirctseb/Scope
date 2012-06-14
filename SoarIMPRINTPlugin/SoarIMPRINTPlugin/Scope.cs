@@ -35,6 +35,7 @@ namespace SoarIMPRINTPlugin
 
 		private MAAD.Simulator.IEntity releaseEntity = null;
 		private System.Threading.Thread thread;
+		private static System.Threading.Thread curThread = System.Threading.Thread.CurrentThread;
 
 		public Scope()
 		{
@@ -229,7 +230,7 @@ namespace SoarIMPRINTPlugin
 		}
 		public void OnBeforeReleaseCondition(MAAD.Simulator.Executor executor)
 		{
-			return;
+			//return;
 			this.log("on before release condition");
 			if (IsRealTask(executor.Simulation.GetTask()))
 			{
@@ -240,7 +241,11 @@ namespace SoarIMPRINTPlugin
 		}
 		public void OnAfterReleaseCondition(MAAD.Simulator.Executor executor, ref bool release)
 		{
-			return;
+			if (curThread != System.Threading.Thread.CurrentThread)
+			{
+				this.log("CURRENT THREAD CHANGE");
+				curThread = System.Threading.Thread.CurrentThread;
+			}
 			this.log("Start OnAfterReleaseCondition: " + executor.Simulation.GetTask().Properties.Name, 5);
 
 			// kill any entities that have been marked
@@ -479,20 +484,37 @@ namespace SoarIMPRINTPlugin
 			}
 
 			// register for soar events
-			kernel.RegisterForUpdateEvent(sml.smlUpdateEventId.smlEVENT_AFTER_ALL_OUTPUT_PHASES, this.GeneralOutputCallbackHandler, null);
-			agent.AddOutputHandler("strategy", this.StrategyCallbackHandler, null);
+			//kernel.RegisterForUpdateEvent(sml.smlUpdateEventId.smlEVENT_LAST_UPDATE_EVENT, this.GeneralOutputCallbackHandler, null);
+			//kernel.RegisterForSystemEvent(sml.smlSystemEventId.smlEVENT_BEFORE_AGENTS_RUN_STEP, SystemCallback, null);
+			agent.AddOutputHandler("command", this.StrategyCallbackHandler, null);
+			//agent.RegisterForRunEvent(sml.smlRunEventId.smlEVENT_AFTER_OUTPUT_PHASE, AgentOuputCallback, null);
 			// start run agent forever
-			System.Threading.Thread t = new System.Threading.Thread(new System.Threading.ThreadStart(this.RunKernelForever));
-			t.Start();
+			thread = new System.Threading.Thread(new System.Threading.ThreadStart(this.RunKernelForever));
+			thread.Start();
 			//this.RunKernelForever();
 
 			return !agent.HadError();
 		}
+		//public delegate void RunEventCallback(smlRunEventId eventID, IntPtr callbackData, IntPtr agent, smlPhase phase);
+		public void AgentOuputCallback(sml.smlRunEventId eventID, IntPtr callbackData, IntPtr agent, sml.smlPhase phase)
+		{
+			return;
+		}
+		//public delegate void SystemEventCallback(smlSystemEventId eventID, IntPtr callbackData, IntPtr kernel);
+		public void SystemCallback(sml.smlSystemEventId eventID, IntPtr callbackData, IntPtr kernel)
+		{
+			return;
+		}
 		//public delegate void Kernel::UpdateEventCallback(smlUpdateEventId eventID, IntPtr callbackData, IntPtr kernel, smlRunFlags runFlags);
 		public void GeneralOutputCallbackHandler(sml.smlUpdateEventId eventID, IntPtr callbackData, IntPtr kernel, sml.smlRunFlags runFlags)
 		{
+			/*if (Scope.kernel.HadError())
+			{
+				//this.log("kernel had error (in output phase callback)");
+				app.AcceptTrace("kernel had error (in output phase callback)");
+			}
 			//this.log("general output callback handler");
-			return;
+			return;*/
 			// update world
 			// if there is an entity marked to be release, add it to soar input
 			if (this.releaseEntity != null)
@@ -504,8 +526,15 @@ namespace SoarIMPRINTPlugin
 		}
 		public void StrategyCallbackHandler(IntPtr callbackData, IntPtr agent, string commandName, IntPtr outputWME)
 		{
-			return;
-			this.log("Got strategy output!");
+			if (curThread != System.Threading.Thread.CurrentThread)
+			{
+				this.log("CURRENT THREAD CHANGE");
+				curThread = System.Threading.Thread.CurrentThread;
+			}
+			//return;
+			//this.log("Got strategy output: " + Scope.agent.GetCommand(0).GetCommandName());
+			Scope.agent.GetCommand(0).AddStatusComplete();
+			Scope.agent.ClearOutputLinkChanges();
 			//throw new Exception("Got strategy output!");
 		}
 		public void RunKernelForever()
@@ -517,8 +546,17 @@ namespace SoarIMPRINTPlugin
 			}
 			catch (Exception e)
 			{
+				if (curThread != System.Threading.Thread.CurrentThread)
+				{
+					this.log("CURRENT THREAD CHANGE in exception");
+					curThread = System.Threading.Thread.CurrentThread;
+				}
+				this.log("kernel had error (exception handler): " + kernel.HadError());
+				this.log("thread state: " + System.Threading.Thread.CurrentThread.ThreadState.ToString());
 				this.log("exception in run forever");
 				this.log(e.Message + e.StackTrace);
+				// kill thread
+				thread.Abort();
 			}
 		}
 

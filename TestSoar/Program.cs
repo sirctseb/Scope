@@ -19,6 +19,9 @@ namespace TestSoar
 			public Agent agent = null;
 			public Kernel kernel = null;
 			public bool stopFlag = false;
+			public bool addition = false;
+			public string addAttribute = null;
+			public string addValue = null;
 
 			public void main()
 			{
@@ -50,19 +53,19 @@ namespace TestSoar
 				if (Err(agent.HadError(), "Error getting input link")) return;
 
 				// put stuff on input
-				input.CreateStringWME("text", "something");
+				//input.CreateStringWME("text", "something");
 
-				agent.RunSelf(3);
+				//agent.RunSelf(3);
 
 				// get output
-				for (int i = 0; i < agent.GetNumberCommands(); i++)
+				/*for (int i = 0; i < agent.GetNumberCommands(); i++)
 				{
 					Identifier id = agent.GetCommand(i);
 					if (id.GetCommandName() == "response")
 					{
 						Console.WriteLine("response: " + id.GetParameterValue("text"));
 					}
-				}
+				}*/
 
 				// register for after output phase
 				kernel.RegisterForUpdateEvent(sml.smlUpdateEventId.smlEVENT_AFTER_ALL_OUTPUT_PHASES, GeneralOutputCallbackHandler, null);
@@ -83,6 +86,14 @@ namespace TestSoar
 							stopFlag = true;
 							Console.WriteLine("Planning to stop. Waiting for next output phase to tell it");
 							break;
+						case "add":
+							// read what to add
+							addAttribute = Console.ReadLine();
+							addValue = Console.ReadLine();
+							// schedule to add to input
+							addition = true;
+							Console.WriteLine("Scheduling addition: ^" + addAttribute + " " + addValue);
+							break;
 						default:
 							Console.WriteLine(thread.ThreadState.ToString());
 							break;
@@ -93,7 +104,17 @@ namespace TestSoar
 
 			public void RunSoarForever()
 			{
-				Console.WriteLine("kernel.RunAllAgentsForever() returned: " + kernel.RunAllAgentsForever());
+				try
+				{
+					Console.WriteLine("starting agents");
+					string result = kernel.RunAllAgentsForever();
+					Console.WriteLine("after return: " + result);
+				}
+				catch (Exception e)
+				{
+					Console.WriteLine(e.Message);
+				}
+				//Console.WriteLine("kernel.RunAllAgentsForever() returned: " + kernel.RunAllAgentsForever());
 			}
 			//public delegate void Kernel::UpdateEventCallback(smlUpdateEventId eventID, IntPtr callbackData, IntPtr kernel, smlRunFlags runFlags);
 			public void GeneralOutputCallbackHandler(sml.smlUpdateEventId eventID, IntPtr callbackData, IntPtr kernel, sml.smlRunFlags runFlags)
@@ -104,6 +125,12 @@ namespace TestSoar
 					Console.WriteLine("After output phase and stopFlag, stopping agents: " +
 						this.kernel.StopAllAgents());
 					stopFlag = false;
+				}
+				if (addition)
+				{
+					Console.WriteLine("After output phase and addition, adding input");
+					this.agent.GetInputLink().CreateStringWME(addAttribute, addValue);
+					addition = false;
 				}
 			}
 		}
