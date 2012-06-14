@@ -1,0 +1,7 @@
+sp {propose*wait
+   (state <s> ^superstate
+             -^operator.name wait)
+-->
+   (<s> ^operator <o> + <)
+   (<o> ^name wait)
+}

@@ -8,4 +8,5 @@ VERSION 4
 5	3	FOPERATOR top-state top-state.soar 6
 6	0	OPERATOR initialize-test-agent initialize-test-agent.soar 7
 7	0	OPERATOR respond-to-input respond-to-input.soar 8
+8	0	OPERATOR wait wait.soar 9
 END

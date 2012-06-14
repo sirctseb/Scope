@@ -7,3 +7,4 @@ source elaborations_source.soar
 popd
 source initialize-test-agent.soar
 source respond-to-input.soar
+source wait.soar

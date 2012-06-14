@@ -438,7 +438,7 @@ namespace SoarIMPRINTPlugin
 
 		public static bool InitializeScope()
 		{
-			return InitializeScope("Scope/agent/scope.soar");
+			return InitializeScope("Scope/agent/test-agent.soar");
 		}
 		public static bool InitializeScope(string source)
 		{
@@ -491,6 +491,7 @@ namespace SoarIMPRINTPlugin
 		//public delegate void Kernel::UpdateEventCallback(smlUpdateEventId eventID, IntPtr callbackData, IntPtr kernel, smlRunFlags runFlags);
 		public void GeneralOutputCallbackHandler(sml.smlUpdateEventId eventID, IntPtr callbackData, IntPtr kernel, sml.smlRunFlags runFlags)
 		{
+			//this.log("general output callback handler");
 			return;
 			// update world
 			// if there is an entity marked to be release, add it to soar input
@@ -512,12 +513,12 @@ namespace SoarIMPRINTPlugin
 			this.log("starting run forever");
 			try
 			{
-				kernel.RunAllAgentsForever();
+				this.log("kernel.RunAllAgentsForever() returned: " + kernel.RunAllAgentsForever());
 			}
 			catch (Exception e)
 			{
 				this.log("exception in run forever");
-				this.log(e.Message);
+				this.log(e.Message + e.StackTrace);
 			}
 		}
 
