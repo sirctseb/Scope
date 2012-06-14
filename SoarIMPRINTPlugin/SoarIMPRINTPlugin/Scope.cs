@@ -37,6 +37,11 @@ namespace SoarIMPRINTPlugin
 		private System.Threading.Thread thread;
 		private static System.Threading.Thread curThread = System.Threading.Thread.CurrentThread;
 
+		private bool startSoar = false;
+		private bool stopSoar = false;
+		private bool performall = false;
+		private bool delaynew = false;
+
 		public Scope()
 		{
 			//app.AcceptTrace("Scope Constructor");
@@ -236,17 +241,45 @@ namespace SoarIMPRINTPlugin
 			{
 				this.log("setting entity as releaseEntity");
 				// set the current entity to be added to soar input when its ready
-				this.releaseEntity = executor.Simulation.GetEntity();
+				//this.releaseEntity = executor.Simulation.GetEntity();
+				// add entity to input
+				this.AddReleaseTask(executor.Simulation.GetTask());
+				// run soar
+				thread = new System.Threading.Thread(new System.Threading.ThreadStart(RunKernelForever));
+				thread.Start();
 			}
 		}
 		public void OnAfterReleaseCondition(MAAD.Simulator.Executor executor, ref bool release)
 		{
+			if (IsRealTask(executor.Simulation.GetTask()))
+			{
+				this.log("trying to release a real task. wait for decision thread");
+				thread.Join();
+				this.log("back after waiting for decision thread");
+				if (performall)
+				{
+					this.log("got perform all, releasing");
+					release = true;
+					//this.log("scheduling to stop soar");
+					//stopSoar = true;
+					performall = false;
+				}
+				else
+				{
+					this.log("got not perform all, not releasing");
+					release = false;
+				}
+				this.log("removing task from input");
+				this.RemoveTask(executor.Simulation.GetTask());
+			}
+
 			if (curThread != System.Threading.Thread.CurrentThread)
 			{
 				this.log("CURRENT THREAD CHANGE");
 				curThread = System.Threading.Thread.CurrentThread;
 			}
 			this.log("Start OnAfterReleaseCondition: " + executor.Simulation.GetTask().Properties.Name, 5);
+			return;
 
 			// kill any entities that have been marked
 			executor.Simulation.IModel.Abort("Tag", KILL_TAG);
@@ -443,7 +476,7 @@ namespace SoarIMPRINTPlugin
 
 		public static bool InitializeScope()
 		{
-			return InitializeScope("Scope/agent/test-agent.soar");
+			return InitializeScope("Scope/agent/scope.soar");
 		}
 		public static bool InitializeScope(string source)
 		{
@@ -484,13 +517,13 @@ namespace SoarIMPRINTPlugin
 			}
 
 			// register for soar events
-			//kernel.RegisterForUpdateEvent(sml.smlUpdateEventId.smlEVENT_LAST_UPDATE_EVENT, this.GeneralOutputCallbackHandler, null);
+			kernel.RegisterForUpdateEvent(sml.smlUpdateEventId.smlEVENT_AFTER_ALL_OUTPUT_PHASES, this.GeneralOutputCallbackHandler, null);
 			//kernel.RegisterForSystemEvent(sml.smlSystemEventId.smlEVENT_BEFORE_AGENTS_RUN_STEP, SystemCallback, null);
-			agent.AddOutputHandler("command", this.StrategyCallbackHandler, null);
+			agent.AddOutputHandler("strategy", this.StrategyCallbackHandler, null);
 			//agent.RegisterForRunEvent(sml.smlRunEventId.smlEVENT_AFTER_OUTPUT_PHASE, AgentOuputCallback, null);
 			// start run agent forever
-			thread = new System.Threading.Thread(new System.Threading.ThreadStart(this.RunKernelForever));
-			thread.Start();
+			//thread = new System.Threading.Thread(new System.Threading.ThreadStart(this.RunKernelForever));
+			//thread.Start();
 			//this.RunKernelForever();
 
 			return !agent.HadError();
@@ -508,6 +541,12 @@ namespace SoarIMPRINTPlugin
 		//public delegate void Kernel::UpdateEventCallback(smlUpdateEventId eventID, IntPtr callbackData, IntPtr kernel, smlRunFlags runFlags);
 		public void GeneralOutputCallbackHandler(sml.smlUpdateEventId eventID, IntPtr callbackData, IntPtr kernel, sml.smlRunFlags runFlags)
 		{
+			this.log("output handler");
+			if(stopSoar) {
+				this.log("noticed stopSoar, stopping soar");
+				this.log("StopAllAgents: " + Scope.kernel.StopAllAgents());
+				stopSoar = false;
+			}
 			/*if (Scope.kernel.HadError())
 			{
 				//this.log("kernel had error (in output phase callback)");
@@ -517,25 +556,37 @@ namespace SoarIMPRINTPlugin
 			return;*/
 			// update world
 			// if there is an entity marked to be release, add it to soar input
-			if (this.releaseEntity != null)
+			/*if (this.releaseEntity != null)
 			{
 				this.log("--- putting entity on input");
 				AddReleaseTask(app.Executor.Simulation.IModel.FindTask(releaseEntity.ID));
 				this.releaseEntity = null;
-			}
+			}*/
 		}
 		public void StrategyCallbackHandler(IntPtr callbackData, IntPtr agent, string commandName, IntPtr outputWME)
 		{
-			if (curThread != System.Threading.Thread.CurrentThread)
+			/*if (curThread != System.Threading.Thread.CurrentThread)
 			{
 				this.log("CURRENT THREAD CHANGE");
 				curThread = System.Threading.Thread.CurrentThread;
-			}
+			}*/
 			//return;
 			//this.log("Got strategy output: " + Scope.agent.GetCommand(0).GetCommandName());
-			Scope.agent.GetCommand(0).AddStatusComplete();
-			Scope.agent.ClearOutputLinkChanges();
-			//throw new Exception("Got strategy output!");
+			this.log("got a strategy event");
+			if (Scope.agent.GetNumberCommands() > 0)
+			{
+				if (Scope.agent.GetCommand(0).FindStringByAttribute("name") == "perform-all")
+				{
+					this.log("strategy is perform-all, setting flag");
+					performall = true;
+				}
+				Scope.agent.GetCommand(0).AddStatusComplete();
+				Scope.agent.ClearOutputLinkChanges();
+				//throw new Exception("Got strategy output!");
+			}
+			//this.log("stopping soar because we got output: " + Scope.kernel.StopAllAgents());
+			this.log("flagging to stop because we got output");
+			stopSoar = true;
 		}
 		public void RunKernelForever()
 		{
