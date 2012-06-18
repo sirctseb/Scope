@@ -10,7 +10,7 @@ sp {propose*reject-duplicate
 -->
    # TODO should we require?
    # make best because we want this selected
-   (<s> ^operator <o> + >)
+   (<s> ^operator <o> + !)
    (<o> ^name reject-duplicate
         ^task <release>)
 }
