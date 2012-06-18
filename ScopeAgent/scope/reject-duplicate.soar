@@ -1,0 +1,30 @@
+# propose to reject a duplicate task if there is one
+sp {propose*reject-duplicate
+   (state <s> ^name release-decision
+              ^io.input-link ( ^task <release>
+                               ^task <delayed> ))
+   (<release> ^release yes
+              ^taskID <taskID>)
+   (<delayed> ^delayed yes
+              ^taskID <taskID>)
+-->
+   # TODO should we require?
+   # make best because we want this selected
+   (<s> ^operator <o> + >)
+   (<o> ^name reject-duplicate
+        ^task <release>)
+}
+
+# apply reject-duplicate
+sp {apply*reject-duplicate
+   (state <s> ^operator (<o> ^name reject-duplicate)
+              ^io.output-link <out>)
+   (<o> ^task <rejected>)
+   # for debug output
+   (<rejected> ^taskID <taskID>)
+-->
+   (<out> ^strategy <st>)
+   (<st> ^name reject-duplicate
+         ^task <rejected>)
+   (write (crlf) |Reject duplicate: | <taskID>)
+}

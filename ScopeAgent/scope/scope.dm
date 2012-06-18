@@ -1,4 +1,4 @@
-298
+302
 SOAR_ID 0
 SOAR_ID 1
 SOAR_ID 2
@@ -297,7 +297,11 @@ ENUMERATION 294 1 wait
 SOAR_ID 295
 ENUMERATION 296 1 wait-test
 SOAR_ID 297
-302
+SOAR_ID 298
+ENUMERATION 299 1 reject-duplicate
+ENUMERATION 300 1 reject-duplicate-test
+SOAR_ID 301
+306
 0 desired 118
 0 disable 69
 0 failure 138
@@ -323,6 +327,7 @@ SOAR_ID 297
 0 operator 260
 0 operator 269
 0 operator 292
+0 operator 298
 0 phase 66
 0 problem-space 139
 0 simulate-task 152
@@ -588,6 +593,7 @@ SOAR_ID 297
 277 operator 291
 277 operator 295
 277 operator 297
+277 operator 301
 277 superstate 0
 277 top-state 0
 277 type 278
@@ -600,3 +606,5 @@ SOAR_ID 297
 292 name 293
 295 name 294
 297 name 296
+298 name 299
+301 name 300
