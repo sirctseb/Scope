@@ -113,6 +113,7 @@ sp {apply*update-workload*add
    (<ts> ^workload <workload> -
          ^workload (+ <workload> <new-workload>)
          ^tasks-accounted-for <t>)
+   (write (crlf) |New workload: | (+ <workload> <new-workload>))
 }
 # apply workload update in update-workload subgoal for remove
 sp {apply*update-workload*remove
@@ -129,4 +130,5 @@ sp {apply*update-workload*remove
    (<ts> ^workload <workload> -
         ^workload (- <workload> <new-workload>)
         ^tasks-accounted-for <t> -)
+   (write (crlf) |New workload: | (- <workload> <new-workload>))
 }
