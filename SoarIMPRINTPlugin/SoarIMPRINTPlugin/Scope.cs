@@ -84,7 +84,7 @@ namespace SoarIMPRINTPlugin
 		//public delegate void DNetworkEvent(object sender, EventArgs e);
 		private void OnBeforeBeginningEffect(MAAD.Simulator.Executor executor)
 		{
-			app.AcceptTrace("Before begin effect: " + executor.Simulation.GetTask().Properties.Name);
+			app.AcceptTrace("Before begin effect: " + executor.Simulation.GetTask().Properties.ID);
 			// TODO if a KILL_TAG entity gets here, something has gone wrong
 			// check that entity hasn't been marked KILL_TAG yet
 			if (executor.EventQueue.GetEntity().Tag == KILL_TAG)
@@ -288,12 +288,36 @@ namespace SoarIMPRINTPlugin
 				}
 			}
 		}
-
+		public void OnAfterDuration(MAAD.Simulator.Executor executor, ref double number)
+		{
+			this.log("OnAfterDuration for task: " + executor.Simulation.GetTask().Properties.ID);
+		}
+		public void OnAfterLaunchEffect(MAAD.Simulator.Executor executor)
+		{
+			this.log("OnAfterLaunchEffect for task: " + executor.Simulation.GetTask().Properties.ID);
+		}
+		public void OnBeforeDuration(MAAD.Simulator.Executor executor)
+		{
+			this.log("OnBeforeDuration for task: " + executor.Simulation.GetTask().Properties.ID);
+		}
+		public void OnBeforeLaunchEffect(MAAD.Simulator.Executor executor)
+		{
+			this.log("OnBeforeLaunchEffect for task: " + executor.Simulation.GetTask().Properties.ID);
+		}
+		public void OnAfterBeginningEffect(MAAD.Simulator.Executor executor)
+		{
+			this.log("OneAfterBeginningEffect for task: " + executor.Simulation.GetTask().Properties.ID);
+		}
 		private MAAD.Simulator.Utilities.DSimulationEvent OBBE;
 		private MAAD.Simulator.Utilities.DSimulationBoolEvent OARC;
 		private MAAD.Simulator.Utilities.DSimulationEvent OAEE;
 		private MAAD.Simulator.Utilities.DNetworkEvent OSB;
 		private MAAD.Simulator.Utilities.DNetworkEvent OSC;
+		private MAAD.Simulator.Utilities.DSimulationDoubleEvent OAD;
+		private MAAD.Simulator.Utilities.DSimulationEvent OALE;
+		private MAAD.Simulator.Utilities.DSimulationEvent OBD;
+		private MAAD.Simulator.Utilities.DSimulationEvent OBLE;
+		private MAAD.Simulator.Utilities.DSimulationEvent OABE;
 		public void RegisterEvents()
 		{
 			app.Generator.OnAfterReleaseCondition +=
@@ -306,6 +330,22 @@ namespace SoarIMPRINTPlugin
 				OSC = new MAAD.Simulator.Utilities.DNetworkEvent(OnSimulationComplete);
 			app.Generator.OnAfterEndingEffect +=
 				OAEE = new MAAD.Simulator.Utilities.DSimulationEvent(OnAfterEndingEffect);
+
+			// testing other events
+			//app.Generator.OnAddEntityToEventQueue += new MAAD.Simulator.Utilities.DSimulationAddEvent(Generator_OnAddEntityToEventQueue);
+			//app.Generator.OnAfterAddEntityToEventQueue += new MAAD.Simulator.Utilities.DSimulationEntityEvent(Generator_OnAfterAddEntityToEventQueue);
+			//public delegate void DSimulationDoubleEvent(Executor executor, ref double number);
+			app.Generator.OnAfterDuration += OAD = new MAAD.Simulator.Utilities.DSimulationDoubleEvent(OnAfterDuration);
+			//app.Generator.OnAfterEntitiesAborted += new MAAD.Simulator.Utilities.DSimulationModificationEvent(Generator_OnAfterEntitiesAborted);
+			//app.Generator.OnAfterGetNextEvents += new MAAD.Simulator.Utilities.DSimulationArrayListEvent(Generator_OnAfterGetNextEvents);
+			//public delegate void DSimulationEvent(Executor executor);
+			app.Generator.OnAfterLaunchEffect += OALE = new MAAD.Simulator.Utilities.DSimulationEvent(OnAfterLaunchEffect);
+			app.Generator.OnBeforeDuration += OBD = new MAAD.Simulator.Utilities.DSimulationEvent(OnBeforeDuration);
+			//public delegate void DSimulationDoubleEvent(Executor executor, ref double number);
+			//app.Generator.OnAfterQueuePriorityCode += new MAAD.Simulator.Utilities.DSimulationDoubleEvent(Generator_OnAfterQueuePriorityCode);
+			app.Generator.OnBeforeLaunchEffect += OBLE = new MAAD.Simulator.Utilities.DSimulationEvent(OnBeforeLaunchEffect);
+			//app.Generator.OnEntityMerged += new MAAD.Simulator.Utilities.DSimulationEntityEvent(Generator_OnEntityMerged);
+			app.Generator.OnAfterBeginningEffect += OABE = new MAAD.Simulator.Utilities.DSimulationEvent(OnAfterBeginningEffect);
 		}
 		public void UnregisterEvents()
 		{
@@ -314,6 +354,11 @@ namespace SoarIMPRINTPlugin
 			app.Generator.OnSimulationBegin -= OSB;
 			app.Generator.OnSimulationComplete -= OSC;
 			app.Generator.OnAfterEndingEffect -= OAEE;
+
+			app.Generator.OnAfterDuration -= OAD;
+			app.Generator.OnAfterLaunchEffect -= OALE;
+			app.Generator.OnBeforeDuration -= OBD;
+			app.Generator.OnBeforeLaunchEffect -= OBLE;
 		}
 
 		#region IMPRINT communication stuff
