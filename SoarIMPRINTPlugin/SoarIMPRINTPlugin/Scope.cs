@@ -21,6 +21,8 @@ namespace SoarIMPRINTPlugin
 		private const int INTERRUPT_TAG = 1954;
 		private const int DELAY_TAG = 1955;
 		private const int RESUME_DELAY_TAG = 1956;
+		private const int TO_DELAY_TAG = 1957;
+		private const int PERFORM_DELAY_KILL_TAG = 1958;
 
 		// TODO test when IMPRINT creates plugin objects
 		private static bool kernelInitialized = false;
@@ -87,18 +89,84 @@ namespace SoarIMPRINTPlugin
 			app.AcceptTrace("Before begin effect: " + executor.Simulation.GetTask().Properties.ID);
 			// TODO if a KILL_TAG entity gets here, something has gone wrong
 			// check that entity hasn't been marked KILL_TAG yet
-			if (executor.EventQueue.GetEntity().Tag == KILL_TAG)
+			/*if (executor.EventQueue.GetEntity().Tag == KILL_TAG)
 			{
 				logger.log("KILL_TAG in Beginning Effect!");
 				return;
-			}
+			}*/
+
 
 			MAAD.Simulator.Utilities.IRuntimeTask task = executor.EventQueue.GetTask();
 
 			// ignore the first and last task
 			int taskID = int.Parse(task.ID);
-			if (taskID > 0 && taskID < 999)
+			if (taskID == 0)
 			{
+				// check if the entity wants to kill / delay other ones
+				// TODO this isn't strictly necessary, we could check for delays and kills every time
+				// anything enters END
+				if (executor.Simulation.GetEntity().Tag == PERFORM_DELAY_KILL_TAG)
+				{
+					// on END begin, check for entities that should be delayed
+					foreach (MAAD.Simulator.IEntity entity in
+						executor.Simulation.IModel.Find("Tag", TO_DELAY_TAG).Cast<MAAD.Simulator.IEntity>())
+					{
+						this.log("suspending to delay entity in " + entity.ID + ": " +
+							executor.Simulation.IModel.Suspend(entity), 4);
+						this.log("setting entity's tag to DELAY_TAG", 4);
+						entity.Tag = DELAY_TAG;
+					}
+					// on END begin, check for entities that should be killed
+					foreach (MAAD.Simulator.IEntity entity in
+						executor.Simulation.IModel.Find("Tag", KILL_TAG).Cast<MAAD.Simulator.IEntity>())
+					{
+						this.log("killing entity in " + entity.ID + ": " +
+							executor.Simulation.IModel.Abort(entity), 4);
+					}
+				}
+			}
+			else if (taskID > 0 && taskID < 999)
+			{
+				// add task to scope input to get a decision
+				// TODO don't do this if the entitiy is TO_DELAY_TAG or KILL_TAG
+				if (executor.Simulation.GetEntity().Tag == TO_DELAY_TAG ||
+					executor.Simulation.GetEntity().Tag == KILL_TAG)
+				{
+					this.log("Begin: Got TO_DELAY or KILL tagged entity", 4);
+				}
+
+				// find corresponding MAAD.IMPRINTPro.NetworkTask
+				MAAD.IMPRINTPro.NetworkTask nt = GetIMPRINTTaskFromRuntimeTask(task);
+				if (nt != null)
+				{
+					this.log("Begin: adding release task: " + nt.ID);
+					// add task props to Soar input
+					sml.Identifier taskWME = AddReleaseTask(nt);
+
+					// TODO make "run until it decides what to do" more robust
+					// run the agent until it decides what to do
+					this.log("Begin: Running scope to get release decision", 5);
+					string output = agent.RunSelfTilOutput();
+					sml.Identifier command = agent.GetCommand(0);
+					// TODO if no command exists?
+					// if(!agent.Commands())
+					// get strategy name
+					string strategy = command.GetParameterValue("name");
+					this.log("Begin: Scope returned: " + strategy, 5);
+					// TODO if command isn't a strategy somehow?
+					// if(agent.GetCommandName() != "strategy")
+					//string strategy = GetOutput("strategy", "name");
+					//this.log("Output strategy was: " + strategy, 5);
+					// execute the strategy
+					ApplyStrategy(strategy, taskWME);
+					// mark the command as complete
+					command.AddStatusComplete();
+					agent.ClearOutputLinkChanges();
+					// log the decision
+					scopeData.LogStrategy(strategy, executor.Simulation.Clock);
+				}
+
+				/*
 				// if the strategy that allowed this task to begin was a perform-all returned
 				// to OnAfterReleaseCondition, then the strategy was submitted to the log but
 				// has not yet been entered to prevent multiple entries for the same perform-all.
@@ -112,11 +180,11 @@ namespace SoarIMPRINTPlugin
 					this.log("Begin: Adding task " + nt.ID + " as an active task", 5);
 					sml.Identifier taskWME = AddActiveTask(nt);
 					// run soar agent to let it update workload
-					/*agent.RunSelfTilOutput();
+					//agent.RunSelfTilOutput();
 					// clear output
-					agent.GetCommand(0).AddStatusComplete();
-					agent.ClearOutputLinkChanges();*/
-				}
+					//agent.GetCommand(0).AddStatusComplete();
+					//agent.ClearOutputLinkChanges();
+				}*/
 			}
 		}
 		private void OnAfterEndingEffect(MAAD.Simulator.Executor executor)
@@ -218,6 +286,7 @@ namespace SoarIMPRINTPlugin
 		}
 		public void OnAfterReleaseCondition(MAAD.Simulator.Executor executor, ref bool release)
 		{
+			return;
 			this.log("Start OnAfterReleaseCondition: " + executor.Simulation.GetTask().Properties.Name, 5);
 
 			// kill any entities that have been marked
@@ -373,11 +442,13 @@ namespace SoarIMPRINTPlugin
 				case "delay-new":
 					this.log("Scope: Delay new task");
 					// mark DELAY_TAG
-					app.Executor.EventQueue.GetEntity().Tag = DELAY_TAG;
+					app.Executor.EventQueue.GetEntity().Tag = TO_DELAY_TAG;
 					// add ^delayed yes to WME
 					this.log("Delay: add ^delayed: " + taskWME.CreateStringWME("delayed", "yes").GetValue(), 5);
 					// remove ^release from WME
 					this.log("Delay: remove ^release: " + taskWME.FindByAttribute("release", 0).DestroyWME(), 5);
+					// start an entity in END so that this will be suspended
+					app.Executor.Simulation.IModel.Start("999", PERFORM_DELAY_KILL_TAG);
 					// TODO can an entity be suspended in release condition event? NOPE
 					//app.AcceptTrace("Suspend for delay: " + app.Executor.Simulation.IModel.Suspend("Tag", DELAY_TAG));
 					// return false so the entity is not released
@@ -389,6 +460,11 @@ namespace SoarIMPRINTPlugin
 					app.Executor.EventQueue.GetEntity().Tag = KILL_TAG;
 					// destroy the task input element
 					taskWME.DestroyWME();
+					// start an entity in END so that this will be suspended
+					// TODO this requires that the task we want to suspend has non-zero duration
+					// we could enforce this by checking the tag in onafterduration and making sure
+					// the duration is non-zero
+					app.Executor.Simulation.IModel.Start("999", PERFORM_DELAY_KILL_TAG);
 					// return false because entity should not be released
 					return false;
 					break;
@@ -396,7 +472,10 @@ namespace SoarIMPRINTPlugin
 					// no action needed
 					this.log("Scope: Perform all tasks");
 					// destroy the task input element and it will be added later on task begin
-					taskWME.DestroyWME();
+					//taskWME.DestroyWME();
+					// remove ^release and add ^active
+					taskWME.FindByAttribute("release", 0).DestroyWME();
+					taskWME.CreateStringWME("active", "yes");
 					// return true because entity should be released
 					return true;
 					break;
@@ -429,7 +508,10 @@ namespace SoarIMPRINTPlugin
 						entity.Tag = INTERRUPT_TAG;
 					}
 					// destroy the task input element and it will be added later on task begin
-					taskWME.DestroyWME();
+					//taskWME.DestroyWME();
+					// remove release and add active
+					taskWME.FindByAttribute("release", 0).DestroyWME();
+					taskWME.CreateStringWME("active", "yes");
 					// return true because entity should be released
 					return true;
 					break;
