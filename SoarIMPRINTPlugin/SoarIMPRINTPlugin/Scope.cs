@@ -220,9 +220,7 @@ namespace SoarIMPRINTPlugin
 									// add the task as a real task
 									//AddActiveTask(executor.GetRuntimeTask(entity.ID));
 									// log that we resumed a task
-									scopeData.LogStrategy("Resume", app.Executor.Simulation.Clock);
-									// log the decision that allowed for the resume
-									scopeData.LogStrategy(strategy, app.Executor.Simulation.Clock);
+									scopeData.LogStrategy("Resume Interrupted", app.Executor.Simulation.Clock);
 									// force logging because there's no corresponding begin task
 									// TODO this is a bad way to do this
 									//scopeData.CommitStrategy();
