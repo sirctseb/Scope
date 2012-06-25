@@ -199,19 +199,16 @@ namespace SoarIMPRINTPlugin
 								{
 									// mark the entity to be resumed
 									this.log("Scope: Resume delayed");
-									// trace that we are resuming
-									app.AcceptTrace("Marking delayed task to be resumed: " + executor.GetRuntimeTask(entity.ID).Properties.Name);
-									// set tag to that release condition automatically accepts it
-									// TODO there is now a gap between marking to resume and actually starting the task
-									// TODO is this a problem?
-									entity.Tag = RESUME_DELAY_TAG;
-									// add the task as a real task
-									//AddActiveTask(executor.GetRuntimeTask(entity.ID));
+									// actually resume entity because it is suspended in its task
+									app.AcceptTrace("Resuming delayed entity: " + executor.Simulation.IModel.Resume(entity));
+									// remove ^delayed and add ^active
+									command.FindIDByAttribute("task").FindByAttribute("delayed",0).DestroyWME();
+									command.FindIDByAttribute("task").CreateStringWME("active", "yes");
+									// set tag to normal
+									// TODO this should reset tag to what is was before
+									executor.Simulation.GetEntity().Tag = 0;
 									// log that we resumed a task
 									scopeData.LogStrategy("Resume Delayed", app.Executor.Simulation.Clock);
-									// remove task from input, and it will be added as active in begin event
-									this.log("End: removing DELAY task " + entity.ID + " and marking RESUME_DELAY", 5);
-									RemoveTask(executor.GetRuntimeTask(entity.ID));
 								}
 								else if (entity.Tag == INTERRUPT_TAG)
 								{
