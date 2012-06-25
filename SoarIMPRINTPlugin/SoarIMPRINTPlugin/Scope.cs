@@ -483,6 +483,11 @@ namespace SoarIMPRINTPlugin
 					app.Executor.EventQueue.GetEntity().Tag = KILL_TAG;
 					// destroy the task input element
 					taskWME.DestroyWME();
+					// start an entity in END so that this will be suspended
+					// TODO this requires that the task we want to suspend has non-zero duration
+					// we could enforce this by checking the tag in onafterduration and making sure
+					// the duration is non-zero
+					app.Executor.Simulation.IModel.Start("999", PERFORM_DELAY_KILL_TAG);
 					// return false because entity should not be released
 					return false;
 					break;
