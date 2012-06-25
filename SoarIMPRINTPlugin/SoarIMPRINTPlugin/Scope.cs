@@ -92,7 +92,7 @@ namespace SoarIMPRINTPlugin
 
 			// ignore the first and last task
 			int taskID = int.Parse(task.ID);
-			if (taskID == 0)
+			if (taskID == 999)
 			{
 				// check if the entity wants to kill / delay other ones
 				// TODO this isn't strictly necessary, we could check for delays and kills every time
