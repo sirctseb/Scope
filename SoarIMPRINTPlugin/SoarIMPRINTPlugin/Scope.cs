@@ -206,7 +206,7 @@ namespace SoarIMPRINTPlugin
 									command.FindIDByAttribute("task").CreateStringWME("active", "yes");
 									// set tag to normal
 									// TODO this should reset tag to what is was before
-									executor.Simulation.GetEntity().Tag = 0;
+									entity.Tag = 0;
 									// log that we resumed a task
 									scopeData.LogStrategy("Resume Delayed", app.Executor.Simulation.Clock);
 								}
