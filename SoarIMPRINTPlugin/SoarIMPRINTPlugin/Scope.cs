@@ -87,14 +87,6 @@ namespace SoarIMPRINTPlugin
 		private void OnBeforeBeginningEffect(MAAD.Simulator.Executor executor)
 		{
 			app.AcceptTrace("Before begin effect: " + executor.Simulation.GetTask().Properties.ID);
-			// TODO if a KILL_TAG entity gets here, something has gone wrong
-			// check that entity hasn't been marked KILL_TAG yet
-			/*if (executor.EventQueue.GetEntity().Tag == KILL_TAG)
-			{
-				logger.log("KILL_TAG in Beginning Effect!");
-				return;
-			}*/
-
 
 			MAAD.Simulator.Utilities.IRuntimeTask task = executor.EventQueue.GetTask();
 
@@ -165,26 +157,6 @@ namespace SoarIMPRINTPlugin
 					// log the decision
 					scopeData.LogStrategy(strategy, executor.Simulation.Clock);
 				}
-
-				/*
-				// if the strategy that allowed this task to begin was a perform-all returned
-				// to OnAfterReleaseCondition, then the strategy was submitted to the log but
-				// has not yet been entered to prevent multiple entries for the same perform-all.
-				// enter it to the log here
-				scopeData.CommitStrategy();
-				// find corresponding MAAD.IMPRINTPro.NetworkTask
-				MAAD.IMPRINTPro.NetworkTask nt = GetIMPRINTTaskFromRuntimeTask(task);
-				if (nt != null)
-				{
-					// add task props to Soar input
-					this.log("Begin: Adding task " + nt.ID + " as an active task", 5);
-					sml.Identifier taskWME = AddActiveTask(nt);
-					// run soar agent to let it update workload
-					//agent.RunSelfTilOutput();
-					// clear output
-					//agent.GetCommand(0).AddStatusComplete();
-					//agent.ClearOutputLinkChanges();
-				}*/
 			}
 		}
 		private void OnAfterEndingEffect(MAAD.Simulator.Executor executor)
