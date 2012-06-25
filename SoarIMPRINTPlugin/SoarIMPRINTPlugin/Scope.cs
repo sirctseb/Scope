@@ -92,32 +92,25 @@ namespace SoarIMPRINTPlugin
 
 			// ignore the first and last task
 			int taskID = int.Parse(task.ID);
-			if (taskID == 999)
+			// any time a task starts, check for entities that are supposed to be killed or delayed
+			// on END begin, check for entities that should be delayed
+			foreach (MAAD.Simulator.IEntity entity in
+				executor.Simulation.IModel.Find("Tag", TO_DELAY_TAG).Cast<MAAD.Simulator.IEntity>())
 			{
-				// check if the entity wants to kill / delay other ones
-				// TODO this isn't strictly necessary, we could check for delays and kills every time
-				// anything enters END
-				if (executor.Simulation.GetEntity().Tag == PERFORM_DELAY_KILL_TAG)
-				{
-					// on END begin, check for entities that should be delayed
-					foreach (MAAD.Simulator.IEntity entity in
-						executor.Simulation.IModel.Find("Tag", TO_DELAY_TAG).Cast<MAAD.Simulator.IEntity>())
-					{
-						this.log("suspending to delay entity in " + entity.ID + ": " +
-							executor.Simulation.IModel.Suspend(entity), 4);
-						this.log("setting entity's tag to DELAY_TAG", 4);
-						entity.Tag = DELAY_TAG;
-					}
-					// on END begin, check for entities that should be killed
-					foreach (MAAD.Simulator.IEntity entity in
-						executor.Simulation.IModel.Find("Tag", KILL_TAG).Cast<MAAD.Simulator.IEntity>())
-					{
-						this.log("killing entity in " + entity.ID + ": " +
-							executor.Simulation.IModel.Abort(entity), 4);
-					}
-				}
+				this.log("suspending to delay entity in " + entity.ID + ": " +
+					executor.Simulation.IModel.Suspend(entity), 4);
+				this.log("setting entity's tag to DELAY_TAG", 4);
+				entity.Tag = DELAY_TAG;
 			}
-			else if (taskID > 0 && taskID < 999)
+			// on END begin, check for entities that should be killed
+			foreach (MAAD.Simulator.IEntity entity in
+				executor.Simulation.IModel.Find("Tag", KILL_TAG).Cast<MAAD.Simulator.IEntity>())
+			{
+				this.log("killing entity in " + entity.ID + ": " +
+					executor.Simulation.IModel.Abort(entity), 4);
+			}
+
+			if (taskID > 0 && taskID < 999)
 			{
 				// add task to scope input to get a decision
 				// TODO don't do this if the entitiy is TO_DELAY_TAG or KILL_TAG
