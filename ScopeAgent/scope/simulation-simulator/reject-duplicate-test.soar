@@ -1,0 +1,40 @@
+sp {initialize*reject-duplicate
+   (state <s> ^operator <o>
+              ^io.input-link <input>
+              ^simulated yes)
+   (<o> ^name initialize-scope
+        ^test-name reject-duplicate)
+-->
+   (<s> ^simulate-task <sim>)
+   (<sim> ^current <n1>)
+   # t=1 add the first task
+   (<n1> ^add <a1>)
+   (<a1> ^obj <input>
+         ^task <t1>)
+   (<t1> ^workload 3
+         ^taskID 0
+         ^release yes)
+   (<n1> ^next <n2>)
+   # t=2 add the second task, should delay
+   (<n2> ^add <a2>)
+   (<a2> ^obj <input>
+         ^task <t2>)
+   (<t2> ^workload 7
+         ^taskID 1
+         ^release yes)
+   (<n2> ^next <n3>)
+   # t=3 add duplicate second task, should reject
+   (<n3> ^add <a3>)
+   (<a3> ^obj <input>
+         ^task <t3>)
+   (<t3> ^workload 7
+         ^taskID 1
+         ^release yes)
+   (<n3> ^next <n4>)
+   # t=3 remove the first task, second task should fail to resume
+   (<n4> ^remove <r4>)
+   (<r4> ^obj <input>
+         ^task <t1>)
+   # infinite loop
+   (<n4> ^next <n4>)
+}

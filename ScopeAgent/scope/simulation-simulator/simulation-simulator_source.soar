@@ -1,5 +1,6 @@
 source elaborations.soar
 source default-test.soar
+source reject-duplicate-test.soar
 source resume-none-test.soar
 source resume-tie-test.soar
 source simultaneous-add-remove-test.soar

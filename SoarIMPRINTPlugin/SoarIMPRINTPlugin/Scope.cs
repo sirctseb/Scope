@@ -477,6 +477,15 @@ namespace SoarIMPRINTPlugin
 					// return true because entity should be released
 					return true;
 					break;
+				case "reject-duplicate":
+					this.log("Scope: Reject duplicate");
+					// mark KILL_TAG
+					app.Executor.EventQueue.GetEntity().Tag = KILL_TAG;
+					// destroy the task input element
+					taskWME.DestroyWME();
+					// return false because entity should not be released
+					return false;
+					break;
 				default:
 					break;
 			}

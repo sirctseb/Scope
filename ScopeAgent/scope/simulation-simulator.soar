@@ -56,7 +56,7 @@ sp {apply*not-simulate-input
 sp {elaborate*strategy*operators
    (state <s> ^operator <o> +)
    (<o> ^name << perform-all ignore-new interrupt-task
-                 delay-new resume-delayed resume-none wait >> )
+                 delay-new resume-delayed resume-none wait reject-duplicate >> )
 -->
    (<o> ^strategy yes)
 }
@@ -182,12 +182,18 @@ sp {apply*delay-new*effects
    (<strategy> ^complete yes)
 }
 
-sp {apply*continue-delay*effects
+sp {apply*reject-duplicate*effects
    (state <s> ^simulated yes
               ^operator.name simulate-input
-              ^io.output-link.strategy.name continue-delay)
+              ^io.output-link.strategy (<strategy>
+              ^name reject-duplicate
+              ^task <task>)
+              ^io.input-link <in>)
 -->
-   # noop
+   # remove rejected from input
+   (<in> ^task <task> -)
+   # mark as complete
+   (<strategy> ^complete yes)
 }
 
 sp {apply*resume-delayed*effects
@@ -207,8 +213,9 @@ sp {init*task*events
               ^simulated yes)
    (<o> ^name initialize-scope)
 -->
+   (<o> ^test-name reject-duplicate)
 #   (<o> ^test-name wait)
-   (<o> ^test-name resume-tie)
+#   (<o> ^test-name resume-tie)
 #   (<o> ^test-name resume-none)
 #   (<o> ^test-name tie*interrupt*delay*ignore)
 #   (<o> ^test-name default)
