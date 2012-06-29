@@ -229,19 +229,20 @@ namespace SoarIMPRINTPlugin
 		}
 		public void OnBeforeReleaseCondition(MAAD.Simulator.Executor executor)
 		{
-			return;
+			//return;
 			this.log("on before release condition");
 			if (IsRealTask(executor.Simulation.GetTask()))
 			{
-				this.log("setting entity as releaseEntity");
 				// set the current entity to be added to soar input when its ready
 				this.releaseEntity = executor.Simulation.GetEntity();
+				
+				this.log("setting entity as releaseEntity: " + this.releaseEntity.ID);
 			}
 		}
 		public void OnAfterReleaseCondition(MAAD.Simulator.Executor executor, ref bool release)
 		{
-			return;
-			this.log("Start OnAfterReleaseCondition: " + executor.Simulation.GetTask().Properties.Name, 5);
+			//return;
+			this.log("Start OnAfterReleaseCondition: " + executor.Simulation.GetTask().ID, 5);
 
 			// kill any entities that have been marked
 			executor.Simulation.IModel.Abort("Tag", KILL_TAG);
@@ -495,20 +496,22 @@ namespace SoarIMPRINTPlugin
 		//public delegate void Kernel::UpdateEventCallback(smlUpdateEventId eventID, IntPtr callbackData, IntPtr kernel, smlRunFlags runFlags);
 		public void GeneralOutputCallbackHandler(sml.smlUpdateEventId eventID, IntPtr callbackData, IntPtr kernel, sml.smlRunFlags runFlags)
 		{
-			return;
+			//return;
 			// update world
 			// if there is an entity marked to be release, add it to soar input
 			if (this.releaseEntity != null)
 			{
-				this.log("--- putting entity on input");
+				this.log("--- putting entity on input: " + releaseEntity.ID);
 				AddReleaseTask(app.Executor.Simulation.IModel.FindTask(releaseEntity.ID));
 				this.releaseEntity = null;
 			}
 		}
 		public void StrategyCallbackHandler(IntPtr callbackData, IntPtr agent, string commandName, IntPtr outputWME)
 		{
-			return;
 			this.log("Got strategy output!");
+			Scope.agent.GetCommand(0).AddStatusComplete();
+			Scope.agent.ClearOutputLinkChanges();
+			return;
 			//throw new Exception("Got strategy output!");
 		}
 		public void RunKernelForever()
