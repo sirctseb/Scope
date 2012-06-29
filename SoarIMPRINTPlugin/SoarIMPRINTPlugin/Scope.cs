@@ -455,6 +455,8 @@ namespace SoarIMPRINTPlugin
 
 			return true;
 		}
+		sml.Kernel.UpdateEventCallback generalOutputHandler;
+		sml.Agent.OutputEventCallback strategyCallback;
 		public bool ResetSoar()
 		{
 			// reinitialize
@@ -479,8 +481,10 @@ namespace SoarIMPRINTPlugin
 			}
 
 			// register for soar events
-			kernel.RegisterForUpdateEvent(sml.smlUpdateEventId.smlEVENT_AFTER_ALL_OUTPUT_PHASES, this.GeneralOutputCallbackHandler, null);
-			agent.AddOutputHandler("strategy", this.StrategyCallbackHandler, null);
+			generalOutputHandler = new sml.Kernel.UpdateEventCallback(this.GeneralOutputCallbackHandler);
+			strategyCallback = new sml.Agent.OutputEventCallback(this.StrategyCallbackHandler);
+			kernel.RegisterForUpdateEvent(sml.smlUpdateEventId.smlEVENT_AFTER_ALL_OUTPUT_PHASES, this.generalOutputHandler, null);
+			agent.AddOutputHandler("strategy", this.strategyCallback, null);
 			// start run agent forever
 			System.Threading.Thread t = new System.Threading.Thread(new System.Threading.ThreadStart(this.RunKernelForever));
 			t.Start();
