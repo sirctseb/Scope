@@ -210,10 +210,12 @@ namespace SoarIMPRINTPlugin
 		}
 		public void OnSimulationBegin(object sender, EventArgs e)
 		{
+			this.log("OnSimulationBegin");
 			//ResetSoar();
 		}
 		public void OnSimulationComplete(object sender, EventArgs e)
 		{
+			this.log("OnSimulationComplete");
 			//KillKernel();
 			// TODO when to shutdown kernel?
 			UnregisterEvents();
@@ -243,7 +245,7 @@ namespace SoarIMPRINTPlugin
 				this.log("setting entity as releaseEntity: " + this.releaseEntity.ID);
 
 				this.log("Joining to try to get Scope to run after setting release entity");
-				thread.Join(1);
+				thread.Join(1000);
 				this.log("Joined");
 			}
 		}
@@ -517,9 +519,23 @@ namespace SoarIMPRINTPlugin
 		}
 		public void StrategyCallbackHandler(IntPtr callbackData, IntPtr agent, string commandName, IntPtr outputWME)
 		{
-			this.log("Got strategy output!: " + Scope.agent.GetCommand(0).FindStringByAttribute("name"));
-			Scope.agent.GetCommand(0).AddStatusComplete();
+			this.log("getting command");
+			sml.Identifier commandID = Scope.agent.GetCommand(0);
+			this.log("got command: " + commandID);
+			if (commandID == null)
+			{
+				this.log("no command found?!");
+			}
+			else
+			{
+				this.log("getting name of command");
+				this.log("Got strategy output!: " + commandID.FindStringByAttribute("name"));
+
+				Scope.agent.GetCommand(0).AddStatusComplete();
+				this.log("StrategyCallbackHandler: added status complete", 5);
+			}
 			Scope.agent.ClearOutputLinkChanges();
+			this.log("StrategyCallbackHandler: cleared output link changes", 5);
 			return;
 			//throw new Exception("Got strategy output!");
 		}
@@ -530,10 +546,19 @@ namespace SoarIMPRINTPlugin
 			{
 				kernel.RunAllAgentsForever();
 			}
-			catch (Exception e)
+			catch (NullReferenceException e)
 			{
 				this.log("exception in run forever");
+				this.log("generalOutputHandler: " + generalOutputHandler.ToString());
+				this.log("strategyCallback: " + strategyCallback.ToString());
 				this.log(e.Message);
+				this.log(e.GetType());
+				this.log(e.Source);
+				this.log(e.Data);
+				this.log(e.Source);
+				this.log(e.StackTrace);
+				this.log(e.TargetSite.ToString());
+				//NullReferenceException nre = new NullReferenceException();
 			}
 		}
 
