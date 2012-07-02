@@ -467,7 +467,6 @@ namespace SoarIMPRINTPlugin
 			return true;
 		}
 		sml.Kernel.UpdateEventCallback generalOutputHandler;
-		sml.Agent.OutputEventCallback strategyCallback;
 		public bool ResetSoar()
 		{
 			// reinitialize
@@ -493,9 +492,7 @@ namespace SoarIMPRINTPlugin
 
 			// register for soar events
 			generalOutputHandler = new sml.Kernel.UpdateEventCallback(this.GeneralOutputCallbackHandler);
-			strategyCallback = new sml.Agent.OutputEventCallback(this.StrategyCallbackHandler);
 			kernel.RegisterForUpdateEvent(sml.smlUpdateEventId.smlEVENT_AFTER_ALL_OUTPUT_PHASES, this.generalOutputHandler, null);
-			agent.AddOutputHandler("strategy", this.strategyCallback, null);
 			// start run agent forever
 			thread = new System.Threading.Thread(new System.Threading.ThreadStart(this.RunKernelForever));
 			thread.Start();
@@ -506,8 +503,24 @@ namespace SoarIMPRINTPlugin
 		//public delegate void Kernel::UpdateEventCallback(smlUpdateEventId eventID, IntPtr callbackData, IntPtr kernel, smlRunFlags runFlags);
 		public void GeneralOutputCallbackHandler(sml.smlUpdateEventId eventID, IntPtr callbackData, IntPtr kernel, sml.smlRunFlags runFlags)
 		{
-			//return;
-			// update world
+			// check for output commands
+			for (int i = 0; i < agent.GetNumberCommands(); i++)
+			{
+				sml.Identifier command = agent.GetCommand(i);
+				string commandName = command.GetCommandName();
+				// act on strategy commands
+				if (commandName == "strategy")
+				{
+					// TODO apply strategy
+					// mark command as complete
+					command.AddStatusComplete();
+				}
+			}
+			// clear output changes
+			agent.ClearOutputLinkChanges();
+
+			// this is where we would update the world if we had a soar-centric structure
+
 			// if there is an entity marked to be release, add it to soar input
 			if (this.releaseEntity != null)
 			{
@@ -516,28 +529,6 @@ namespace SoarIMPRINTPlugin
 				this.releaseEntity = null;
 				this.log("General Output: releaseEntity now null");
 			}
-		}
-		public void StrategyCallbackHandler(IntPtr callbackData, IntPtr agent, string commandName, IntPtr outputWME)
-		{
-			this.log("getting command");
-			sml.Identifier commandID = Scope.agent.GetCommand(0);
-			this.log("got command: " + commandID);
-			if (commandID == null)
-			{
-				this.log("no command found?!");
-			}
-			else
-			{
-				this.log("getting name of command");
-				this.log("Got strategy output!: " + commandID.FindStringByAttribute("name"));
-
-				Scope.agent.GetCommand(0).AddStatusComplete();
-				this.log("StrategyCallbackHandler: added status complete", 5);
-			}
-			Scope.agent.ClearOutputLinkChanges();
-			this.log("StrategyCallbackHandler: cleared output link changes", 5);
-			return;
-			//throw new Exception("Got strategy output!");
 		}
 		public void RunKernelForever()
 		{
@@ -550,7 +541,6 @@ namespace SoarIMPRINTPlugin
 			{
 				this.log("exception in run forever");
 				this.log("generalOutputHandler: " + generalOutputHandler.ToString());
-				this.log("strategyCallback: " + strategyCallback.ToString());
 				this.log(e.Message);
 				this.log(e.GetType());
 				this.log(e.Source);
