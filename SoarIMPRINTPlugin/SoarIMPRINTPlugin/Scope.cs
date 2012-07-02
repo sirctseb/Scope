@@ -236,7 +236,7 @@ namespace SoarIMPRINTPlugin
 		public void OnBeforeReleaseCondition(MAAD.Simulator.Executor executor)
 		{
 			//return;
-			this.log("on before release condition");
+			this.log("on before release condition: event: " + executor.Simulation.GetEntity().Event);
 			if (IsRealTask(executor.Simulation.GetTask()))
 			{
 				// set the current entity to be added to soar input when its ready
@@ -245,14 +245,14 @@ namespace SoarIMPRINTPlugin
 				this.log("setting entity as releaseEntity: " + this.releaseEntity.ID);
 
 				this.log("Joining to try to get Scope to run after setting release entity");
-				thread.Join(1000);
+				thread.Join(10);
 				this.log("Joined");
 			}
 		}
 		public void OnAfterReleaseCondition(MAAD.Simulator.Executor executor, ref bool release)
 		{
 			//return;
-			this.log("Start OnAfterReleaseCondition: " + executor.Simulation.GetTask().ID, 5);
+			this.log("Start OnAfterReleaseCondition: " + executor.Simulation.GetTask().ID + ", event: " + executor.Simulation.GetEntity().Event, 5);
 
 			// kill any entities that have been marked
 			executor.Simulation.IModel.Abort("Tag", KILL_TAG);
@@ -699,7 +699,7 @@ namespace SoarIMPRINTPlugin
 
 		public bool KillKernel()
 		{
-			//this.log("killing kernel", "debug");
+			this.log("killing kernel", 5);
 			kernel.Shutdown();
 			thread.Abort();
 			thread = null;
