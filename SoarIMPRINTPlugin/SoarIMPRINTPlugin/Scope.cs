@@ -224,7 +224,11 @@ namespace SoarIMPRINTPlugin
 		}
 		public bool IsRealTask(MAAD.Simulator.Utilities.IRuntimeTask task)
 		{
+			this.log("checking if real task: " + task.ID,6);
 			int taskID = int.Parse(task.ID);
+			this.log("ID int: " + taskID,6);
+			this.log(taskID + " > 0: " + (taskID > 0),6);
+			this.log(taskID + " < 999: " + (taskID < 999),6);
 			return taskID > 0 && taskID < 999;
 		}
 		public void OnBeforeReleaseCondition(MAAD.Simulator.Executor executor)
@@ -237,6 +241,10 @@ namespace SoarIMPRINTPlugin
 				this.releaseEntity = executor.Simulation.GetEntity();
 				
 				this.log("setting entity as releaseEntity: " + this.releaseEntity.ID);
+
+				this.log("Joining to try to get Scope to run after setting release entity");
+				thread.Join(1);
+				this.log("Joined");
 			}
 		}
 		public void OnAfterReleaseCondition(MAAD.Simulator.Executor executor, ref bool release)
@@ -487,8 +495,8 @@ namespace SoarIMPRINTPlugin
 			kernel.RegisterForUpdateEvent(sml.smlUpdateEventId.smlEVENT_AFTER_ALL_OUTPUT_PHASES, this.generalOutputHandler, null);
 			agent.AddOutputHandler("strategy", this.strategyCallback, null);
 			// start run agent forever
-			System.Threading.Thread t = new System.Threading.Thread(new System.Threading.ThreadStart(this.RunKernelForever));
-			t.Start();
+			thread = new System.Threading.Thread(new System.Threading.ThreadStart(this.RunKernelForever));
+			thread.Start();
 			//this.RunKernelForever();
 
 			return !agent.HadError();
@@ -501,14 +509,15 @@ namespace SoarIMPRINTPlugin
 			// if there is an entity marked to be release, add it to soar input
 			if (this.releaseEntity != null)
 			{
-				this.log("--- putting entity on input: " + releaseEntity.ID);
+				this.log("General Output: putting entity on input: " + releaseEntity.ID);
 				AddReleaseTask(app.Executor.Simulation.IModel.FindTask(releaseEntity.ID));
 				this.releaseEntity = null;
+				this.log("General Output: releaseEntity now null");
 			}
 		}
 		public void StrategyCallbackHandler(IntPtr callbackData, IntPtr agent, string commandName, IntPtr outputWME)
 		{
-			this.log("Got strategy output!");
+			this.log("Got strategy output!: " + Scope.agent.GetCommand(0).FindStringByAttribute("name"));
 			Scope.agent.GetCommand(0).AddStatusComplete();
 			Scope.agent.ClearOutputLinkChanges();
 			return;
