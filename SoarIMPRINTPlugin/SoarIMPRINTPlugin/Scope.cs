@@ -31,6 +31,8 @@ namespace SoarIMPRINTPlugin
 			public DecisionType type;
 			// what time the entity was scheduled to begin
 			public double scheduledBeginTime;
+			// the unique ID of the entity that the decision pertains to
+			public int uniqueID;
 		}
 
 		// a set of currently deferred actions
