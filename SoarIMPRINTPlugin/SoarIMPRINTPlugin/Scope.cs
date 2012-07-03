@@ -24,7 +24,10 @@ namespace SoarIMPRINTPlugin
 			public enum DecisionType
 			{
 				RejectDecision,
-				DelayDecision
+				DelayDecision,
+				PerformAllDecision,
+				InterruptDecision,
+				ResumeDecision
 			}
 
 			// what the decision was
@@ -34,9 +37,17 @@ namespace SoarIMPRINTPlugin
 			// the unique ID of the entity that the decision pertains to
 			public int uniqueID;
 		}
+		public class InterruptDecision : DeferredDecision
+		{
+			// unique id of the entity this is supposed to interrupt
+			public int interruptUniqueID;
+		}
 
 		// a set of currently deferred actions
 		HashSet<DeferredDecision> deferredDecisions = new HashSet<DeferredDecision>();
+
+		// the one decision that led to the entity in BE
+		DeferredDecision lastDecision = null;
 
 		// properties we can ascribe to entities
 		public enum EntityProperty
@@ -157,11 +168,50 @@ namespace SoarIMPRINTPlugin
 			}
 			return null;
 		}
+
+		// check if there are delayed or rejected entities that we should act on
+		// TODO what events should call this?
+		// TODO why not just call from that event for when the clock changes?
+		private void CheckForDelaysAndRejects(double Clock)
+		{
+			// check each defered event
+			foreach (DeferredDecision decision in this.deferredDecisions)
+			{
+				// check if clock is past the scheduled start of the decision
+				if (decision.scheduledBeginTime < Clock)
+				{
+					// act on the decision
+					if (decision.type == DeferredDecision.DecisionType.RejectDecision)
+					{
+						// kill the entity
+						this.log("Killing entity for ignore-task: " +
+							app.Executor.Simulation.IModel.Abort("UniqueID", decision.uniqueID)
+							);
+					}
+					else if (decision.type == DeferredDecision.DecisionType.DelayDecision)
+					{
+						// suspend the entity
+						this.log("Suspending entity for delay-task: " +
+							app.Executor.Simulation.IModel.Suspend("UniqueID", decision.uniqueID)
+							);
+
+						// add task as delayed in scope
+						string ID = ((MAAD.Simulator.IEntity)app.Executor.Simulation.IModel.Find("UniqueID", decision.uniqueID)[0]).ID;
+						this.AddTask(app.Executor.Simulation.IModel.FindTask(ID)).CreateStringWME("delayed", "yes");
+					}
+					// remove decision from set
+					// TODO can we do this while iterating?
+					this.deferredDecisions.Remove(decision);
+				}
+			}
+		}
+
 		//public delegate void DSimulationEvent(Executor executor);
 		//public delegate void DNetworkEvent(object sender, EventArgs e);
 		private void OnBeforeBeginningEffect(MAAD.Simulator.Executor executor)
 		{
 			app.AcceptTrace("Before begin effect: " + executor.Simulation.GetTask().Properties.Name);
+
 			// TODO if a KILL_TAG entity gets here, something has gone wrong
 			// check that entity hasn't been marked KILL_TAG yet
 			//if (executor.EventQueue.GetEntity().Tag == KILL_TAG)
@@ -177,24 +227,43 @@ namespace SoarIMPRINTPlugin
 			int taskID = int.Parse(task.ID);
 			if (taskID > 0 && taskID < 999)
 			{
+				// sanity check: any entity starting this task should be referenced in the last decision
+				if (executor.Simulation.GetEntity().UniqueID != lastDecision.uniqueID)
+				{
+					this.log("Entity beginning task that is not in last decision");
+					throw new Exception("Entity beginning task that is not in last decision");
+				}
+
 				// if the strategy that allowed this task to begin was a perform-all returned
 				// to OnAfterReleaseCondition, then the strategy was submitted to the log but
 				// has not yet been entered to prevent multiple entries for the same perform-all.
 				// enter it to the log here
 				scopeData.CommitStrategy();
-				// find corresponding MAAD.IMPRINTPro.NetworkTask
-				MAAD.IMPRINTPro.NetworkTask nt = GetIMPRINTTaskFromRuntimeTask(task);
-				if (nt != null)
+
+				// if entity is starting because of interrupt-task strategy, suspend the other task
+				if (lastDecision.type == DeferredDecision.DecisionType.InterruptDecision)
 				{
-					// add task props to Soar input
-					this.log("Begin: Adding task " + nt.ID + " as an active task", 5);
-					sml.Identifier taskWME = AddActiveTask(nt);
-					// run soar agent to let it update workload
-					/*agent.RunSelfTilOutput();
-					// clear output
-					agent.GetCommand(0).AddStatusComplete();
-					agent.ClearOutputLinkChanges();*/
+					// suspend task
+					this.log("suspending entity for interrupt-task: " +
+						executor.Simulation.IModel.Suspend("UniqueID", ((InterruptDecision)lastDecision).interruptUniqueID)
+						, 3);
+
+					// get interrupted task ID
+					string ID = ((MAAD.Simulator.IEntity)executor.Simulation.IModel.Find("UniqueID", ((InterruptDecision)lastDecision).interruptUniqueID)[0]).ID;
+
+					// add ^delayed to scope task and take off ^active
+					sml.Identifier interruptedTaskWME = agent.GetInputLink().GetChildren("task")
+						.Select(wme => wme.ConvertToIdentifier())
+						.Where(id => id.FindStringByAttribute("taskID") == ID).First();
+					// take off ^active
+					interruptedTaskWME.FindByAttribute("active", 0).DestroyWME();
+					// add ^delayed
+					interruptedTaskWME.CreateStringWME("delayed", "yes");
 				}
+
+				// add task props to Soar input
+				this.log("Begin: Adding task " + task.ID + " as an active task", 5);
+				sml.Identifier taskWME = AddActiveTask(task);
 			}
 		}
 		private void OnAfterEndingEffect(MAAD.Simulator.Executor executor)
@@ -298,35 +367,25 @@ namespace SoarIMPRINTPlugin
 		{
 			this.log("Start OnAfterReleaseCondition: " + executor.Simulation.GetTask().Properties.Name, 5);
 
-			// kill any entities that have been marked
-			// TODO make sure we can look up entities like this with Abort
-			foreach(int uniqueID in entityProperties.EntitiesWith(EntityProperty.KillEntity))
-			{
-				executor.Simulation.IModel.Abort("UniqueID", uniqueID);
-			}
-			// TODO suspend any entities that have been marked delayed
-
-			// check that entity hasn't been marked KILL_TAG yet
-			if(entityProperties.EntityHas(executor.Simulation.GetEntity().UniqueID, EntityProperty.KillEntity))
-			{
-				this.log("KILL_TAG coming through release condition, rejecting", 3);
-				release = false;
-				return;
-			}
-			// check that entity isn't marked delayed
-			if(entityProperties.EntityHas(executor.Simulation.GetEntity().UniqueID, EntityProperty.DelayEntity))
-			{
-				this.log("DELAY_TAG coming through release condition, rejecting", 3);
-				release = false;
-				return;
-			}
-
 			// if entity is marked to resume after delay, return true
 			if(entityProperties.EntityHas(executor.Simulation.GetEntity().UniqueID, EntityProperty.ResumeEntity))
 			{
 				this.log("RESUME_DELAY_TAG coming through release condition, accepting", 3);
+
 				// remove resume property
+				// TODO what if there is another task starting when this is resumed, and they both have their
+				// RCs evaluated, but the other one actually starts before this one, so this one has RC evaluated
+				// again. then this would be subject to release decision again. This is a bug
 				entityProperties.RemoveProp(executor.Simulation.GetEntity().UniqueID, EntityProperty.ResumeEntity);
+
+				// update last decision as resume decision
+				this.lastDecision = new DeferredDecision
+				{
+					type = DeferredDecision.DecisionType.ResumeDecision,
+					uniqueID = executor.Simulation.GetEntity().UniqueID,
+					scheduledBeginTime = executor.Simulation.Clock
+				};
+
 				release = true;
 				return;
 			}
@@ -375,11 +434,18 @@ namespace SoarIMPRINTPlugin
 			}
 		}
 
+		public void OnClockAdvance(object sender, MAAD.Simulator.ClockChangedArgs args)
+		{
+			// call to check for reject/delayed actions
+			CheckForDelaysAndRejects(args.Clock);
+		}
+
 		private MAAD.Simulator.Utilities.DSimulationEvent OBBE;
 		private MAAD.Simulator.Utilities.DSimulationBoolEvent OARC;
 		private MAAD.Simulator.Utilities.DSimulationEvent OAEE;
 		private MAAD.Simulator.Utilities.DNetworkEvent OSB;
 		private MAAD.Simulator.Utilities.DNetworkEvent OSC;
+		private EventHandler<MAAD.Simulator.ClockChangedArgs> OCA;
 		public void RegisterEvents()
 		{
 			app.Generator.OnAfterReleaseCondition +=
@@ -392,6 +458,10 @@ namespace SoarIMPRINTPlugin
 				OSC = new MAAD.Simulator.Utilities.DNetworkEvent(OnSimulationComplete);
 			app.Generator.OnAfterEndingEffect +=
 				OAEE = new MAAD.Simulator.Utilities.DSimulationEvent(OnAfterEndingEffect);
+
+			//public delegate void EventHandler<TEventArgs>(object sender, TEventArgs e);
+			app.Generator.OnClockAdvance +=
+				OCA = new EventHandler<MAAD.Simulator.ClockChangedArgs>(OnClockAdvance);
 		}
 		public void UnregisterEvents()
 		{
@@ -400,6 +470,8 @@ namespace SoarIMPRINTPlugin
 			app.Generator.OnSimulationBegin -= OSB;
 			app.Generator.OnSimulationComplete -= OSC;
 			app.Generator.OnAfterEndingEffect -= OAEE;
+
+			app.Generator.OnClockAdvance -= OCA;
 		}
 
 		#region IMPRINT communication stuff
@@ -412,32 +484,74 @@ namespace SoarIMPRINTPlugin
 			switch (strategy)
 			{
 				case "delay-new":
-					this.log("Scope: Delay new task");
-					// mark DELAY_TAG
-					entityProperties.AddProp(app.Executor.Simulation.GetEntity().UniqueID, EntityProperty.DelayEntity);
+					//this.log("Scope: Delay new task");
 					// add ^delayed yes to WME
-					this.log("Delay: add ^delayed: " + taskWME.CreateStringWME("delayed", "yes").GetValue(), 5);
+					//this.log("Delay: add ^delayed: " + taskWME.CreateStringWME("delayed", "yes").GetValue(), 5);
 					// remove ^release from WME
-					this.log("Delay: remove ^release: " + taskWME.FindByAttribute("release", 0).DestroyWME(), 5);
-					// TODO can an entity be suspended in release condition event? NOPE
-					//app.AcceptTrace("Suspend for delay: " + app.Executor.Simulation.IModel.Suspend("Tag", DELAY_TAG));
+					//this.log("Delay: remove ^release: " + taskWME.FindByAttribute("release", 0).DestroyWME(), 5);
+
+					// create the info to defer the execution of the action
+					// only create if we haven't already done so
+					if (!entityProperties.EntityHas(app.Executor.Simulation.GetEntity().UniqueID, EntityProperty.DelayEntity))
+					{
+						// mark DELAY_TAG
+						entityProperties.AddProp(app.Executor.Simulation.GetEntity().UniqueID, EntityProperty.DelayEntity);
+
+						// create info
+						deferredDecisions.Add(new DeferredDecision
+						{
+							type = DeferredDecision.DecisionType.DelayDecision,
+							uniqueID = app.Executor.Simulation.GetEntity().UniqueID,
+							scheduledBeginTime = app.Executor.Simulation.Clock // TODO is this always true?
+						});
+					}
+
+					// remove task from input
+					taskWME.DestroyWME();
+
 					// return false so the entity is not released
 					return false;
 					break;
 				case "ignore-new":
-					this.log("Scope: Ignore new task");
-					// mark KILL_TAG
-					entityProperties.AddProp(app.Executor.Simulation.GetEntity().UniqueID, EntityProperty.KillEntity);
+					//this.log("Scope: Ignore new task");
+
+					// create the info to defer the execution of the action
+					// only create if we haven't already done so
+					if (!entityProperties.EntityHas(app.Executor.Simulation.GetEntity().UniqueID, EntityProperty.KillEntity))
+					{
+						// mark KILL_TAG
+						entityProperties.AddProp(app.Executor.Simulation.GetEntity().UniqueID, EntityProperty.KillEntity);
+
+						// create info
+						deferredDecisions.Add(new DeferredDecision
+						{
+							type = DeferredDecision.DecisionType.RejectDecision,
+							uniqueID = app.Executor.Simulation.GetEntity().UniqueID,
+							scheduledBeginTime = app.Executor.Simulation.Clock // TODO is this always true?
+						});
+					}
+
 					// destroy the task input element
 					taskWME.DestroyWME();
+
 					// return false because entity should not be released
 					return false;
 					break;
 				case "perform-all":
 					// no action needed
 					this.log("Scope: Perform all tasks");
+
 					// destroy the task input element and it will be added later on task begin
 					taskWME.DestroyWME();
+
+					// store info about the decision
+					this.lastDecision = new DeferredDecision
+					{
+						type = DeferredDecision.DecisionType.PerformAllDecision,
+						uniqueID = app.Executor.Simulation.GetEntity().UniqueID,
+						scheduledBeginTime = app.Executor.Simulation.Clock
+					};
+
 					// return true because entity should be released
 					return true;
 					break;
@@ -445,29 +559,35 @@ namespace SoarIMPRINTPlugin
 					this.log("Scope: Interrupt task");
 
 					// get task which should be interrupted
-					/*sml.Identifier interruptedTaskWME = agent.GetOutputLink()
-															 .FindIDByAttribute("strategy")
-															 .FindIDByAttribute("interrupt-task");*/
 					sml.Identifier interruptedTaskWME = agent.GetOutputLink().GetIDAtAttributePath("strategy.interrupt-task");
 					string taskID = interruptedTaskWME.FindStringByAttribute("taskID");
+
+					// store info on decision
+					this.lastDecision = new InterruptDecision
+					{
+						type = DeferredDecision.DecisionType.InterruptDecision,
+						uniqueID = app.Executor.Simulation.GetEntity().UniqueID,
+						scheduledBeginTime = app.Executor.Simulation.Clock,
+						interruptUniqueID = ((MAAD.Simulator.IEntity)app.Executor.Simulation.IModel.Find("ID", taskID)[0]).UniqueID
+					};
+
 					// suspend entity(ies?) in task
 					// TODO this will abort all entities in task. should we include entity tag?
 					// suspend, and ask Scope if we can restart once in a while (in end effect?)
-					app.AcceptTrace("Interrupting " + app.Executor.Simulation.IModel.FindTask(taskID).Properties.Name + ": " + app.Executor.Simulation.IModel.Suspend("ID", taskID));
+					//app.AcceptTrace("Interrupting " + app.Executor.Simulation.IModel.FindTask(taskID).Properties.Name + ": " + app.Executor.Simulation.IModel.Suspend("ID", taskID));
 					// remove task from Scope
-					// TODO should we actually annotate with ^suspend yes and to let Scope know more about what's happening?
-					//RemoveTask(GetIMPRINTTaskFromRuntimeTask(app.Executor.Simulation.IModel.FindTask(taskID)));
 					// TODO for some reason we have to remove ^active before adding ^delayed, otherwise it crashes. we should figure out why
 					// remove ^active from WME
-					this.log("Interrupt: remove ^active: " + interruptedTaskWME.FindByAttribute("active", 0).DestroyWME(), 5);
+					//this.log("Interrupt: remove ^active: " + interruptedTaskWME.FindByAttribute("active", 0).DestroyWME(), 5);
 					// add ^delayed yes to WME
-					this.log("Interrupt: add ^delayed: " + interruptedTaskWME.CreateStringWME("delayed", "yes").GetValue(), 5);
+					//this.log("Interrupt: add ^delayed: " + interruptedTaskWME.CreateStringWME("delayed", "yes").GetValue(), 5);
 					// give entity the INTERRUPT_TAG tag
 					// TODO store uniqueID on task so we can target exactly which one
-					foreach (MAAD.Simulator.IEntity entity in app.Executor.Simulation.IModel.Find("ID", taskID))
+					/*foreach (MAAD.Simulator.IEntity entity in app.Executor.Simulation.IModel.Find("ID", taskID))
 					{
 						entityProperties.AddProp(entity.UniqueID, EntityProperty.InterruptEntity);
-					}
+					}*/
+
 					// destroy the task input element and it will be added later on task begin
 					taskWME.DestroyWME();
 					// return true because entity should be released
@@ -475,10 +595,15 @@ namespace SoarIMPRINTPlugin
 					break;
 				case "reject-duplicate":
 					this.log("Scope: Reject duplicate");
+
 					// mark KILL_TAG
 					entityProperties.AddProp(app.Executor.Simulation.GetEntity().UniqueID, EntityProperty.KillEntity);
+
+					// TODO what to do with these? kill them immediately? or deferred?
+
 					// destroy the task input element
 					taskWME.DestroyWME();
+
 					// return false because entity should not be released
 					return false;
 					break;
@@ -595,6 +720,10 @@ namespace SoarIMPRINTPlugin
 				}
 			}*/
 			return true;
+		}
+		public sml.Identifier AddTask(MAAD.Simulator.Utilities.IRuntimeTask task)
+		{
+			return AddTask(GetIMPRINTTaskFromRuntimeTask(task));
 		}
 		public sml.Identifier AddTask(MAAD.IMPRINTPro.NetworkTask task)
 		{
