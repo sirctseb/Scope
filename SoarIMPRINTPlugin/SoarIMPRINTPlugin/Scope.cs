@@ -17,10 +17,6 @@ namespace SoarIMPRINTPlugin
 		}
 
 		private ScopeData scopeData = new ScopeData();
-		private const int KILL_TAG = 1953;
-		private const int INTERRUPT_TAG = 1954;
-		private const int DELAY_TAG = 1955;
-		private const int RESUME_DELAY_TAG = 1956;
 
 		// properties we can ascribe to entities
 		public enum EntityProperty
@@ -326,28 +322,33 @@ namespace SoarIMPRINTPlugin
 				if (nt != null)
 				{
 					this.log("Release: adding release task: " + nt.ID);
+
 					// add task props to Soar input
 					sml.Identifier taskWME = AddReleaseTask(nt);
 
-					// TODO make "run until it decides what to do" more robust
-					// run the agent until it decides what to do
 					this.log("Release: Running scope to get release decision",5);
 					string output = agent.RunSelfTilOutput();
+
+					// get output commnad
 					sml.Identifier command = agent.GetCommand(0);
+
 					// TODO if no command exists?
 					// if(!agent.Commands())
+
 					// get strategy name
 					string strategy = command.GetParameterValue("name");
 					this.log("Release: Scope returned: " + strategy, 5);
+
 					// TODO if command isn't a strategy somehow?
 					// if(agent.GetCommandName() != "strategy")
-					//string strategy = GetOutput("strategy", "name");
-					//this.log("Output strategy was: " + strategy, 5);
+
 					// execute the strategy
 					release = ApplyStrategy(strategy, taskWME);
+
 					// mark the command as complete
 					command.AddStatusComplete();
 					agent.ClearOutputLinkChanges();
+
 					// log the decision
 					scopeData.LogStrategy(strategy, executor.Simulation.Clock);
 				}
