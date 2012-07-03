@@ -76,6 +76,9 @@ namespace SoarIMPRINTPlugin
 			{
 				return Remove(ID, property);
 			}
+			public IEnumerable<int> EntitiesWith(EntityProperty property) {
+				return Keys.Where(key => EntityHas(key, EntityProperty.KillEntity));
+			}
 		}
 
 		private EntityProperties entityProperties = new EntityProperties();
@@ -281,7 +284,7 @@ namespace SoarIMPRINTPlugin
 
 			// kill any entities that have been marked
 			// TODO make sure we can look up entities like this with Abort
-			foreach(int uniqueID in entityProperties.Keys.Where(key => entityProperties.EntityHas(key, EntityProperty.KillEntity)))
+			foreach(int uniqueID in entityProperties.EntitiesWith(EntityProperty.KillEntity))
 			{
 				executor.Simulation.IModel.Abort("UniqueID", uniqueID);
 			}
