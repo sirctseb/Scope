@@ -259,6 +259,9 @@ namespace SoarIMPRINTPlugin
 					interruptedTaskWME.FindByAttribute("active", 0).DestroyWME();
 					// add ^delayed
 					interruptedTaskWME.CreateStringWME("delayed", "yes");
+
+					// mark interrupted task as interrupted
+					entityProperties.AddProp(((InterruptDecision)lastDecision).interruptUniqueID, EntityProperty.InterruptEntity);
 				}
 
 				// add task props to Soar input
@@ -279,6 +282,7 @@ namespace SoarIMPRINTPlugin
 
 				// check that there are any delayed tasks before trying to resume them
 				// if we don't check, the scope agent can get confused
+				// TODO can this happen before a delayed entity is marked ^delayed in scope?
 				if(entityProperties.Any(entry => entry.Value.Contains(EntityProperty.DelayEntity)||
 												 entry.Value.Contains(EntityProperty.KillEntity)))
 				{
@@ -297,7 +301,7 @@ namespace SoarIMPRINTPlugin
 							// scope says to resume a task
 							// find the task scope wants to resume
 							string taskIDString = command.FindIDByAttribute("task").FindStringByAttribute("taskID");
-							//app.Executor.Simulation.IModel.Resume("ID", taskIDString);
+
 							// search through entities in the task
 							foreach (MAAD.Simulator.IEntity entity in app.Executor.Simulation.IModel.Find("ID", taskIDString))
 							{
