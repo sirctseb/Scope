@@ -22,6 +22,49 @@ namespace SoarIMPRINTPlugin
 		private const int DELAY_TAG = 1955;
 		private const int RESUME_DELAY_TAG = 1956;
 
+		// properties we can ascribe to entities
+		public enum EntityProperty
+		{
+			KillEntity,
+			InterruptEntity,
+			DelayEntity,
+			ResumeEntity
+		};
+		
+		// a class to manage entity markings
+		public class EntityProperties : Dictionary<int, HashSet<EntityProperty>>
+		{
+			// determine if an entity has a property
+			public bool Contains(int ID, EntityProperty property) {
+				if(this.ContainsKey(ID)) {
+					return this[ID].Contains(property);
+				}
+				return false;
+			}
+			// add property to entity
+			public bool Add(int ID, EntityProperty property)
+			{
+				// if no properties for this entry, add the set
+				if (!this.ContainsKey(ID))
+				{
+					this[ID] = new HashSet<EntityProperty>();
+				}
+				// add the property
+				return this[ID].Add(property);
+			}
+			// remove property from entity
+			public bool Remove(int ID, EntityProperty property)
+			{
+				if (this.ContainsKey(ID))
+				{
+					return this[ID].Remove(property);
+				}
+				return false;
+			}
+		}
+
+		private EntityProperties entityProperties = new EntityProperties();
+
 		// TODO test when IMPRINT creates plugin objects
 		private static bool kernelInitialized = false;
 		private static sml.Kernel kernel = null;
