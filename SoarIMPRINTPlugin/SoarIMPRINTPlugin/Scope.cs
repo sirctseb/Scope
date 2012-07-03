@@ -32,34 +32,49 @@ namespace SoarIMPRINTPlugin
 		};
 		
 		// a class to manage entity markings
-		public class EntityProperties : Dictionary<int, HashSet<EntityProperty>>
+		public class MutliDict<TKey, TValue> : Dictionary<TKey, HashSet<TValue> >
 		{
 			// determine if an entity has a property
-			public bool Contains(int ID, EntityProperty property) {
-				if(this.ContainsKey(ID)) {
-					return this[ID].Contains(property);
+			public bool Contains(TKey key, TValue value) {
+				if(this.ContainsKey(key)) {
+					return this[key].Contains(value);
 				}
 				return false;
 			}
 			// add property to entity
-			public bool Add(int ID, EntityProperty property)
+			public bool Add(TKey key, TValue value)
 			{
 				// if no properties for this entry, add the set
-				if (!this.ContainsKey(ID))
+				if (!this.ContainsKey(key))
 				{
-					this[ID] = new HashSet<EntityProperty>();
+					this[key] = new HashSet<TValue>();
 				}
 				// add the property
-				return this[ID].Add(property);
+				return this[key].Add(value);
 			}
 			// remove property from entity
-			public bool Remove(int ID, EntityProperty property)
+			public bool Remove(TKey key, TValue value)
 			{
-				if (this.ContainsKey(ID))
+				if (this.ContainsKey(key))
 				{
-					return this[ID].Remove(property);
+					return this[key].Remove(value);
 				}
 				return false;
+			}
+		}
+		public class EntityProperties : MutliDict<int, EntityProperty>
+		{
+			public bool EntityHas(int ID, EntityProperty property)
+			{
+				return Contains(ID, property);
+			}
+			public bool AddProp(int ID, EntityProperty property)
+			{
+				return Add(ID, property);
+			}
+			public bool RemoveProp(int ID, EntityProperty property)
+			{
+				return Remove(ID, property);
 			}
 		}
 
@@ -130,7 +145,8 @@ namespace SoarIMPRINTPlugin
 			app.AcceptTrace("Before begin effect: " + executor.Simulation.GetTask().Properties.Name);
 			// TODO if a KILL_TAG entity gets here, something has gone wrong
 			// check that entity hasn't been marked KILL_TAG yet
-			if (executor.EventQueue.GetEntity().Tag == KILL_TAG)
+			//if (executor.EventQueue.GetEntity().Tag == KILL_TAG)
+			if(entityProperties.EntityHas(executor.EventQueue.GetEntity().UniqueID, EntityProperty.KillEntity))
 			{
 				logger.log("KILL_TAG in Beginning Effect!");
 				return;
@@ -175,8 +191,8 @@ namespace SoarIMPRINTPlugin
 
 				// check that there are any delayed tasks before trying to resume them
 				// if we don't check, the scope agent can get confused
-				if (executor.Simulation.IModel.Find("Tag", DELAY_TAG).Count > 0 ||
-					executor.Simulation.IModel.Find("Tag", INTERRUPT_TAG).Count > 0)
+				if(entityProperties.Any(entry => entry.Value.Contains(EntityProperty.DelayEntity)||
+												 entry.Value.Contains(EntityProperty.KillEntity)))
 				{
 					this.log("End: found delayed or interrupted tasks, running scope for resume decision", 5);
 					// run scope to decide if we should resume any delayed or interrupted tasks
@@ -198,7 +214,7 @@ namespace SoarIMPRINTPlugin
 							foreach (MAAD.Simulator.IEntity entity in app.Executor.Simulation.IModel.Find("ID", taskIDString))
 							{
 								// check if it is in a suspended state
-								if (entity.Tag == DELAY_TAG)
+								if(entityProperties.EntityHas(entity.UniqueID, EntityProperty.DelayEntity))
 								{
 									// mark the entity to be resumed
 									this.log("Scope: Resume delayed");
@@ -207,7 +223,7 @@ namespace SoarIMPRINTPlugin
 									// set tag to that release condition automatically accepts it
 									// TODO there is now a gap between marking to resume and actually starting the task
 									// TODO is this a problem?
-									entity.Tag = RESUME_DELAY_TAG;
+									entityProperties.AddProp(entity.UniqueID, EntityProperty.ResumeEntity);
 									// add the task as a real task
 									//AddActiveTask(executor.GetRuntimeTask(entity.ID));
 									// log that we resumed a task
@@ -216,13 +232,13 @@ namespace SoarIMPRINTPlugin
 									this.log("End: removing DELAY task " + entity.ID + " and marking RESUME_DELAY", 5);
 									RemoveTask(executor.GetRuntimeTask(entity.ID));
 								}
-								else if (entity.Tag == INTERRUPT_TAG)
+								else if(entityProperties.EntityHas(entity.UniqueID, EntityProperty.InterruptEntity))
 								{
 									this.log("Scope: Resume interrupted");
 									// trace that we are resuming
 									app.AcceptTrace("Resuming task " + entity.ID + ": " + executor.Simulation.IModel.Resume("ID", entity.ID));
 									// TODO this should be restored from what it was before
-									entity.Tag = 0;
+									entityProperties.RemoveProp(entity.UniqueID, EntityProperty.InterruptEntity);
 									// add the task as a real task
 									//AddActiveTask(executor.GetRuntimeTask(entity.ID));
 									// log that we resumed a task
@@ -264,18 +280,22 @@ namespace SoarIMPRINTPlugin
 			this.log("Start OnAfterReleaseCondition: " + executor.Simulation.GetTask().Properties.Name, 5);
 
 			// kill any entities that have been marked
-			executor.Simulation.IModel.Abort("Tag", KILL_TAG);
+			// TODO make sure we can look up entities like this with Abort
+			foreach(int uniqueID in entityProperties.Keys.Where(key => entityProperties.EntityHas(key, EntityProperty.KillEntity)))
+			{
+				executor.Simulation.IModel.Abort("UniqueID", uniqueID);
+			}
 			// TODO suspend any entities that have been marked delayed
 
 			// check that entity hasn't been marked KILL_TAG yet
-			if (executor.EventQueue.GetEntity().Tag == KILL_TAG)
+			if(entityProperties.EntityHas(executor.Simulation.GetEntity().UniqueID, EntityProperty.KillEntity))
 			{
 				this.log("KILL_TAG coming through release condition, rejecting", 3);
 				release = false;
 				return;
 			}
 			// check that entity isn't marked delayed
-			if (executor.EventQueue.GetEntity().Tag == DELAY_TAG)
+			if(entityProperties.EntityHas(executor.Simulation.GetEntity().UniqueID, EntityProperty.DelayEntity))
 			{
 				this.log("DELAY_TAG coming through release condition, rejecting", 3);
 				release = false;
@@ -283,12 +303,11 @@ namespace SoarIMPRINTPlugin
 			}
 
 			// if entity is marked to resume after delay, return true
-			if (executor.EventQueue.GetEntity().Tag == RESUME_DELAY_TAG)
+			if(entityProperties.EntityHas(executor.Simulation.GetEntity().UniqueID, EntityProperty.ResumeEntity))
 			{
 				this.log("RESUME_DELAY_TAG coming through release condition, accepting", 3);
-				// set tag to normal
-				// TODO this should reset tag to what is was before
-				executor.Simulation.GetEntity().Tag = 0;
+				// remove resume property
+				entityProperties.RemoveProp(executor.Simulation.GetEntity().UniqueID, EntityProperty.ResumeEntity);
 				release = true;
 				return;
 			}
@@ -371,7 +390,7 @@ namespace SoarIMPRINTPlugin
 				case "delay-new":
 					this.log("Scope: Delay new task");
 					// mark DELAY_TAG
-					app.Executor.EventQueue.GetEntity().Tag = DELAY_TAG;
+					entityProperties.AddProp(app.Executor.Simulation.GetEntity().UniqueID, EntityProperty.DelayEntity);
 					// add ^delayed yes to WME
 					this.log("Delay: add ^delayed: " + taskWME.CreateStringWME("delayed", "yes").GetValue(), 5);
 					// remove ^release from WME
@@ -384,7 +403,7 @@ namespace SoarIMPRINTPlugin
 				case "ignore-new":
 					this.log("Scope: Ignore new task");
 					// mark KILL_TAG
-					app.Executor.EventQueue.GetEntity().Tag = KILL_TAG;
+					entityProperties.AddProp(app.Executor.Simulation.GetEntity().UniqueID, EntityProperty.KillEntity);
 					// destroy the task input element
 					taskWME.DestroyWME();
 					// return false because entity should not be released
@@ -420,11 +439,10 @@ namespace SoarIMPRINTPlugin
 					// add ^delayed yes to WME
 					this.log("Interrupt: add ^delayed: " + interruptedTaskWME.CreateStringWME("delayed", "yes").GetValue(), 5);
 					// give entity the INTERRUPT_TAG tag
-					// TODO this could be disruptive if the model is otherwise using tags
+					// TODO store uniqueID on task so we can target exactly which one
 					foreach (MAAD.Simulator.IEntity entity in app.Executor.Simulation.IModel.Find("ID", taskID))
 					{
-						// TODO at the very least, we should restore the original tag when we resume
-						entity.Tag = INTERRUPT_TAG;
+						entityProperties.AddProp(entity.UniqueID, EntityProperty.InterruptEntity);
 					}
 					// destroy the task input element and it will be added later on task begin
 					taskWME.DestroyWME();
@@ -434,7 +452,7 @@ namespace SoarIMPRINTPlugin
 				case "reject-duplicate":
 					this.log("Scope: Reject duplicate");
 					// mark KILL_TAG
-					app.Executor.EventQueue.GetEntity().Tag = KILL_TAG;
+					entityProperties.AddProp(app.Executor.Simulation.GetEntity().UniqueID, EntityProperty.KillEntity);
 					// destroy the task input element
 					taskWME.DestroyWME();
 					// return false because entity should not be released
