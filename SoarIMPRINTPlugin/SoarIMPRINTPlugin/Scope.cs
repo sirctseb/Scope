@@ -246,6 +246,23 @@ namespace SoarIMPRINTPlugin
 		}
 		public void OnAfterReleaseCondition(MAAD.Simulator.Executor executor, ref bool release)
 		{
+			//this.log("eventy Q attrs: " + executor.Simulation.GetEntity().GetEventQueueAttributes());
+			/*foreach (object obj in executor.Simulation.GetEntity().GetEventQueueAttributes())
+			{
+				this.log("OARC Q attrs: " + obj); 
+			}*/
+			/*this.log("task.IsActive(): " + executor.Simulation.GetTask().IsActive);
+			this.log("task.IsQueueActive(): " + executor.Simulation.GetTask().IsQueueActive);
+			this.log("task.ItemsInQueue: " + executor.Simulation.GetTask().ItemsInQueue);
+			this.log("task.ItemsInTask: " + executor.Simulation.GetTask().ItemsInTask);
+			this.log("task.Properties: " + executor.Simulation.GetTask().Properties);
+			this.log("entity action: " + executor.EventQueue.GetEntityActionString(executor.EventQueue.GetEntity()));
+			this.log("OARC entity type: " + executor.Simulation.GetEntity().Type);*/
+			this.log("entities (current: " + executor.EventQueue.GetEntity().ID + "): ");
+			foreach (MAAD.Simulator.IEntity entity in executor.Simulation.IModel.Find("Tag", 0))
+			{
+				this.log("entity in " + entity.ID + ", " + entity.Time);
+			}
 			return;
 		}
 		public void OnAfterDuration(MAAD.Simulator.Executor executor, ref double number)
@@ -268,6 +285,14 @@ namespace SoarIMPRINTPlugin
 		{
 			this.log("OneAfterBeginningEffect for task: " + executor.Simulation.GetTask().Properties.ID);
 		}
+		public void OnBeforeQueueEnteringEffect(MAAD.Simulator.Executor executor)
+		{
+			this.log("OnBeforeQueueEnteringEffect for task: " + executor.Simulation.GetTask().ID);
+		}
+		void OnAddEntityToEventQueue(MAAD.Simulator.Executor executor, MAAD.Simulator.IEntity entity, ref bool cancel)
+		{
+			this.log("OnAddEntityToEventQueue for task: " + entity.ID);
+		}
 		private MAAD.Simulator.Utilities.DSimulationEvent OBBE;
 		private MAAD.Simulator.Utilities.DSimulationBoolEvent OARC;
 		private MAAD.Simulator.Utilities.DSimulationEvent OAEE;
@@ -278,6 +303,11 @@ namespace SoarIMPRINTPlugin
 		private MAAD.Simulator.Utilities.DSimulationEvent OBD;
 		private MAAD.Simulator.Utilities.DSimulationEvent OBLE;
 		private MAAD.Simulator.Utilities.DSimulationEvent OABE;
+
+		private MAAD.Simulator.Utilities.DSimulationEvent OBQEE;
+		private MAAD.Simulator.Utilities.DSimulationAddEvent OAETEQ;
+		
+
 		public void RegisterEvents()
 		{
 			app.Generator.OnAfterReleaseCondition +=
@@ -290,6 +320,11 @@ namespace SoarIMPRINTPlugin
 				OSC = new MAAD.Simulator.Utilities.DNetworkEvent(OnSimulationComplete);
 			app.Generator.OnAfterEndingEffect +=
 				OAEE = new MAAD.Simulator.Utilities.DSimulationEvent(OnAfterEndingEffect);
+
+			app.Generator.OnBeforeQueueEnteringEffect +=
+				OBQEE = new MAAD.Simulator.Utilities.DSimulationEvent(OnBeforeQueueEnteringEffect);
+			app.Generator.OnAddEntityToEventQueue +=
+				OAETEQ = new MAAD.Simulator.Utilities.DSimulationAddEvent(OnAddEntityToEventQueue);
 
 			// testing other events
 			//app.Generator.OnAddEntityToEventQueue += new MAAD.Simulator.Utilities.DSimulationAddEvent(Generator_OnAddEntityToEventQueue);
@@ -314,6 +349,9 @@ namespace SoarIMPRINTPlugin
 			app.Generator.OnSimulationBegin -= OSB;
 			app.Generator.OnSimulationComplete -= OSC;
 			app.Generator.OnAfterEndingEffect -= OAEE;
+
+			app.Generator.OnBeforeQueueEnteringEffect -= OBQEE;
+			app.Generator.OnAddEntityToEventQueue -= OAETEQ;
 		}
 
 		#region IMPRINT communication stuff
