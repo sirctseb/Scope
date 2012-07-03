@@ -18,6 +18,24 @@ namespace SoarIMPRINTPlugin
 
 		private ScopeData scopeData = new ScopeData();
 
+		// class to represent a deferred action
+		public class DeferredDecision
+		{
+			public enum DecisionType
+			{
+				RejectDecision,
+				DelayDecision
+			}
+
+			// what the decision was
+			public DecisionType type;
+			// what time the entity was scheduled to begin
+			public double scheduledBeginTime;
+		}
+
+		// a set of currently deferred actions
+		HashSet<DeferredDecision> deferredDecisions = new HashSet<DeferredDecision>();
+
 		// properties we can ascribe to entities
 		public enum EntityProperty
 		{
