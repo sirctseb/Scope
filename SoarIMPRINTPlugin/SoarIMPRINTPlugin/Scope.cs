@@ -291,7 +291,7 @@ namespace SoarIMPRINTPlugin
 				// if we don't check, the scope agent can get confused
 				// TODO can this happen before a delayed entity is marked ^delayed in scope?
 				if(entityProperties.Any(entry => entry.Value.Contains(EntityProperty.DelayEntity)||
-												 entry.Value.Contains(EntityProperty.IgnoreEntity)))
+												 entry.Value.Contains(EntityProperty.InterruptEntity)))
 				{
 					this.log("End: found delayed or interrupted tasks, running scope for resume decision", 5);
 					// run scope to decide if we should resume any delayed or interrupted tasks
