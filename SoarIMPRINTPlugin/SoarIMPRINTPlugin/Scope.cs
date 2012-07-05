@@ -175,8 +175,10 @@ namespace SoarIMPRINTPlugin
 		private void CheckForDelaysAndRejects(double Clock)
 		{
 			// check each defered event
-			foreach (DeferredDecision decision in this.deferredDecisions)
+			foreach (DeferredDecision decision in this.deferredDecisions.Where(decision => decision.scheduledBeginTime < Clock))
 			{
+				this.log("Clock advanced, checking " + decision.type + " for action", 6);
+
 				// check if clock is past the scheduled start of the decision
 				if (decision.scheduledBeginTime < Clock)
 				{
@@ -199,11 +201,10 @@ namespace SoarIMPRINTPlugin
 						string ID = ((MAAD.Simulator.IEntity)app.Executor.Simulation.IModel.Find("UniqueID", decision.uniqueID)[0]).ID;
 						this.AddTask(app.Executor.Simulation.IModel.FindTask(ID)).CreateStringWME("delayed", "yes");
 					}
-					// remove decision from set
-					// TODO can we do this while iterating?
-					this.deferredDecisions.Remove(decision);
 				}
 			}
+			// remove processed decisions from set
+			deferredDecisions.RemoveWhere(decision => decision.scheduledBeginTime < Clock);
 		}
 
 		//public delegate void DSimulationEvent(Executor executor);
