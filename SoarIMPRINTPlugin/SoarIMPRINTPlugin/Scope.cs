@@ -56,7 +56,8 @@ namespace SoarIMPRINTPlugin
 			InterruptEntity,
 			DelayEntity,
 			TentativeDelayEntity,
-			ResumeEntity
+			ResumeEntity,
+			ResumePurgatoryEntity
 		};
 		
 		// a class to manage entity markings
@@ -212,6 +213,10 @@ namespace SoarIMPRINTPlugin
 		private void OnBeforeBeginningEffect(MAAD.Simulator.Executor executor)
 		{
 			app.AcceptTrace("Before begin effect: " + executor.Simulation.GetTask().Properties.Name);
+
+			// TODO checking for bug that should exist (see RC handler)
+			// once an entity starts its task, it is out of resume purgatory
+			entityProperties.RemoveProp(executor.Simulation.GetEntity().UniqueID, EntityProperty.ResumePurgatoryEntity);
 
 			// TODO if a KILL_TAG entity gets here, something has gone wrong
 			// check that entity hasn't been marked KILL_TAG yet
@@ -374,6 +379,12 @@ namespace SoarIMPRINTPlugin
 		{
 			this.log("Start OnAfterReleaseCondition: " + executor.Simulation.GetTask().Properties.Name, 5);
 
+			// TODO check for resume purgatory entities which may exist due to a bug I can't produce but should exist
+			if (entityProperties.EntityHas(executor.Simulation.GetEntity().UniqueID, EntityProperty.ResumePurgatoryEntity))
+			{
+				throw new Exception("Entity in resume purgatory entering RC");
+			}
+
 			// don't let delayed entities through. this filter is to replace suspending and resuming the entity
 			if (entityProperties.EntityHas(executor.Simulation.GetEntity().UniqueID, EntityProperty.DelayEntity))
 			{
@@ -394,6 +405,8 @@ namespace SoarIMPRINTPlugin
 				// RCs evaluated, but the other one actually starts before this one, so this one has RC evaluated
 				// again. then this would be subject to release decision again. This is a bug
 				entityProperties.RemoveProp(executor.Simulation.GetEntity().UniqueID, EntityProperty.ResumeEntity);
+				// TODO to detect manifestation of this bug, put the resume purgatory property on the entity and check for it later
+				entityProperties.AddProp(executor.Simulation.GetEntity().UniqueID, EntityProperty.ResumePurgatoryEntity);
 
 				// update last decision as resume decision
 				this.lastDecision = new DeferredDecision
