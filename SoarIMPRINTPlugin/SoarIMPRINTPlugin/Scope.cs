@@ -106,7 +106,7 @@ namespace SoarIMPRINTPlugin
 				return Remove(ID, property);
 			}
 			public IEnumerable<int> EntitiesWith(EntityProperty property) {
-				return Keys.Where(key => EntityHas(key, EntityProperty.KillEntity));
+				return Keys.Where(key => EntityHas(key, property));
 			}
 		}
 
