@@ -52,7 +52,8 @@ namespace SoarIMPRINTPlugin
 		// properties we can ascribe to entities
 		public enum EntityProperty
 		{
-			KillEntity,
+			RejectDuplicateEntity,
+			IgnoreEntity,
 			InterruptEntity,
 			DelayEntity,
 			TentativeDelayEntity,
@@ -221,7 +222,7 @@ namespace SoarIMPRINTPlugin
 			// TODO if a KILL_TAG entity gets here, something has gone wrong
 			// check that entity hasn't been marked KILL_TAG yet
 			//if (executor.EventQueue.GetEntity().Tag == KILL_TAG)
-			if(entityProperties.EntityHas(executor.EventQueue.GetEntity().UniqueID, EntityProperty.KillEntity))
+			if(entityProperties.EntityHas(executor.EventQueue.GetEntity().UniqueID, EntityProperty.IgnoreEntity))
 			{
 				logger.log("KILL_TAG in Beginning Effect!");
 				return;
@@ -290,7 +291,7 @@ namespace SoarIMPRINTPlugin
 				// if we don't check, the scope agent can get confused
 				// TODO can this happen before a delayed entity is marked ^delayed in scope?
 				if(entityProperties.Any(entry => entry.Value.Contains(EntityProperty.DelayEntity)||
-												 entry.Value.Contains(EntityProperty.KillEntity)))
+												 entry.Value.Contains(EntityProperty.IgnoreEntity)))
 				{
 					this.log("End: found delayed or interrupted tasks, running scope for resume decision", 5);
 					// run scope to decide if we should resume any delayed or interrupted tasks
@@ -383,6 +384,17 @@ namespace SoarIMPRINTPlugin
 			if (entityProperties.EntityHas(executor.Simulation.GetEntity().UniqueID, EntityProperty.ResumePurgatoryEntity))
 			{
 				throw new Exception("Entity in resume purgatory entering RC");
+			}
+
+			// abort any entities that scope said to reject because they are duplicates
+			foreach (int uniqueID in entityProperties.EntitiesWith(EntityProperty.RejectDuplicateEntity))
+			{
+				int removed = executor.Simulation.IModel.Abort("UniqueID", uniqueID);
+				this.log("killing duplicate entity: " + removed, 5);
+				if (removed > 0)
+				{
+					entityProperties.RemoveProp(uniqueID, EntityProperty.RejectDuplicateEntity);
+				}
 			}
 
 			// don't let delayed entities through. this filter is to replace suspending and resuming the entity
@@ -547,10 +559,10 @@ namespace SoarIMPRINTPlugin
 
 					// create the info to defer the execution of the action
 					// only create if we haven't already done so
-					if (!entityProperties.EntityHas(app.Executor.Simulation.GetEntity().UniqueID, EntityProperty.KillEntity))
+					if (!entityProperties.EntityHas(app.Executor.Simulation.GetEntity().UniqueID, EntityProperty.IgnoreEntity))
 					{
 						// mark KILL_TAG
-						entityProperties.AddProp(app.Executor.Simulation.GetEntity().UniqueID, EntityProperty.KillEntity);
+						entityProperties.AddProp(app.Executor.Simulation.GetEntity().UniqueID, EntityProperty.IgnoreEntity);
 
 						// create info
 						deferredDecisions.Add(new DeferredDecision
@@ -627,9 +639,10 @@ namespace SoarIMPRINTPlugin
 					this.log("Scope: Reject duplicate");
 
 					// mark KILL_TAG
-					entityProperties.AddProp(app.Executor.Simulation.GetEntity().UniqueID, EntityProperty.KillEntity);
+					entityProperties.AddProp(app.Executor.Simulation.GetEntity().UniqueID, EntityProperty.RejectDuplicateEntity);
 
 					// TODO what to do with these? kill them immediately? or deferred?
+					// killing immediately in RC
 
 					// destroy the task input element
 					taskWME.DestroyWME();
