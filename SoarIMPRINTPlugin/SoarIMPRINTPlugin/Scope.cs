@@ -5,8 +5,20 @@ using System.Text;
 using Utility;
 using SMLExtension;
 
+using LauncherProject;
+using MAAD.IMPRINTPro;
+
 namespace SoarIMPRINTPlugin
 {
+	class IMPRINTRunner
+	{
+		[STAThread]
+		static void Main(string[] args)
+		{
+			Console.WriteLine(System.IO.Directory.GetCurrentDirectory());
+			MAAD.IMPRINTPro.Launcher.Main(args);
+		}
+	}
 	public class Scope : Utility.IMPRINTAccess, Utility.IIMPRINTLogger, MAAD.Utilities.Plugins.IPlugin
 	{
 		// to "subclass" from IMPRINTLogger
