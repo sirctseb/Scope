@@ -55,6 +55,7 @@ namespace SoarIMPRINTPlugin
 			KillEntity,
 			InterruptEntity,
 			DelayEntity,
+			TentativeDelayEntity,
 			ResumeEntity
 		};
 		
@@ -192,10 +193,9 @@ namespace SoarIMPRINTPlugin
 					}
 					else if (decision.type == DeferredDecision.DecisionType.DelayDecision)
 					{
-						// suspend the entity
-						this.log("Suspending entity for delay-task: " +
-							app.Executor.Simulation.IModel.Suspend("UniqueID", decision.uniqueID)
-							);
+						// change the entity property from tentative delay to actually delayed
+						entityProperties.RemoveProp(decision.uniqueID, EntityProperty.TentativeDelayEntity);
+						entityProperties.AddProp(decision.uniqueID, EntityProperty.DelayEntity);
 
 						// add task as delayed in scope
 						string ID = ((MAAD.Simulator.IEntity)app.Executor.Simulation.IModel.Find("UniqueID", decision.uniqueID)[0]).ID;
@@ -317,6 +317,8 @@ namespace SoarIMPRINTPlugin
 									// TODO there is now a gap between marking to resume and actually starting the task
 									// TODO is this a problem?
 									entityProperties.AddProp(entity.UniqueID, EntityProperty.ResumeEntity);
+									// remove the delay property
+									entityProperties.RemoveProp(entity.UniqueID, EntityProperty.DelayEntity);
 									// add the task as a real task
 									//AddActiveTask(executor.GetRuntimeTask(entity.ID));
 									// log that we resumed a task
@@ -371,6 +373,16 @@ namespace SoarIMPRINTPlugin
 		public void OnAfterReleaseCondition(MAAD.Simulator.Executor executor, ref bool release)
 		{
 			this.log("Start OnAfterReleaseCondition: " + executor.Simulation.GetTask().Properties.Name, 5);
+
+			// don't let delayed entities through. this filter is to replace suspending and resuming the entity
+			if (entityProperties.EntityHas(executor.Simulation.GetEntity().UniqueID, EntityProperty.DelayEntity))
+			{
+				// don't let it through
+				release = false;
+
+				// also don't make a decision about it
+				return;
+			}
 
 			// if entity is marked to resume after delay, return true
 			if(entityProperties.EntityHas(executor.Simulation.GetEntity().UniqueID, EntityProperty.ResumeEntity))
@@ -497,10 +509,10 @@ namespace SoarIMPRINTPlugin
 
 					// create the info to defer the execution of the action
 					// only create if we haven't already done so
-					if (!entityProperties.EntityHas(app.Executor.Simulation.GetEntity().UniqueID, EntityProperty.DelayEntity))
+					if (!entityProperties.EntityHas(app.Executor.Simulation.GetEntity().UniqueID, EntityProperty.TentativeDelayEntity))
 					{
 						// mark DELAY_TAG
-						entityProperties.AddProp(app.Executor.Simulation.GetEntity().UniqueID, EntityProperty.DelayEntity);
+						entityProperties.AddProp(app.Executor.Simulation.GetEntity().UniqueID, EntityProperty.TentativeDelayEntity);
 
 						// create info
 						deferredDecisions.Add(new DeferredDecision
