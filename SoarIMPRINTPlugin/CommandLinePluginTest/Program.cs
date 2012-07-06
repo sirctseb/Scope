@@ -12,7 +12,7 @@ namespace CommandLinePluginTest
 		static void Main(string[] args)
 		{
 			SoarIMPRINTPlugin.Scope scope = new Scope();
-			if (Scope.CreateKernel())
+			if (Scope.InitializeKernel())
 			{
 				Console.WriteLine("created kernel");
 			}
@@ -21,7 +21,7 @@ namespace CommandLinePluginTest
 				Console.WriteLine("Failed to create kernel");
 			}
 
-			Scope.InitializeScope("..\\..\\..\\..\\TestAgent\\test-agent.soar");
+			scope.InitializeAgent("..\\..\\..\\..\\TestAgent\\test-agent.soar");
 			scope.SetInput("text", "blurg");
 			scope.RunAgent(3);
 			string resp = scope.GetOutput("response", "text");

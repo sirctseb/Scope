@@ -118,11 +118,15 @@ namespace SoarIMPRINTPlugin
 		private static sml.Kernel kernel = null;
 		public static sml.Agent agent = null;
 		public string ScopeOutput = null;
+		private static bool enable = false;
 		private bool eventsRegistered = false;
 
 		// hold the last decision & time so that we can filter duplicate perfom-alls
 		private string lastStrategyDecision;
 		private double lastStrategyDecisionTime;
+
+		// Scope instance that static methods can access
+		private static Scope instance = null;
 
 		public Scope()
 		{
@@ -131,12 +135,15 @@ namespace SoarIMPRINTPlugin
 			this.enable("debug");
 			// high debug output
 			this.logger.LogLevel = 5;
+
+			// store instance in static member
+			instance = this;
+			this.log("Registering instance in static member", 5);
 		}
 
 		public void EnableScope()
 		{
-			CreateKernel();
-			InitializeScope();
+			InitializeAgent();
 			RegisterEvents();
 			// TODO we don't catch OnSimulationBegin if we wait for first task begin to initialize
 			ResetSoar();
@@ -363,18 +370,46 @@ namespace SoarIMPRINTPlugin
 				}
 			}
 		}
-		public void OnSimulationBegin(object sender, EventArgs e)
+		public static void OnSimulationBegin(object sender, EventArgs e)
 		{
-			ResetSoar();
+			app.AcceptTrace("Simulation beginning, creating agent and registering events");
+
+			// init agent and register handlers
+			if (instance != null)
+			{
+				// setup agent stuff
+				// initialize agent
+				// TODO should agent be non-static then?
+				instance.InitializeAgent();
+				instance.ResetSoar();
+				instance.RegisterEvents();
+			}
+			else
+			{
+				app.AcceptTrace("Beginning simulation but we have no Scope instance to register events");
+			}
 		}
-		public void OnSimulationComplete(object sender, EventArgs e)
+		public static void OnSimulationComplete(object sender, EventArgs e)
 		{
+			app.AcceptTrace("Ending simulation, unregistering events");
+
+			if (instance != null)
+			{
+				instance.UnregisterEvents();
+				instance.KillAgent();
+			}
+			else
+			{
+				app.AcceptTrace("Ending simulation, but we have no Scope instance to unregister events");
+			}
+
+			// set enabled to false when a simulation ends so that it doesn't get stuck on after one simulation uses it
+			enable = false;
+
 			//KillKernel();
-			// TODO when to shutdown kernel?
-			UnregisterEvents();
 			// write data
-			scopeData.WriteCounts("C:\\Users\\christopher.j.best2\\Documents\\ScopeData\\scope_counts.txt");
-			scopeData.WriteTrace("C:\\Users\\christopher.j.best2\\Documents\\ScopeData\\scope_trace.txt");
+			//scopeData.WriteCounts("C:\\Users\\christopher.j.best2\\Documents\\ScopeData\\scope_counts.txt");
+			//scopeData.WriteTrace("C:\\Users\\christopher.j.best2\\Documents\\ScopeData\\scope_trace.txt");
 		}
 		public void OnAfterReleaseCondition(MAAD.Simulator.Executor executor, ref bool release)
 		{
@@ -482,11 +517,24 @@ namespace SoarIMPRINTPlugin
 			CheckForDelaysAndRejects(args.Clock);
 		}
 
+		// simulation begin / complete handlers
+		private static MAAD.Simulator.Utilities.DNetworkEvent OSB = new MAAD.Simulator.Utilities.DNetworkEvent(OnSimulationBegin);
+		private static MAAD.Simulator.Utilities.DNetworkEvent OSC = new MAAD.Simulator.Utilities.DNetworkEvent(OnSimulationComplete);
+		private static MAAD.Simulator.Utilities.DInitializeVariable IV = new MAAD.Simulator.Utilities.DInitializeVariable(OnInitializeVariable);
+
+		private static void OnInitializeVariable(MAAD.Simulator.Executor executor, string name, object variable)
+		{
+			// TODO check for the enable scope variable
+			//app.AcceptTrace("initialize variable: " + name + ": " + variable);
+			if (name == "EnableScope")
+			{
+				enable = true;
+			}
+		}
+
 		private MAAD.Simulator.Utilities.DSimulationEvent OBBE;
 		private MAAD.Simulator.Utilities.DSimulationBoolEvent OARC;
 		private MAAD.Simulator.Utilities.DSimulationEvent OAEE;
-		private MAAD.Simulator.Utilities.DNetworkEvent OSB;
-		private MAAD.Simulator.Utilities.DNetworkEvent OSC;
 		private EventHandler<MAAD.Simulator.ClockChangedArgs> OCA;
 		public void RegisterEvents()
 		{
@@ -659,23 +707,32 @@ namespace SoarIMPRINTPlugin
 		#endregion
 
 		#region soar communication stuff
-		public static bool CreateKernel()
+		public static bool InitializeKernel()
 		{
 			if (kernel == null)
 			{
 				kernel = sml.Kernel.CreateKernelInNewThread();
 				//this.log("Creating kernel: " + !kernel.HadError(), "debug");
+				app.AcceptTrace("Creating kernel");
 
 				return kernelInitialized = !kernel.HadError();
 			}
+
+			// register for simulation start / end
+			app.Generator.OnSimulationBegin += OSB;
+			app.Generator.OnSimulationComplete += OSC;
+			app.Generator.OnInitializeVariable += IV;
+
+			// TODO register for app close to kill the kernel
+
 			return true;
 		}
 
-		public static bool InitializeScope()
+		public bool InitializeAgent()
 		{
-			return InitializeScope("Scope/agent/scope.soar");
+			return InitializeAgent("Scope/agent/scope.soar");
 		}
-		public static bool InitializeScope(string source)
+		public bool InitializeAgent(string source)
 		{
 			if (agent == null)
 			{
@@ -714,6 +771,16 @@ namespace SoarIMPRINTPlugin
 			}
 
 			return !agent.HadError();
+		}
+		public bool KillAgent()
+		{
+			if (agent != null)
+			{
+				kernel.DestroyAgent(agent);
+				agent = null;
+				return !kernel.HadError();
+			}
+			return false;
 		}
 
 		public bool RunAgent(int steps)

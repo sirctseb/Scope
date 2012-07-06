@@ -20,6 +20,9 @@ namespace SoarIMPRINTPlugin
 
 		public IEnumerable<VariableName> GetExternalVariables()
 		{
+			// initialize the soar kernel
+			Scope.InitializeKernel();
+
 			return new VariableName[]{
 				new VariableName("SoarPlugin", typeof(Scope))
 			};
