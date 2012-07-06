@@ -406,7 +406,6 @@ namespace SoarIMPRINTPlugin
 			// set enabled to false when a simulation ends so that it doesn't get stuck on after one simulation uses it
 			enable = false;
 
-			//KillKernel();
 			// write data
 			//scopeData.WriteCounts("C:\\Users\\christopher.j.best2\\Documents\\ScopeData\\scope_counts.txt");
 			//scopeData.WriteTrace("C:\\Users\\christopher.j.best2\\Documents\\ScopeData\\scope_trace.txt");
@@ -722,10 +721,15 @@ namespace SoarIMPRINTPlugin
 			app.Generator.OnSimulationBegin += OSB;
 			app.Generator.OnSimulationComplete += OSC;
 			app.Generator.OnInitializeVariable += IV;
-
-			// TODO register for app close to kill the kernel
+			app.OnApplicationClosing += new MAAD.Utilities.Plugins.DStandardEvent(OnApplicationClosing);
 
 			return true;
+		}
+
+		private static MAAD.Utilities.Plugins.DStandardEvent OAC = new MAAD.Utilities.Plugins.DStandardEvent(OnApplicationClosing);
+		private static void OnApplicationClosing(object sender, EventArgs e)
+		{
+			KillKernel();
 		}
 
 		public bool InitializeAgent()
@@ -932,11 +936,17 @@ namespace SoarIMPRINTPlugin
 			return output;
 		}
 
-		public bool KillKernel()
+		public static bool KillKernel()
 		{
-			//this.log("killing kernel", "debug");
-			kernel.Shutdown();
-			return true;
+			// shutdown kernel if we haven't already
+			if (kernel != null)
+			{
+				kernel.Shutdown();
+				kernel = null;
+				return true;
+			}
+
+			return false;
 		}
 		#endregion
 
