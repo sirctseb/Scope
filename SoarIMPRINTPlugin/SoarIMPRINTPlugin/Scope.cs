@@ -19,7 +19,7 @@ namespace SoarIMPRINTPlugin
 		private ScopeData scopeData = new ScopeData();
 
 		// Class to represent a deferred action
-		public class DeferredDecision
+		private class DeferredDecision
 		{
 			public enum DecisionType
 			{
@@ -37,7 +37,7 @@ namespace SoarIMPRINTPlugin
 			// the unique ID of the entity that the decision pertains to
 			public int uniqueID;
 		}
-		public class InterruptDecision : DeferredDecision
+		private class InterruptDecision : DeferredDecision
 		{
 			// unique id of the entity this is supposed to interrupt
 			public int interruptUniqueID;
@@ -62,7 +62,7 @@ namespace SoarIMPRINTPlugin
 		};
 		
 		// A class to manage entity markings
-		public class MutliDict<TKey, TValue> : Dictionary<TKey, HashSet<TValue> >
+		private class MutliDict<TKey, TValue> : Dictionary<TKey, HashSet<TValue> >
 		{
 			// determine if an entity has a property
 			public bool Contains(TKey key, TValue value) {
@@ -92,7 +92,7 @@ namespace SoarIMPRINTPlugin
 				return false;
 			}
 		}
-		public class EntityProperties : MutliDict<int, EntityProperty>
+		private class EntityProperties : MutliDict<int, EntityProperty>
 		{
 			public bool EntityHas(int ID, EntityProperty property)
 			{
@@ -115,8 +115,12 @@ namespace SoarIMPRINTPlugin
 
 		// TODO test when IMPRINT creates plugin objects
 		private static sml.Kernel kernel = null;
-		public static sml.Agent agent = null;
+		private sml.Agent agent = null;
+		// True iff scope should be used during the simulation
 		private static bool enable = false;
+		// True iff the agent exists, has been initialized,
+		// and instance event handlers are registered
+		private static bool scopeInitialized = false;
 
 		// Scope instance that static methods can access
 		private static Scope instance = null;
@@ -133,6 +137,30 @@ namespace SoarIMPRINTPlugin
 			this.log("Registering instance in static member", 5);
 		}
 
+		public static bool EnableScope()
+		{
+			// if Scope is already enabled, noop
+			if (Scope.enable)
+			{
+				return true;
+			}
+			else
+			{
+				// set enabled
+				Scope.enable = true;
+
+				// initialize if we haven't yet
+				if (!scopeInitialized)
+				{
+					instance.InitializeAgent();
+					instance.ResetSoar();
+					instance.RegisterEvents();
+					scopeInitialized = true;
+				}
+			}
+			return true;
+		}
+
 		#region Static Event Handlers
 
 		// Static handlers for initalization
@@ -147,13 +175,13 @@ namespace SoarIMPRINTPlugin
 			// TODO check for the enable scope variable
 			if (name == "EnableScope")
 			{
-				enable = true;
+				Scope.enable = true;
 			}
 		}
 
 		// Initialize the agent and set up info on the input-link when the simulation starts
 		// Also register for events
-		public static void OnSimulationBegin(object sender, EventArgs e)
+		private static void OnSimulationBegin(object sender, EventArgs e)
 		{
 			app.AcceptTrace("Simulation beginning, creating agent and registering events");
 
@@ -168,6 +196,7 @@ namespace SoarIMPRINTPlugin
 					instance.InitializeAgent();
 					instance.ResetSoar();
 					instance.RegisterEvents();
+					scopeInitialized = true;
 				}
 				else
 				{
@@ -177,7 +206,7 @@ namespace SoarIMPRINTPlugin
 		}
 		
 		// Kill the agent and unregister events when the simulation is over
-		public static void OnSimulationComplete(object sender, EventArgs e)
+		private static void OnSimulationComplete(object sender, EventArgs e)
 		{
 			app.AcceptTrace("Ending simulation, unregistering events");
 			if (enable)
@@ -200,6 +229,9 @@ namespace SoarIMPRINTPlugin
 				//scopeData.WriteCounts("C:\\Users\\christopher.j.best2\\Documents\\ScopeData\\scope_counts.txt");
 				//scopeData.WriteTrace("C:\\Users\\christopher.j.best2\\Documents\\ScopeData\\scope_trace.txt");
 			}
+
+			// reset initialization flag
+			scopeInitialized = false;
 		}
 		
 		// Kill the kernel when IMPRINT closes
@@ -374,7 +406,7 @@ namespace SoarIMPRINTPlugin
 			}
 		}
 		
-		public void OnAfterReleaseCondition(MAAD.Simulator.Executor executor, ref bool release)
+		private void OnAfterReleaseCondition(MAAD.Simulator.Executor executor, ref bool release)
 		{
 			this.log("Start OnAfterReleaseCondition: " + executor.Simulation.GetTask().Properties.Name, 5);
 
@@ -615,7 +647,7 @@ namespace SoarIMPRINTPlugin
 			return true;
 		}
 
-		public void OnClockAdvance(object sender, MAAD.Simulator.ClockChangedArgs args)
+		private void OnClockAdvance(object sender, MAAD.Simulator.ClockChangedArgs args)
 		{
 			// call to check for reject/delayed actions
 			CheckForDelaysAndRejects(args.Clock);
@@ -658,7 +690,7 @@ namespace SoarIMPRINTPlugin
 		}
 
 		// Register for simulation events
-		public void RegisterEvents()
+		private void RegisterEvents()
 		{
 			app.Generator.OnAfterReleaseCondition +=
 				OARC = new MAAD.Simulator.Utilities.DSimulationBoolEvent(OnAfterReleaseCondition);
@@ -669,7 +701,7 @@ namespace SoarIMPRINTPlugin
 			app.Generator.OnClockAdvance +=
 				OCA = new EventHandler<MAAD.Simulator.ClockChangedArgs>(OnClockAdvance);
 		}
-		public void UnregisterEvents()
+		private void UnregisterEvents()
 		{
 			app.Generator.OnAfterReleaseCondition -= OARC;
 			app.Generator.OnBeforeBeginningEffect -= OBBE;
@@ -691,14 +723,14 @@ namespace SoarIMPRINTPlugin
 				kernel = sml.Kernel.CreateKernelInNewThread();
 				app.AcceptTrace("Creating kernel");
 
+				// register static event handlers
+				app.Generator.OnSimulationBegin += OSB;
+				app.Generator.OnSimulationComplete += OSC;
+				app.Generator.OnInitializeVariable += IV;
+				app.OnApplicationClosing += OAC;
+
 				return !kernel.HadError();
 			}
-
-			// register static event handlers
-			app.Generator.OnSimulationBegin += OSB;
-			app.Generator.OnSimulationComplete += OSC;
-			app.Generator.OnInitializeVariable += IV;
-			app.OnApplicationClosing += OAC;
 
 			return true;
 		}
@@ -710,6 +742,13 @@ namespace SoarIMPRINTPlugin
 		}
 		public bool InitializeAgent(string source)
 		{
+			// this will never happen but it's good practice if this is public
+			if (agent != null && kernel.IsAgentValid(agent))
+			{
+				kernel.DestroyAgent(agent);
+				agent = null;
+			}
+
 			if (agent == null)
 			{
 				// create the agent
@@ -725,7 +764,7 @@ namespace SoarIMPRINTPlugin
 		}
 		
 		// Clear the input link and populate with initial info
-		public bool ResetSoar()
+		private bool ResetSoar()
 		{
 			// reinitialize
 			this.log("Scope: initSoar: " + agent.InitSoar());
@@ -752,7 +791,7 @@ namespace SoarIMPRINTPlugin
 		}
 		
 		// Destory the agent
-		public bool KillAgent()
+		private bool KillAgent()
 		{
 			if (agent != null)
 			{
@@ -764,7 +803,7 @@ namespace SoarIMPRINTPlugin
 		}
 
 		// shutdown the kernel
-		public static bool KillKernel()
+		private static bool KillKernel()
 		{
 			// shutdown kernel if we haven't already
 			if (kernel != null)
@@ -805,11 +844,11 @@ namespace SoarIMPRINTPlugin
 		// relying on task ID because this may cause problems if multiple entities go through
 		// a task
 		// Remove a task from the input-link
-		public bool RemoveTask(MAAD.Simulator.Utilities.IRuntimeTask task)
+		private bool RemoveTask(MAAD.Simulator.Utilities.IRuntimeTask task)
 		{
 			return RemoveTask(GetIMPRINTTaskFromRuntimeTask(task));
 		}
-		public bool RemoveTask(MAAD.IMPRINTPro.NetworkTask task)
+		private bool RemoveTask(MAAD.IMPRINTPro.NetworkTask task)
 		{
 			// get input link
 			sml.Identifier input = agent.GetInputLink();
@@ -830,11 +869,11 @@ namespace SoarIMPRINTPlugin
 		}
 	
 		// Put a task on the input-link
-		public sml.Identifier AddTask(MAAD.Simulator.Utilities.IRuntimeTask task)
+		private sml.Identifier AddTask(MAAD.Simulator.Utilities.IRuntimeTask task)
 		{
 			return AddTask(GetIMPRINTTaskFromRuntimeTask(task));
 		}
-		public sml.Identifier AddTask(MAAD.IMPRINTPro.NetworkTask task)
+		private sml.Identifier AddTask(MAAD.IMPRINTPro.NetworkTask task)
 		{
 			// get input link
 			sml.Identifier input = agent.GetInputLink();
@@ -876,11 +915,11 @@ namespace SoarIMPRINTPlugin
 		}
 		
 		// Add a task to the input link and add ^active yes attribute
-		public sml.Identifier AddActiveTask(MAAD.Simulator.Utilities.IRuntimeTask task)
+		private sml.Identifier AddActiveTask(MAAD.Simulator.Utilities.IRuntimeTask task)
 		{
 			return AddActiveTask(GetIMPRINTTaskFromRuntimeTask(task));
 		}
-		public sml.Identifier AddActiveTask(MAAD.IMPRINTPro.NetworkTask task)
+		private sml.Identifier AddActiveTask(MAAD.IMPRINTPro.NetworkTask task)
 		{
 			sml.Identifier taskWME = AddTask(task);
 			// add active attribute
@@ -889,11 +928,11 @@ namespace SoarIMPRINTPlugin
 		}
 		
 		// Add a task to the input link and add ^release yes attribute
-		public sml.Identifier AddReleaseTask(MAAD.Simulator.Utilities.IRuntimeTask task)
+		private sml.Identifier AddReleaseTask(MAAD.Simulator.Utilities.IRuntimeTask task)
 		{
 			return AddReleaseTask(GetIMPRINTTaskFromRuntimeTask(task));
 		}
-		public sml.Identifier AddReleaseTask(MAAD.IMPRINTPro.NetworkTask task)
+		private sml.Identifier AddReleaseTask(MAAD.IMPRINTPro.NetworkTask task)
 		{
 			sml.Identifier taskWME = AddTask(task);
 			// add release attribute
