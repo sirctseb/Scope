@@ -10,7 +10,7 @@ namespace SoarIMPRINTPlugin
 	public class Scope : Utility.IMPRINTAccess, MAAD.Utilities.Plugins.IPlugin
 	{
 		// for logging to the IMPRINT window
-		private static Utility.IMPRINTLogger log = new IMPRINTLogger(5, new string[] {"debug"});
+		private static Utility.IMPRINTLogger log = new IMPRINTLogger(5, new string[] {"debug", "event", "error"});
 
 		private ScopeData scopeData = new ScopeData();
 
@@ -125,7 +125,7 @@ namespace SoarIMPRINTPlugin
 		{
 			// store instance in static member
 			instance = this;
-			log.log("Registering instance in static member", 5);
+			log.log("Scope: Registering instance in static member", 10);
 		}
 
 		public bool EnableScope()
@@ -139,10 +139,12 @@ namespace SoarIMPRINTPlugin
 			{
 				// set enabled
 				Scope.enable = true;
+				log.log("Scope: EnableScope() called. Enabling scope", 5);
 
 				// initialize if we haven't yet
 				if (!scopeInitialized)
 				{
+					log.log("Scope: Initializing", 4);
 					InitializeAgent();
 					ResetSoar();
 					RegisterEvents();
@@ -166,6 +168,7 @@ namespace SoarIMPRINTPlugin
 			// TODO check for the enable scope variable
 			if (name == "EnableScope")
 			{
+				log.log("Scope: Found EnableScope variable. Enabling Scope", 5);
 				Scope.enable = true;
 			}
 		}
@@ -174,7 +177,7 @@ namespace SoarIMPRINTPlugin
 		// Also register for events
 		private static void OnSimulationBegin(object sender, EventArgs e)
 		{
-			app.AcceptTrace("Simulation beginning, creating agent and registering events");
+			log.log("Scope: OnSimulationBegin", "event");
 
 			if (enable)
 			{
@@ -184,6 +187,7 @@ namespace SoarIMPRINTPlugin
 					// setup agent stuff
 					// initialize agent
 					// TODO should agent be non-static then?
+					log.log("Scope: Initializing agent, resetting, and registering events", 5);
 					instance.InitializeAgent();
 					instance.ResetSoar();
 					instance.RegisterEvents();
@@ -191,25 +195,31 @@ namespace SoarIMPRINTPlugin
 				}
 				else
 				{
-					app.AcceptTrace("Beginning simulation but we have no Scope instance to register events");
+					log.log("Scope: Beginning simulation but we have no Scope instance to register events", "error");
 				}
+			}
+			else
+			{
+				log.log("Scope: Scope not enabled, nothing to do on simulation begin", 9);
 			}
 		}
 		
 		// Kill the agent and unregister events when the simulation is over
 		private static void OnSimulationComplete(object sender, EventArgs e)
 		{
-			app.AcceptTrace("Ending simulation, unregistering events");
+			log.log("Scope: OnSimulationComplete", "event");
+
 			if (enable)
 			{
 				if (instance != null)
 				{
+					log.log("Scope: Unregistering events and killing agent", 5);
 					instance.UnregisterEvents();
 					instance.KillAgent();
 				}
 				else
 				{
-					app.AcceptTrace("Ending simulation, but we have no Scope instance to unregister events");
+					log.log("Scope: Ending simulation, but we have no Scope instance to unregister events", "error");
 				}
 
 				// set enabled to false when a simulation ends so that it doesn't get stuck on after one simulation uses it
@@ -220,6 +230,11 @@ namespace SoarIMPRINTPlugin
 				//scopeData.WriteCounts("C:\\Users\\christopher.j.best2\\Documents\\ScopeData\\scope_counts.txt");
 				//scopeData.WriteTrace("C:\\Users\\christopher.j.best2\\Documents\\ScopeData\\scope_trace.txt");
 			}
+			else
+			{
+				// obviously no one would ever want to see this
+				log.log("Scope: Scope not enabled, nothing to do on simulation complete", 9);
+			}
 
 			// reset initialization flag
 			scopeInitialized = false;
@@ -229,6 +244,8 @@ namespace SoarIMPRINTPlugin
 		// TODO we should test this. but it doesn't really matter, because the program is closing anyway
 		private static void OnApplicationClosing(object sender, EventArgs e)
 		{
+			// TODO this probably won't work because the application is closing
+			//log.log("Scope: OnApplicationClosing", "event");
 			KillKernel();
 		}
 
@@ -245,7 +262,7 @@ namespace SoarIMPRINTPlugin
 		// Handler definitions
 		private void OnBeforeBeginningEffect(MAAD.Simulator.Executor executor)
 		{
-			app.AcceptTrace("Before begin effect: " + executor.Simulation.GetTask().Properties.Name);
+			log.log("Scope: OnBeforeBeginningEffect", 10);
 
 			// TODO checking for bug that should exist (see RC handler)
 			// once an entity starts its task, it is out of resume purgatory
@@ -256,7 +273,7 @@ namespace SoarIMPRINTPlugin
 			//if (executor.EventQueue.GetEntity().Tag == KILL_TAG)
 			if (entityProperties.EntityHas(executor.EventQueue.GetEntity().UniqueID, EntityProperty.IgnoreEntity))
 			{
-				log.log("KILL_TAG in Beginning Effect!");
+				log.log("Scope: IgnoreEntity in Beginning Effect", "error");
 				return;
 			}
 
@@ -266,11 +283,13 @@ namespace SoarIMPRINTPlugin
 			int taskID = int.Parse(task.ID);
 			if (taskID > 0 && taskID < 999)
 			{
+				log.log("Scope: OnBeforeBeginningEffect: " + executor.Simulation.GetTask().Properties.Name, "event");
+
 				// sanity check: any entity starting this task should be referenced in the last decision
 				if (executor.Simulation.GetEntity().UniqueID != lastDecision.uniqueID)
 				{
-					log.log("Entity beginning task that is not in last decision");
-					throw new Exception("Entity beginning task that is not in last decision");
+					log.log("Scope: Entity beginning task that is not in last decision", "error");
+					//throw new Exception("Entity beginning task that is not in last decision");
 				}
 
 				// if the strategy that allowed this task to begin was a perform-all returned
@@ -283,7 +302,7 @@ namespace SoarIMPRINTPlugin
 				if (lastDecision.type == DeferredDecision.DecisionType.InterruptDecision)
 				{
 					// suspend task
-					log.log("suspending entity for interrupt-task: " +
+					log.log("Scope: Suspending entity for interrupt-task: " +
 						executor.Simulation.IModel.Suspend("UniqueID", ((InterruptDecision)lastDecision).interruptUniqueID)
 						, 3);
 
@@ -299,26 +318,29 @@ namespace SoarIMPRINTPlugin
 					// add ^delayed
 					interruptedTaskWME.CreateStringWME("delayed", "yes");
 
+					log.log("Scope: Added ^delayed and removed ^active", 4);
+
 					// mark interrupted task as interrupted
 					entityProperties.AddProp(((InterruptDecision)lastDecision).interruptUniqueID, EntityProperty.InterruptEntity);
+					log.log("Scope: Added InteruptEntity property", 6);
 				}
 
 				// add task props to Soar input
-				log.log("Begin: Adding task " + task.ID + " as an active task", 5);
+				log.log("Scope: BE: Adding task " + task.ID + " as an active task", 3);
 				sml.Identifier taskWME = AddActiveTask(task);
 			}
 		}
 		
 		private void OnAfterEndingEffect(MAAD.Simulator.Executor executor)
 		{
-			log.log("Top of OnAfterEndingEffect: " + executor.Simulation.GetTask().Properties.Name, 5);
 			MAAD.Simulator.Utilities.IRuntimeTask task = executor.EventQueue.GetTask();
 			// ignore first and last tasks
 			int taskID = int.Parse(task.ID);
 			if (taskID > 0 && taskID < 999)
 			{
-				log.log("End: Removing task " + task.ID + " from input", 5);
-				RemoveTask(GetIMPRINTTaskFromRuntimeTask(task));
+				log.log("Scope: OnAfterEndingEffect: " + executor.Simulation.GetTask().Properties.Name, "event");
+
+				log.log("Scope: EE: Removing task " + task.ID + " from input: " + RemoveTask(GetIMPRINTTaskFromRuntimeTask(task)), 5);
 
 				// check that there are any delayed tasks before trying to resume them
 				// if we don't check, the scope agent can get confused
@@ -326,7 +348,7 @@ namespace SoarIMPRINTPlugin
 				if (entityProperties.Any(entry => entry.Value.Contains(EntityProperty.DelayEntity) ||
 												 entry.Value.Contains(EntityProperty.InterruptEntity)))
 				{
-					log.log("End: found delayed or interrupted tasks, running scope for resume decision", 5);
+					log.log("Scope: EE: Found delayed or interrupted tasks, running scope for resume decision", 3);
 					// run scope to decide if we should resume any delayed or interrupted tasks
 					string output = agent.RunSelfTilOutput();
 					// get result
@@ -335,7 +357,7 @@ namespace SoarIMPRINTPlugin
 					{
 						// get strategy name
 						string strategy = command.GetParameterValue("name");
-						log.log("End: scope responds with: " + strategy, 5);
+						log.log("Scope: EE: Scope responds with: " + strategy, 5);
 						if (strategy == "resume-delayed")
 						{
 							// scope says to resume a task
@@ -348,48 +370,46 @@ namespace SoarIMPRINTPlugin
 								// check if it is in a suspended state
 								if (entityProperties.EntityHas(entity.UniqueID, EntityProperty.DelayEntity))
 								{
-									// mark the entity to be resumed
-									log.log("Scope: Resume delayed");
 									// trace that we are resuming
-									app.AcceptTrace("Marking delayed task to be resumed: " + executor.GetRuntimeTask(entity.ID).Properties.Name);
+									log.log("Scope: EE: Marking delayed task to be resumed: " + executor.GetRuntimeTask(entity.ID).Properties.Name, 4);
 									// set tag to that release condition automatically accepts it
 									// TODO there is now a gap between marking to resume and actually starting the task
 									// TODO is this a problem?
 									entityProperties.AddProp(entity.UniqueID, EntityProperty.ResumeEntity);
 									// remove the delay property
 									entityProperties.RemoveProp(entity.UniqueID, EntityProperty.DelayEntity);
-									// add the task as a real task
-									//AddActiveTask(executor.GetRuntimeTask(entity.ID));
+
 									// log that we resumed a task
 									scopeData.LogStrategy("Resume Delayed", app.Executor.Simulation.Clock);
+
 									// remove task from input, and it will be added as active in begin event
-									log.log("End: removing DELAY task " + entity.ID + " and marking RESUME_DELAY", 5);
+									log.log("Scope: EE: removing task " + entity.ID, 5);
 									RemoveTask(executor.GetRuntimeTask(entity.ID));
 								}
 								else if (entityProperties.EntityHas(entity.UniqueID, EntityProperty.InterruptEntity))
 								{
-									log.log("Scope: Resume interrupted");
 									// trace that we are resuming
-									app.AcceptTrace("Resuming task " + entity.ID + ": " + executor.Simulation.IModel.Resume("ID", entity.ID));
+									log.log("Scope: EE: Resuming interrupted task " + entity.ID + ": " + executor.Simulation.IModel.Resume("ID", entity.ID));
+
 									// TODO this should be restored from what it was before
 									entityProperties.RemoveProp(entity.UniqueID, EntityProperty.InterruptEntity);
-									// add the task as a real task
-									//AddActiveTask(executor.GetRuntimeTask(entity.ID));
+
 									// log that we resumed a task
 									scopeData.LogStrategy("Resume", app.Executor.Simulation.Clock);
 									// log the decision that allowed for the resume
 									scopeData.LogStrategy(strategy, app.Executor.Simulation.Clock);
-									// force logging because there's no corresponding begin task
-									// TODO this is a bad way to do this
-									//scopeData.CommitStrategy();
 
 									// remove ^delayed from WME
 									command.FindIDByAttribute("task").FindByAttribute("delayed", 0).DestroyWME();
 									// add ^active
 									command.FindIDByAttribute("task").CreateStringWME("active", "yes");
+
+									log.log("Scope: EE: Switching from ^delayed to ^active", 6);
 								}
 							}
 						}
+
+						log.log("Scope: EE: Marking command complete and clearing output changed", 7);
 						command.AddStatusComplete();
 						agent.ClearOutputLinkChanges();
 					}
@@ -399,11 +419,10 @@ namespace SoarIMPRINTPlugin
 		
 		private void OnAfterReleaseCondition(MAAD.Simulator.Executor executor, ref bool release)
 		{
-			log.log("Start OnAfterReleaseCondition: " + executor.Simulation.GetTask().Properties.Name, 5);
-
 			// TODO check for resume purgatory entities which may exist due to a bug I can't produce but should exist
 			if (entityProperties.EntityHas(executor.Simulation.GetEntity().UniqueID, EntityProperty.ResumePurgatoryEntity))
 			{
+				log.log("Scope: RC: Entity in resume purgatory entering RC", "error");
 				throw new Exception("Entity in resume purgatory entering RC");
 			}
 
@@ -411,7 +430,7 @@ namespace SoarIMPRINTPlugin
 			foreach (int uniqueID in entityProperties.EntitiesWith(EntityProperty.RejectDuplicateEntity))
 			{
 				int removed = executor.Simulation.IModel.Abort("UniqueID", uniqueID);
-				log.log("killing duplicate entity: " + removed, 5);
+				log.log("Scope: RC: Killing duplicate entity: " + removed, 5);
 				if (removed > 0)
 				{
 					entityProperties.RemoveProp(uniqueID, EntityProperty.RejectDuplicateEntity);
@@ -421,6 +440,8 @@ namespace SoarIMPRINTPlugin
 			// don't let delayed entities through. this filter is to replace suspending and resuming the entity
 			if (entityProperties.EntityHas(executor.Simulation.GetEntity().UniqueID, EntityProperty.DelayEntity))
 			{
+				log.log("Scope: RC: Delayed entity in RC, not releasing", 5);
+
 				// don't let it through
 				release = false;
 
@@ -431,7 +452,7 @@ namespace SoarIMPRINTPlugin
 			// if entity is marked to resume after delay, return true
 			if (entityProperties.EntityHas(executor.Simulation.GetEntity().UniqueID, EntityProperty.ResumeEntity))
 			{
-				log.log("RESUME_DELAY_TAG coming through release condition, accepting", 3);
+				log.log("Scope: RC: Resuming entity coming through release condition, accepting", 3);
 
 				// remove resume property
 				// TODO what if there is another task starting when this is resumed, and they both have their
@@ -442,6 +463,7 @@ namespace SoarIMPRINTPlugin
 				entityProperties.AddProp(executor.Simulation.GetEntity().UniqueID, EntityProperty.ResumePurgatoryEntity);
 
 				// update last decision as resume decision
+				log.log("Scope: RC: Setting last decision to this resume decision", 5);
 				this.lastDecision = new DeferredDecision
 				{
 					type = DeferredDecision.DecisionType.ResumeDecision,
@@ -459,16 +481,18 @@ namespace SoarIMPRINTPlugin
 			int taskID = int.Parse(task.ID);
 			if (taskID > 0 && taskID < 999)
 			{
+				log.log("Scope: OnAfterReleaseCondition: " + executor.Simulation.GetTask().Properties.Name, 4);
+
 				// find corresponding MAAD.IMPRINTPro.NetworkTask
 				MAAD.IMPRINTPro.NetworkTask nt = GetIMPRINTTaskFromRuntimeTask(task);
 				if (nt != null)
 				{
-					log.log("Release: adding release task: " + nt.ID);
+					log.log("Scope: RC: adding release task: " + nt.ID, 5);
 
 					// add task props to Soar input
 					sml.Identifier taskWME = AddReleaseTask(nt);
 
-					log.log("Release: Running scope to get release decision", 5);
+					log.log("Scope: RC: Running scope to get release decision", 5);
 					string output = agent.RunSelfTilOutput();
 
 					// get output commnad
@@ -479,7 +503,7 @@ namespace SoarIMPRINTPlugin
 
 					// get strategy name
 					string strategy = command.GetParameterValue("name");
-					log.log("Release: Scope returned: " + strategy, 5);
+					log.log("Scope: RC: Scope returned: " + strategy, 5);
 
 					// TODO if command isn't a strategy somehow?
 					// if(agent.GetCommandName() != "strategy")
@@ -504,15 +528,11 @@ namespace SoarIMPRINTPlugin
 			// get the strategy name
 			//string strategy = GetOutput("strategy", "name");
 			// TODO make a class to handle this stuff
-			log.log("Applying strategy " + strategy, 5);
+			log.log("Scope: Applying strategy " + strategy, 5);
 			switch (strategy)
 			{
 				case "delay-new":
-					//log.log("Scope: Delay new task");
-					// add ^delayed yes to WME
-					//log.log("Delay: add ^delayed: " + taskWME.CreateStringWME("delayed", "yes").GetValue(), 5);
-					// remove ^release from WME
-					//log.log("Delay: remove ^release: " + taskWME.FindByAttribute("release", 0).DestroyWME(), 5);
+					log.log("Scope: Delay new", 3);
 
 					// create the info to defer the execution of the action
 					// only create if we haven't already done so
@@ -537,7 +557,7 @@ namespace SoarIMPRINTPlugin
 					return false;
 					break;
 				case "ignore-new":
-					//log.log("Scope: Ignore new task");
+					log.log("Scope: Ignore new task", 3);
 
 					// create the info to defer the execution of the action
 					// only create if we haven't already done so
@@ -563,7 +583,7 @@ namespace SoarIMPRINTPlugin
 					break;
 				case "perform-all":
 					// no action needed
-					log.log("Scope: Perform all tasks");
+					log.log("Scope: Perform all tasks", 3);
 
 					// destroy the task input element and it will be added later on task begin
 					taskWME.DestroyWME();
@@ -580,7 +600,7 @@ namespace SoarIMPRINTPlugin
 					return true;
 					break;
 				case "interrupt-task":
-					log.log("Scope: Interrupt task");
+					log.log("Scope: Interrupt task", 3);
 
 					// get task which should be interrupted
 					sml.Identifier interruptedTaskWME = agent.GetOutputLink().GetIDAtAttributePath("strategy.interrupt-task");
@@ -618,13 +638,10 @@ namespace SoarIMPRINTPlugin
 					return true;
 					break;
 				case "reject-duplicate":
-					log.log("Scope: Reject duplicate");
+					log.log("Scope: Reject duplicate", 3);
 
 					// mark KILL_TAG
 					entityProperties.AddProp(app.Executor.Simulation.GetEntity().UniqueID, EntityProperty.RejectDuplicateEntity);
-
-					// TODO what to do with these? kill them immediately? or deferred?
-					// killing immediately in RC
 
 					// destroy the task input element
 					taskWME.DestroyWME();
@@ -651,7 +668,7 @@ namespace SoarIMPRINTPlugin
 			// check each defered event
 			foreach (DeferredDecision decision in this.deferredDecisions.Where(decision => decision.scheduledBeginTime < Clock))
 			{
-				log.log("Clock advanced, checking " + decision.type + " for action", 6);
+				log.log("Scope: Clock advanced, checking " + decision.type + " for action", 6);
 
 				// check if clock is past the scheduled start of the decision
 				if (decision.scheduledBeginTime < Clock)
@@ -660,9 +677,9 @@ namespace SoarIMPRINTPlugin
 					if (decision.type == DeferredDecision.DecisionType.RejectDecision)
 					{
 						// kill the entity
-						log.log("Killing entity for ignore-task: " +
+						log.log("Scope: Killing entity for ignore-task: " +
 							app.Executor.Simulation.IModel.Abort("UniqueID", decision.uniqueID)
-							);
+							, 3);
 					}
 					else if (decision.type == DeferredDecision.DecisionType.DelayDecision)
 					{
@@ -673,6 +690,7 @@ namespace SoarIMPRINTPlugin
 						// add task as delayed in scope
 						string ID = ((MAAD.Simulator.IEntity)app.Executor.Simulation.IModel.Find("UniqueID", decision.uniqueID)[0]).ID;
 						this.AddTask(app.Executor.Simulation.IModel.FindTask(ID)).CreateStringWME("delayed", "yes");
+						log.log("Scope: Setting task as acutally delayed for delay-new", 3);
 					}
 				}
 			}
@@ -712,7 +730,7 @@ namespace SoarIMPRINTPlugin
 			if (kernel == null)
 			{
 				kernel = sml.Kernel.CreateKernelInNewThread();
-				app.AcceptTrace("Creating kernel");
+				log.log("Scope: Creating kernel", 6);
 
 				// register static event handlers
 				app.Generator.OnSimulationBegin += OSB;
@@ -736,6 +754,7 @@ namespace SoarIMPRINTPlugin
 			// this will never happen but it's good practice if this is public
 			if (agent != null && kernel.IsAgentValid(agent))
 			{
+				log.log("Scope: Destroying existing agent to create new one", 6);
 				kernel.DestroyAgent(agent);
 				agent = null;
 			}
@@ -744,11 +763,21 @@ namespace SoarIMPRINTPlugin
 			{
 				// create the agent
 				agent = kernel.CreateAgent("scope-agent");
-				if (kernel.HadError()) return false;
+				if (kernel.HadError())
+				{
+					log.log("Scope: Failed to create agent", "error");
+					return false;
+				}
 
 				// load scope productions
 				agent.LoadProductions(source);
-				if (agent.HadError()) return false;
+				if (agent.HadError())
+				{
+					log.log("Scope: Failed to load productions from " + source, "error");
+					return false;
+				}
+
+				log.log("Scope: Created agent scope-agent from " + source, 5);
 			}
 
 			return true;
@@ -758,9 +787,7 @@ namespace SoarIMPRINTPlugin
 		private bool ResetSoar()
 		{
 			// reinitialize
-			log.log("Scope: initSoar: " + agent.InitSoar());
-			log.log("is commit required: " + kernel.IsCommitRequired());
-			log.log("Initializing soar");
+			log.log("Scope: Calling InitSoar: " + agent.InitSoar(), 6);
 
 			// tell Soar we are providing input
 			if (agent.GetInputLink().FindByAttribute("IMPRINT", 0) == null)
@@ -768,7 +795,8 @@ namespace SoarIMPRINTPlugin
 				agent.GetInputLink().CreateStringWME("IMPRINT", "yes");
 				// sneak in a threshold value too
 				agent.GetInputLink().CreateFloatWME("threshold", 8);
-				log.log("putting IMPRINT on input link");
+
+				log.log("Scope: Putting IMPRINT on input link", 6);
 			}
 
 			// TODO I don't know why agent.InitSoar() doesn't clear the input link
@@ -776,6 +804,7 @@ namespace SoarIMPRINTPlugin
 			while ((element = agent.GetInputLink().FindByAttribute("task", 0)) != null)
 			{
 				element.DestroyWME();
+				log.log("Scope: Removing existing task from input", 9);
 			}
 
 			return !agent.HadError();
@@ -786,7 +815,7 @@ namespace SoarIMPRINTPlugin
 		{
 			if (agent != null)
 			{
-				kernel.DestroyAgent(agent);
+				log.log("Scope: Destroying agent: " + kernel.DestroyAgent(agent), 6);
 				agent = null;
 				return !kernel.HadError();
 			}
@@ -850,8 +879,10 @@ namespace SoarIMPRINTPlugin
 				// for the given ID
 				if (taskLink.FindStringByAttribute("taskID") == task.ID)
 				{
-					// and destry if we find it
-					return taskLink.DestroyWME();
+					// and destroy if we find it
+					bool success = taskLink.DestroyWME();
+					log.log("Scope: Attempting to remove task from input: " + success, 7);
+					return success;
 				}
 			}
 
@@ -901,6 +932,8 @@ namespace SoarIMPRINTPlugin
 			// TODO add task duration
 			// TODO add task priority
 			//taskLink.CreateFloatWME("duration", task.TaskPriority...
+
+			log.log("Scope: Added task to input-link", 7);
 
 			return taskLink;
 		}
