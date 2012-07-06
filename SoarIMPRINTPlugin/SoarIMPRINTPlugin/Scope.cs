@@ -137,7 +137,7 @@ namespace SoarIMPRINTPlugin
 			this.log("Registering instance in static member", 5);
 		}
 
-		public static bool EnableScope()
+		public bool EnableScope()
 		{
 			// if Scope is already enabled, noop
 			if (Scope.enable)
@@ -152,9 +152,9 @@ namespace SoarIMPRINTPlugin
 				// initialize if we haven't yet
 				if (!scopeInitialized)
 				{
-					instance.InitializeAgent();
-					instance.ResetSoar();
-					instance.RegisterEvents();
+					InitializeAgent();
+					ResetSoar();
+					RegisterEvents();
 					scopeInitialized = true;
 				}
 			}
