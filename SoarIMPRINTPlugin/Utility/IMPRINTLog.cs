@@ -7,6 +7,21 @@ namespace Utility
 {
 	public class IMPRINTLogger : SmartPlugin
 	{
+		public IMPRINTLogger(int logLevel = 0, string[] groups = null)
+		{
+			// set log level
+			LogLevel = logLevel;
+
+			// intialize set of groups that are enabled
+			if (groups != null)
+			{
+				foreach (string group in groups)
+				{
+					this.groups[group] = true;
+				}
+			}
+		}
+
 		private int logLevel = 0;
 		public int LogLevel
 		{

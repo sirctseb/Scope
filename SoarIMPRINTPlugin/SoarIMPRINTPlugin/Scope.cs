@@ -10,7 +10,7 @@ namespace SoarIMPRINTPlugin
 	public class Scope : Utility.IMPRINTAccess, MAAD.Utilities.Plugins.IPlugin
 	{
 		// for logging to the IMPRINT window
-		private Utility.IMPRINTLogger log = new IMPRINTLogger();
+		private static Utility.IMPRINTLogger log = new IMPRINTLogger(5, new string[] {"debug"});
 
 		private ScopeData scopeData = new ScopeData();
 
@@ -123,10 +123,6 @@ namespace SoarIMPRINTPlugin
 
 		public Scope()
 		{
-			log.enable("debug");
-			// high debug output
-			log.LogLevel = 5;
-
 			// store instance in static member
 			instance = this;
 			log.log("Registering instance in static member", 5);
