@@ -18,7 +18,7 @@ namespace SoarIMPRINTPlugin
 
 		private ScopeData scopeData = new ScopeData();
 
-		// class to represent a deferred action
+		// Class to represent a deferred action
 		public class DeferredDecision
 		{
 			public enum DecisionType
@@ -43,13 +43,13 @@ namespace SoarIMPRINTPlugin
 			public int interruptUniqueID;
 		}
 
-		// a set of currently deferred actions
+		// A set of currently deferred actions
 		HashSet<DeferredDecision> deferredDecisions = new HashSet<DeferredDecision>();
 
-		// the one decision that led to the entity in BE
+		// The one decision that led to the entity in BE
 		DeferredDecision lastDecision = null;
 
-		// properties we can ascribe to entities
+		// Properties we can ascribe to entities
 		public enum EntityProperty
 		{
 			RejectDuplicateEntity,
@@ -61,7 +61,7 @@ namespace SoarIMPRINTPlugin
 			ResumePurgatoryEntity
 		};
 		
-		// a class to manage entity markings
+		// A class to manage entity markings
 		public class MutliDict<TKey, TValue> : Dictionary<TKey, HashSet<TValue> >
 		{
 			// determine if an entity has a property
@@ -114,23 +114,15 @@ namespace SoarIMPRINTPlugin
 		private EntityProperties entityProperties = new EntityProperties();
 
 		// TODO test when IMPRINT creates plugin objects
-		private static bool kernelInitialized = false;
 		private static sml.Kernel kernel = null;
 		public static sml.Agent agent = null;
-		public string ScopeOutput = null;
 		private static bool enable = false;
-		private bool eventsRegistered = false;
-
-		// hold the last decision & time so that we can filter duplicate perfom-alls
-		private string lastStrategyDecision;
-		private double lastStrategyDecisionTime;
 
 		// Scope instance that static methods can access
 		private static Scope instance = null;
 
 		public Scope()
 		{
-			//app.AcceptTrace("Scope Constructor");
 			logger = new IMPRINTLogger();
 			this.enable("debug");
 			// high debug output
@@ -141,83 +133,93 @@ namespace SoarIMPRINTPlugin
 			this.log("Registering instance in static member", 5);
 		}
 
-		public void EnableScope()
-		{
-			InitializeAgent();
-			RegisterEvents();
-			// TODO we don't catch OnSimulationBegin if we wait for first task begin to initialize
-			ResetSoar();
-			app.AcceptTrace("Enable Scope Called");
-		}
+		#region Static Event Handlers
 
-		// we learned that a new object is constructed everytime a simulation starts
-		//private static int constructorCalls = 0;
-		/*public Scope()
-		{
-			constructorCalls += 1;
-			app.AcceptTrace("constructing!");
-		}
-		~Scope()
-		{
-			app.AcceptTrace("destructing!");
-		}
-		public int getConstructorCalls()
-		{
-			return constructorCalls;
-		}*/
+		// Static handlers for initalization
+		private static MAAD.Simulator.Utilities.DInitializeVariable IV = new MAAD.Simulator.Utilities.DInitializeVariable(OnInitializeVariable);
+		private static MAAD.Simulator.Utilities.DNetworkEvent OSB = new MAAD.Simulator.Utilities.DNetworkEvent(OnSimulationBegin);
+		private static MAAD.Simulator.Utilities.DNetworkEvent OSC = new MAAD.Simulator.Utilities.DNetworkEvent(OnSimulationComplete);
+		private static MAAD.Utilities.Plugins.DStandardEvent OAC = new MAAD.Utilities.Plugins.DStandardEvent(OnApplicationClosing);
 
-		private MAAD.IMPRINTPro.NetworkTask GetIMPRINTTaskFromRuntimeTask(MAAD.Simulator.Utilities.IRuntimeTask t)
+		// Check if the EnableScope variable is defined in the IMPRINT model, and enable if it is
+		private static void OnInitializeVariable(MAAD.Simulator.Executor executor, string name, object variable)
 		{
-			// find corresponding MAAD.IMPRINTPro.NetworkTask
-			foreach (MAAD.IMPRINTPro.NetworkTask nt in this.GetTaskList())
+			// TODO check for the enable scope variable
+			if (name == "EnableScope")
 			{
-				if (nt.ID == t.ID)
+				enable = true;
+			}
+		}
+
+		// Initialize the agent and set up info on the input-link when the simulation starts
+		// Also register for events
+		public static void OnSimulationBegin(object sender, EventArgs e)
+		{
+			app.AcceptTrace("Simulation beginning, creating agent and registering events");
+
+			if (enable)
+			{
+				// init agent and register handlers
+				if (instance != null)
 				{
-					return nt;
+					// setup agent stuff
+					// initialize agent
+					// TODO should agent be non-static then?
+					instance.InitializeAgent();
+					instance.ResetSoar();
+					instance.RegisterEvents();
+				}
+				else
+				{
+					app.AcceptTrace("Beginning simulation but we have no Scope instance to register events");
 				}
 			}
-			return null;
 		}
-
-		// check if there are delayed or rejected entities that we should act on
-		// TODO what events should call this?
-		// TODO why not just call from that event for when the clock changes?
-		private void CheckForDelaysAndRejects(double Clock)
+		
+		// Kill the agent and unregister events when the simulation is over
+		public static void OnSimulationComplete(object sender, EventArgs e)
 		{
-			// check each defered event
-			foreach (DeferredDecision decision in this.deferredDecisions.Where(decision => decision.scheduledBeginTime < Clock))
+			app.AcceptTrace("Ending simulation, unregistering events");
+			if (enable)
 			{
-				this.log("Clock advanced, checking " + decision.type + " for action", 6);
-
-				// check if clock is past the scheduled start of the decision
-				if (decision.scheduledBeginTime < Clock)
+				if (instance != null)
 				{
-					// act on the decision
-					if (decision.type == DeferredDecision.DecisionType.RejectDecision)
-					{
-						// kill the entity
-						this.log("Killing entity for ignore-task: " +
-							app.Executor.Simulation.IModel.Abort("UniqueID", decision.uniqueID)
-							);
-					}
-					else if (decision.type == DeferredDecision.DecisionType.DelayDecision)
-					{
-						// change the entity property from tentative delay to actually delayed
-						entityProperties.RemoveProp(decision.uniqueID, EntityProperty.TentativeDelayEntity);
-						entityProperties.AddProp(decision.uniqueID, EntityProperty.DelayEntity);
-
-						// add task as delayed in scope
-						string ID = ((MAAD.Simulator.IEntity)app.Executor.Simulation.IModel.Find("UniqueID", decision.uniqueID)[0]).ID;
-						this.AddTask(app.Executor.Simulation.IModel.FindTask(ID)).CreateStringWME("delayed", "yes");
-					}
+					instance.UnregisterEvents();
+					instance.KillAgent();
 				}
+				else
+				{
+					app.AcceptTrace("Ending simulation, but we have no Scope instance to unregister events");
+				}
+
+				// set enabled to false when a simulation ends so that it doesn't get stuck on after one simulation uses it
+				enable = false;
+
+				// TOOD renable this
+				// write data
+				//scopeData.WriteCounts("C:\\Users\\christopher.j.best2\\Documents\\ScopeData\\scope_counts.txt");
+				//scopeData.WriteTrace("C:\\Users\\christopher.j.best2\\Documents\\ScopeData\\scope_trace.txt");
 			}
-			// remove processed decisions from set
-			deferredDecisions.RemoveWhere(decision => decision.scheduledBeginTime < Clock);
+		}
+		
+		// Kill the kernel when IMPRINT closes
+		// TODO we should test this. but it doesn't really matter, because the program is closing anyway
+		private static void OnApplicationClosing(object sender, EventArgs e)
+		{
+			KillKernel();
 		}
 
-		//public delegate void DSimulationEvent(Executor executor);
-		//public delegate void DNetworkEvent(object sender, EventArgs e);
+		#endregion
+
+		#region Instance Event Handlers
+
+		// Instance handlers for various events
+		private MAAD.Simulator.Utilities.DSimulationEvent OBBE;
+		private MAAD.Simulator.Utilities.DSimulationBoolEvent OARC;
+		private MAAD.Simulator.Utilities.DSimulationEvent OAEE;
+		private EventHandler<MAAD.Simulator.ClockChangedArgs> OCA;
+
+		// Handler definitions
 		private void OnBeforeBeginningEffect(MAAD.Simulator.Executor executor)
 		{
 			app.AcceptTrace("Before begin effect: " + executor.Simulation.GetTask().Properties.Name);
@@ -229,7 +231,7 @@ namespace SoarIMPRINTPlugin
 			// TODO if a KILL_TAG entity gets here, something has gone wrong
 			// check that entity hasn't been marked KILL_TAG yet
 			//if (executor.EventQueue.GetEntity().Tag == KILL_TAG)
-			if(entityProperties.EntityHas(executor.EventQueue.GetEntity().UniqueID, EntityProperty.IgnoreEntity))
+			if (entityProperties.EntityHas(executor.EventQueue.GetEntity().UniqueID, EntityProperty.IgnoreEntity))
 			{
 				logger.log("KILL_TAG in Beginning Effect!");
 				return;
@@ -283,6 +285,7 @@ namespace SoarIMPRINTPlugin
 				sml.Identifier taskWME = AddActiveTask(task);
 			}
 		}
+		
 		private void OnAfterEndingEffect(MAAD.Simulator.Executor executor)
 		{
 			this.log("Top of OnAfterEndingEffect: " + executor.Simulation.GetTask().Properties.Name, 5);
@@ -297,7 +300,7 @@ namespace SoarIMPRINTPlugin
 				// check that there are any delayed tasks before trying to resume them
 				// if we don't check, the scope agent can get confused
 				// TODO can this happen before a delayed entity is marked ^delayed in scope?
-				if(entityProperties.Any(entry => entry.Value.Contains(EntityProperty.DelayEntity)||
+				if (entityProperties.Any(entry => entry.Value.Contains(EntityProperty.DelayEntity) ||
 												 entry.Value.Contains(EntityProperty.InterruptEntity)))
 				{
 					this.log("End: found delayed or interrupted tasks, running scope for resume decision", 5);
@@ -320,7 +323,7 @@ namespace SoarIMPRINTPlugin
 							foreach (MAAD.Simulator.IEntity entity in app.Executor.Simulation.IModel.Find("ID", taskIDString))
 							{
 								// check if it is in a suspended state
-								if(entityProperties.EntityHas(entity.UniqueID, EntityProperty.DelayEntity))
+								if (entityProperties.EntityHas(entity.UniqueID, EntityProperty.DelayEntity))
 								{
 									// mark the entity to be resumed
 									this.log("Scope: Resume delayed");
@@ -340,7 +343,7 @@ namespace SoarIMPRINTPlugin
 									this.log("End: removing DELAY task " + entity.ID + " and marking RESUME_DELAY", 5);
 									RemoveTask(executor.GetRuntimeTask(entity.ID));
 								}
-								else if(entityProperties.EntityHas(entity.UniqueID, EntityProperty.InterruptEntity))
+								else if (entityProperties.EntityHas(entity.UniqueID, EntityProperty.InterruptEntity))
 								{
 									this.log("Scope: Resume interrupted");
 									// trace that we are resuming
@@ -370,46 +373,7 @@ namespace SoarIMPRINTPlugin
 				}
 			}
 		}
-		public static void OnSimulationBegin(object sender, EventArgs e)
-		{
-			app.AcceptTrace("Simulation beginning, creating agent and registering events");
-
-			// init agent and register handlers
-			if (instance != null)
-			{
-				// setup agent stuff
-				// initialize agent
-				// TODO should agent be non-static then?
-				instance.InitializeAgent();
-				instance.ResetSoar();
-				instance.RegisterEvents();
-			}
-			else
-			{
-				app.AcceptTrace("Beginning simulation but we have no Scope instance to register events");
-			}
-		}
-		public static void OnSimulationComplete(object sender, EventArgs e)
-		{
-			app.AcceptTrace("Ending simulation, unregistering events");
-
-			if (instance != null)
-			{
-				instance.UnregisterEvents();
-				instance.KillAgent();
-			}
-			else
-			{
-				app.AcceptTrace("Ending simulation, but we have no Scope instance to unregister events");
-			}
-
-			// set enabled to false when a simulation ends so that it doesn't get stuck on after one simulation uses it
-			enable = false;
-
-			// write data
-			//scopeData.WriteCounts("C:\\Users\\christopher.j.best2\\Documents\\ScopeData\\scope_counts.txt");
-			//scopeData.WriteTrace("C:\\Users\\christopher.j.best2\\Documents\\ScopeData\\scope_trace.txt");
-		}
+		
 		public void OnAfterReleaseCondition(MAAD.Simulator.Executor executor, ref bool release)
 		{
 			this.log("Start OnAfterReleaseCondition: " + executor.Simulation.GetTask().Properties.Name, 5);
@@ -442,7 +406,7 @@ namespace SoarIMPRINTPlugin
 			}
 
 			// if entity is marked to resume after delay, return true
-			if(entityProperties.EntityHas(executor.Simulation.GetEntity().UniqueID, EntityProperty.ResumeEntity))
+			if (entityProperties.EntityHas(executor.Simulation.GetEntity().UniqueID, EntityProperty.ResumeEntity))
 			{
 				this.log("RESUME_DELAY_TAG coming through release condition, accepting", 3);
 
@@ -481,7 +445,7 @@ namespace SoarIMPRINTPlugin
 					// add task props to Soar input
 					sml.Identifier taskWME = AddReleaseTask(nt);
 
-					this.log("Release: Running scope to get release decision",5);
+					this.log("Release: Running scope to get release decision", 5);
 					string output = agent.RunSelfTilOutput();
 
 					// get output commnad
@@ -510,60 +474,8 @@ namespace SoarIMPRINTPlugin
 			}
 		}
 
-		public void OnClockAdvance(object sender, MAAD.Simulator.ClockChangedArgs args)
-		{
-			// call to check for reject/delayed actions
-			CheckForDelaysAndRejects(args.Clock);
-		}
-
-		// simulation begin / complete handlers
-		private static MAAD.Simulator.Utilities.DNetworkEvent OSB = new MAAD.Simulator.Utilities.DNetworkEvent(OnSimulationBegin);
-		private static MAAD.Simulator.Utilities.DNetworkEvent OSC = new MAAD.Simulator.Utilities.DNetworkEvent(OnSimulationComplete);
-		private static MAAD.Simulator.Utilities.DInitializeVariable IV = new MAAD.Simulator.Utilities.DInitializeVariable(OnInitializeVariable);
-
-		private static void OnInitializeVariable(MAAD.Simulator.Executor executor, string name, object variable)
-		{
-			// TODO check for the enable scope variable
-			//app.AcceptTrace("initialize variable: " + name + ": " + variable);
-			if (name == "EnableScope")
-			{
-				enable = true;
-			}
-		}
-
-		private MAAD.Simulator.Utilities.DSimulationEvent OBBE;
-		private MAAD.Simulator.Utilities.DSimulationBoolEvent OARC;
-		private MAAD.Simulator.Utilities.DSimulationEvent OAEE;
-		private EventHandler<MAAD.Simulator.ClockChangedArgs> OCA;
-		public void RegisterEvents()
-		{
-			app.Generator.OnAfterReleaseCondition +=
-				OARC = new MAAD.Simulator.Utilities.DSimulationBoolEvent(OnAfterReleaseCondition);
-			app.Generator.OnBeforeBeginningEffect +=
-				OBBE = new MAAD.Simulator.Utilities.DSimulationEvent(OnBeforeBeginningEffect);
-			app.Generator.OnSimulationBegin +=
-				OSB = new MAAD.Simulator.Utilities.DNetworkEvent(OnSimulationBegin);
-			app.Generator.OnSimulationComplete +=
-				OSC = new MAAD.Simulator.Utilities.DNetworkEvent(OnSimulationComplete);
-			app.Generator.OnAfterEndingEffect +=
-				OAEE = new MAAD.Simulator.Utilities.DSimulationEvent(OnAfterEndingEffect);
-
-			//public delegate void EventHandler<TEventArgs>(object sender, TEventArgs e);
-			app.Generator.OnClockAdvance +=
-				OCA = new EventHandler<MAAD.Simulator.ClockChangedArgs>(OnClockAdvance);
-		}
-		public void UnregisterEvents()
-		{
-			app.Generator.OnAfterReleaseCondition -= OARC;
-			app.Generator.OnBeforeBeginningEffect -= OBBE;
-			app.Generator.OnSimulationBegin -= OSB;
-			app.Generator.OnSimulationComplete -= OSC;
-			app.Generator.OnAfterEndingEffect -= OAEE;
-
-			app.Generator.OnClockAdvance -= OCA;
-		}
-
-		#region IMPRINT communication stuff
+		// Act on the decision made by scope
+		// This is called exclusively by OnAfterReleaseCondition
 		private bool ApplyStrategy(string strategy, sml.Identifier taskWME)
 		{
 			// get the strategy name
@@ -701,37 +613,97 @@ namespace SoarIMPRINTPlugin
 					break;
 			}
 			return true;
-
 		}
+
+		public void OnClockAdvance(object sender, MAAD.Simulator.ClockChangedArgs args)
+		{
+			// call to check for reject/delayed actions
+			CheckForDelaysAndRejects(args.Clock);
+		}
+
+		// Check if there are delayed or rejected entities that we should act on
+		// This is called exclusively by OnClockAdvance
+		private void CheckForDelaysAndRejects(double Clock)
+		{
+			// check each defered event
+			foreach (DeferredDecision decision in this.deferredDecisions.Where(decision => decision.scheduledBeginTime < Clock))
+			{
+				this.log("Clock advanced, checking " + decision.type + " for action", 6);
+
+				// check if clock is past the scheduled start of the decision
+				if (decision.scheduledBeginTime < Clock)
+				{
+					// act on the decision
+					if (decision.type == DeferredDecision.DecisionType.RejectDecision)
+					{
+						// kill the entity
+						this.log("Killing entity for ignore-task: " +
+							app.Executor.Simulation.IModel.Abort("UniqueID", decision.uniqueID)
+							);
+					}
+					else if (decision.type == DeferredDecision.DecisionType.DelayDecision)
+					{
+						// change the entity property from tentative delay to actually delayed
+						entityProperties.RemoveProp(decision.uniqueID, EntityProperty.TentativeDelayEntity);
+						entityProperties.AddProp(decision.uniqueID, EntityProperty.DelayEntity);
+
+						// add task as delayed in scope
+						string ID = ((MAAD.Simulator.IEntity)app.Executor.Simulation.IModel.Find("UniqueID", decision.uniqueID)[0]).ID;
+						this.AddTask(app.Executor.Simulation.IModel.FindTask(ID)).CreateStringWME("delayed", "yes");
+					}
+				}
+			}
+			// remove processed decisions from set
+			deferredDecisions.RemoveWhere(decision => decision.scheduledBeginTime < Clock);
+		}
+
+		// Register for simulation events
+		public void RegisterEvents()
+		{
+			app.Generator.OnAfterReleaseCondition +=
+				OARC = new MAAD.Simulator.Utilities.DSimulationBoolEvent(OnAfterReleaseCondition);
+			app.Generator.OnBeforeBeginningEffect +=
+				OBBE = new MAAD.Simulator.Utilities.DSimulationEvent(OnBeforeBeginningEffect);
+			app.Generator.OnAfterEndingEffect +=
+				OAEE = new MAAD.Simulator.Utilities.DSimulationEvent(OnAfterEndingEffect);
+			app.Generator.OnClockAdvance +=
+				OCA = new EventHandler<MAAD.Simulator.ClockChangedArgs>(OnClockAdvance);
+		}
+		public void UnregisterEvents()
+		{
+			app.Generator.OnAfterReleaseCondition -= OARC;
+			app.Generator.OnBeforeBeginningEffect -= OBBE;
+			app.Generator.OnAfterEndingEffect -= OAEE;
+			app.Generator.OnClockAdvance -= OCA;
+		}
+
 		#endregion
 
-		#region soar communication stuff
+		#region Soar Communication
+
+		// Start the kernel and register static event handlers
+		// TODO this does more than initialize the kernel and should be renamed
 		public static bool InitializeKernel()
 		{
+			// create the kernel if it doesn't exist yet
 			if (kernel == null)
 			{
 				kernel = sml.Kernel.CreateKernelInNewThread();
-				//this.log("Creating kernel: " + !kernel.HadError(), "debug");
 				app.AcceptTrace("Creating kernel");
 
-				return kernelInitialized = !kernel.HadError();
+				return !kernel.HadError();
 			}
 
-			// register for simulation start / end
+			// register static event handlers
 			app.Generator.OnSimulationBegin += OSB;
 			app.Generator.OnSimulationComplete += OSC;
 			app.Generator.OnInitializeVariable += IV;
-			app.OnApplicationClosing += new MAAD.Utilities.Plugins.DStandardEvent(OnApplicationClosing);
+			app.OnApplicationClosing += OAC;
 
 			return true;
 		}
 
-		private static MAAD.Utilities.Plugins.DStandardEvent OAC = new MAAD.Utilities.Plugins.DStandardEvent(OnApplicationClosing);
-		private static void OnApplicationClosing(object sender, EventArgs e)
-		{
-			KillKernel();
-		}
-
+		// Initialize the agent with the scope-agent rules
 		public bool InitializeAgent()
 		{
 			return InitializeAgent("Scope/agent/scope.soar");
@@ -751,6 +723,8 @@ namespace SoarIMPRINTPlugin
 
 			return true;
 		}
+		
+		// Clear the input link and populate with initial info
 		public bool ResetSoar()
 		{
 			// reinitialize
@@ -776,6 +750,8 @@ namespace SoarIMPRINTPlugin
 
 			return !agent.HadError();
 		}
+		
+		// Destory the agent
 		public bool KillAgent()
 		{
 			if (agent != null)
@@ -787,9 +763,23 @@ namespace SoarIMPRINTPlugin
 			return false;
 		}
 
+		// shutdown the kernel
+		public static bool KillKernel()
+		{
+			// shutdown kernel if we haven't already
+			if (kernel != null)
+			{
+				kernel.Shutdown();
+				kernel = null;
+				return true;
+			}
+
+			return false;
+		}
+
+		// Run the agent for a number of steps
 		public bool RunAgent(int steps)
 		{
-
 			// run agent for 3 steps
 			agent.RunSelf(steps);
 			if (agent.HadError()) return false;
@@ -797,9 +787,24 @@ namespace SoarIMPRINTPlugin
 			return true;
 		}
 
+		// Lookup between task object types. used by Add/RemoveTask below
+		private MAAD.IMPRINTPro.NetworkTask GetIMPRINTTaskFromRuntimeTask(MAAD.Simulator.Utilities.IRuntimeTask t)
+		{
+			// find corresponding MAAD.IMPRINTPro.NetworkTask
+			foreach (MAAD.IMPRINTPro.NetworkTask nt in this.GetTaskList())
+			{
+				if (nt.ID == t.ID)
+				{
+					return nt;
+				}
+			}
+			return null;
+		}
+
 		// TODO we should save the sml.Identifier we get from AddTask instead of
 		// relying on task ID because this may cause problems if multiple entities go through
 		// a task
+		// Remove a task from the input-link
 		public bool RemoveTask(MAAD.Simulator.Utilities.IRuntimeTask task)
 		{
 			return RemoveTask(GetIMPRINTTaskFromRuntimeTask(task));
@@ -809,32 +814,22 @@ namespace SoarIMPRINTPlugin
 			// get input link
 			sml.Identifier input = agent.GetInputLink();
 
+			// search task children
 			foreach (sml.Identifier taskLink in input.GetIDChildren("task"))
 			{
+				// for the given ID
 				if (taskLink.FindStringByAttribute("taskID") == task.ID)
 				{
-					taskLink.DestroyWME();
-					break;
+					// and destry if we find it
+					return taskLink.DestroyWME();
 				}
 			}
 
-			// search tasks for this one
-			/*for (int i = 0; i < input.GetNumberChildren(); i++)
-			{
-				sml.WMElement child = input.GetChild(i);
-				if (child.IsIdentifier())
-				{
-					sml.Identifier childID = child.ConvertToIdentifier();
-					if (childID.FindByAttribute("taskID", 0).GetValueAsString() == task.ID)
-					{
-						//this.log("Removing input task: " + childID.DestroyWME());
-						childID.DestroyWME();
-						break;
-					}
-				}
-			}*/
-			return true;
+			// return false if we didn't find a matching task
+			return false;
 		}
+	
+		// Put a task on the input-link
 		public sml.Identifier AddTask(MAAD.Simulator.Utilities.IRuntimeTask task)
 		{
 			return AddTask(GetIMPRINTTaskFromRuntimeTask(task));
@@ -851,9 +846,7 @@ namespace SoarIMPRINTPlugin
 			taskLink.CreateStringWME("taskID", task.ID);
 
 			double totalWorkload = 0;
-			//foreach (MAAD.IMPRINTPro.Interfaces.ITaskDemand demand in task.TaskDemandList.GetITaskDemands())
-			// Looks like GetITaskDemands doesn't exist in 3.1.0.86. Using Active instead, hopefully it's the same
-			// similarly, MAAD.IMPRINTPro.Interfaces.ITaskDemand -> MAAD.IMPRINTPro.TaskDemand
+
 			foreach (MAAD.IMPRINTPro.TaskDemand demand in task.TaskDemandList.Active)
 			{
 				// get workload attributes
@@ -877,14 +870,12 @@ namespace SoarIMPRINTPlugin
 
 			// TODO add task duration
 			// TODO add task priority
-			//taskLink.CreateFloatWME("duration", task.TaskPriority
+			//taskLink.CreateFloatWME("duration", task.TaskPriority...
 
-			//agent.Commit();
-			//kernel.CheckForIncomingCommands();
-
-			//return !agent.HadError();
 			return taskLink;
 		}
+		
+		// Add a task to the input link and add ^active yes attribute
 		public sml.Identifier AddActiveTask(MAAD.Simulator.Utilities.IRuntimeTask task)
 		{
 			return AddActiveTask(GetIMPRINTTaskFromRuntimeTask(task));
@@ -896,6 +887,8 @@ namespace SoarIMPRINTPlugin
 			taskWME.CreateStringWME("active", "yes");
 			return taskWME;
 		}
+		
+		// Add a task to the input link and add ^release yes attribute
 		public sml.Identifier AddReleaseTask(MAAD.Simulator.Utilities.IRuntimeTask task)
 		{
 			return AddReleaseTask(GetIMPRINTTaskFromRuntimeTask(task));
@@ -907,6 +900,8 @@ namespace SoarIMPRINTPlugin
 			taskWME.CreateStringWME("release", "yes");
 			return taskWME;
 		}
+		
+		// Mostly for testing
 		public bool SetInput(string attribute, string value)
 		{
 			// get input link
@@ -936,18 +931,6 @@ namespace SoarIMPRINTPlugin
 			return output;
 		}
 
-		public static bool KillKernel()
-		{
-			// shutdown kernel if we haven't already
-			if (kernel != null)
-			{
-				kernel.Shutdown();
-				kernel = null;
-				return true;
-			}
-
-			return false;
-		}
 		#endregion
 
 		#region IPlugin Implementation
