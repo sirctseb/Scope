@@ -296,7 +296,7 @@ namespace SoarIMPRINTPlugin
 				// to OnAfterReleaseCondition, then the strategy was submitted to the log but
 				// has not yet been entered to prevent multiple entries for the same perform-all.
 				// enter it to the log here
-				scopeData.CommitStrategy();
+				//scopeData.CommitStrategy();
 
 				// if entity is starting because of interrupt-task strategy, suspend the other task
 				if (lastDecision.type == DeferredDecision.DecisionType.InterruptDecision)
