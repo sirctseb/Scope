@@ -292,12 +292,6 @@ namespace SoarIMPRINTPlugin
 					//throw new Exception("Entity beginning task that is not in last decision");
 				}
 
-				// if the strategy that allowed this task to begin was a perform-all returned
-				// to OnAfterReleaseCondition, then the strategy was submitted to the log but
-				// has not yet been entered to prevent multiple entries for the same perform-all.
-				// enter it to the log here
-				//scopeData.CommitStrategy();
-
 				// if entity is starting because of interrupt-task strategy, suspend the other task
 				if (lastDecision.type == DeferredDecision.DecisionType.InterruptDecision)
 				{
@@ -323,6 +317,14 @@ namespace SoarIMPRINTPlugin
 					// mark interrupted task as interrupted
 					entityProperties.AddProp(((InterruptDecision)lastDecision).interruptUniqueID, EntityProperty.InterruptEntity);
 					log.log("Scope: Added InteruptEntity property", 6);
+
+					// enter decision in scope log
+					scopeData.LogStrategy("interrupt-task", executor.Simulation.Clock);
+				}
+				else if (lastDecision.type == DeferredDecision.DecisionType.PerformAllDecision)
+				{
+					// enter decision in scope log
+					scopeData.LogStrategy("perform-all", executor.Simulation.Clock);
 				}
 
 				// add task props to Soar input
@@ -395,9 +397,7 @@ namespace SoarIMPRINTPlugin
 									entityProperties.RemoveProp(entity.UniqueID, EntityProperty.InterruptEntity);
 
 									// log that we resumed a task
-									scopeData.LogStrategy("Resume", app.Executor.Simulation.Clock);
-									// log the decision that allowed for the resume
-									scopeData.LogStrategy(strategy, app.Executor.Simulation.Clock);
+									scopeData.LogStrategy("Resume Interrupted", app.Executor.Simulation.Clock);
 
 									// remove ^delayed from WME
 									command.FindIDByAttribute("task").FindByAttribute("delayed", 0).DestroyWME();
@@ -680,6 +680,10 @@ namespace SoarIMPRINTPlugin
 						log.log("Scope: Killing entity for ignore-task: " +
 							app.Executor.Simulation.IModel.Abort("UniqueID", decision.uniqueID)
 							, 3);
+
+						// enter decision in scope log
+						// TODO check that "ignore-new" is exactly equal to DD.DT.RejectDecision
+						scopeData.LogStrategy("ignore-new", decision.scheduledBeginTime);
 					}
 					else if (decision.type == DeferredDecision.DecisionType.DelayDecision)
 					{
@@ -691,6 +695,9 @@ namespace SoarIMPRINTPlugin
 						string ID = ((MAAD.Simulator.IEntity)app.Executor.Simulation.IModel.Find("UniqueID", decision.uniqueID)[0]).ID;
 						this.AddTask(app.Executor.Simulation.IModel.FindTask(ID)).CreateStringWME("delayed", "yes");
 						log.log("Scope: Setting task as acutally delayed for delay-new", 3);
+
+						// enter decision in scope log
+						scopeData.LogStrategy("delay-new", decision.scheduledBeginTime);
 					}
 				}
 			}
