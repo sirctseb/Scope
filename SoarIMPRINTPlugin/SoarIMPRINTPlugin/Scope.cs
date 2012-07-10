@@ -58,7 +58,7 @@ namespace SoarIMPRINTPlugin
 		};
 		
 		// A class to manage entity markings
-		private class MutliDict<TKey, TValue> : Dictionary<TKey, HashSet<TValue> >
+		private class MultiDict<TKey, TValue> : Dictionary<TKey, HashSet<TValue> >
 		{
 			// determine if an entity has a property
 			public bool Contains(TKey key, TValue value) {
@@ -88,7 +88,7 @@ namespace SoarIMPRINTPlugin
 				return false;
 			}
 		}
-		private class EntityProperties : MutliDict<int, EntityProperty>
+		private class EntityProperties : MultiDict<int, EntityProperty>
 		{
 			public bool EntityHas(int ID, EntityProperty property)
 			{
