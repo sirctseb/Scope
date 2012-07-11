@@ -440,6 +440,14 @@ namespace SoarIMPRINTPlugin
 		}
 		private void OnAfterReleaseCondition(MAAD.Simulator.Executor executor, ref bool release)
 		{
+			// don't override false RC evaluations
+			// TODO should the special case checks be evaluated before this?
+			// TODO seems like maybe the ResumeEntity and RejectDuplicateEntity should?
+			if (release == false)
+			{
+				return;
+			}
+
 			// TODO check for resume purgatory entities which may exist due to a bug I can't produce but should exist
 			if (entityProperties.EntityHas(executor.Simulation.GetEntity().UniqueID, EntityProperty.ResumePurgatoryEntity))
 			{
