@@ -399,10 +399,29 @@ namespace SoarIMPRINTPlugin
 									// log that we resumed a task
 									scopeData.LogStrategy("Resume Interrupted", app.Executor.Simulation.Clock);
 
+									log.log("Task WME to resume: " + command.FindIDByAttribute("task").GetValueAsString());
+
+									/* TODO: looks like there is a big problem with changing modifying objects
+									 * that we get from GetCommand instead of input. We should only change stuff
+									 * that we get from input link
+									 */
 									// remove ^delayed from WME
-									command.FindIDByAttribute("task").FindByAttribute("delayed", 0).DestroyWME();
+									//command.FindIDByAttribute("task").FindByAttribute("delayed", 0).DestroyWME();
 									// add ^active
-									command.FindIDByAttribute("task").CreateStringWME("active", "yes");
+									//command.FindIDByAttribute("task").CreateStringWME("active", "yes");
+									
+									// TODO this method will cause problems when we want to allow multiple
+									// entities in a single task. We will have to put the Entity's UniqueID in WM
+									foreach (sml.Identifier taskElement in agent.GetInputLink().GetIDChildren("task"))
+									{
+										if (taskElement.FindStringByAttribute("taskID") == entity.ID)
+										{
+											// remove ^delayed from WME
+											taskElement.FindByAttribute("delayed", 0).DestroyWME();
+											// add ^active
+											taskElement.CreateStringWME("active", "yes");
+										}
+									}
 
 									log.log("Scope: EE: Switching from ^delayed to ^active", 6);
 								}
@@ -417,6 +436,11 @@ namespace SoarIMPRINTPlugin
 			}
 		}
 		
+		private void ShowInputState()
+		{
+			log.log("From SML: " + agent.GetInputLink().Print(3));
+			log.log("From CMD: " + agent.ExecuteCommandLine("print i2 --depth 3", true, true));
+		}
 		private void OnAfterReleaseCondition(MAAD.Simulator.Executor executor, ref bool release)
 		{
 			// TODO check for resume purgatory entities which may exist due to a bug I can't produce but should exist
