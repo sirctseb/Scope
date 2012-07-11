@@ -535,9 +535,6 @@ namespace SoarIMPRINTPlugin
 					// mark the command as complete
 					command.AddStatusComplete();
 					agent.ClearOutputLinkChanges();
-
-					// log the decision
-					scopeData.LogStrategy(strategy, executor.Simulation.Clock);
 				}
 			}
 		}
