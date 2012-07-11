@@ -216,6 +216,10 @@ namespace SoarIMPRINTPlugin
 					log.log("Scope: Unregistering events and killing agent", 5);
 					instance.UnregisterEvents();
 					instance.KillAgent();
+
+					// write data
+					instance.scopeData.WriteCounts("C:\\Users\\christopher.j.best2\\Documents\\ScopeData\\scope_counts.txt");
+					instance.scopeData.WriteTrace("C:\\Users\\christopher.j.best2\\Documents\\ScopeData\\scope_trace.txt");
 				}
 				else
 				{
@@ -224,11 +228,6 @@ namespace SoarIMPRINTPlugin
 
 				// set enabled to false when a simulation ends so that it doesn't get stuck on after one simulation uses it
 				enable = false;
-
-				// TOOD renable this
-				// write data
-				//scopeData.WriteCounts("C:\\Users\\christopher.j.best2\\Documents\\ScopeData\\scope_counts.txt");
-				//scopeData.WriteTrace("C:\\Users\\christopher.j.best2\\Documents\\ScopeData\\scope_trace.txt");
 			}
 			else
 			{
@@ -398,8 +397,6 @@ namespace SoarIMPRINTPlugin
 
 									// log that we resumed a task
 									scopeData.LogStrategy("Resume Interrupted", app.Executor.Simulation.Clock);
-
-									log.log("Task WME to resume: " + command.FindIDByAttribute("task").GetValueAsString());
 
 									/* TODO: looks like there is a big problem with changing modifying objects
 									 * that we get from GetCommand instead of input. We should only change stuff
