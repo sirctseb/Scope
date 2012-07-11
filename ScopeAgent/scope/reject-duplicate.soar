@@ -5,7 +5,7 @@ sp {propose*reject-duplicate
                                ^task <delayed> ))
    (<release> ^release yes
               ^taskID <taskID>)
-   (<delayed> ^delayed yes
+   (<delayed> ^<< delayed active >> yes
               ^taskID <taskID>)
 -->
    # TODO should we require?
