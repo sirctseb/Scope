@@ -306,13 +306,8 @@ namespace SoarIMPRINTPlugin
 						executor.Simulation.IModel.Suspend("UniqueID", ((InterruptDecision)lastDecision).interruptUniqueID)
 						, 3);
 
-					// get interrupted task ID
-					string ID = ((MAAD.Simulator.IEntity)executor.Simulation.IModel.Find("UniqueID", ((InterruptDecision)lastDecision).interruptUniqueID)[0]).ID;
-
 					// add ^delayed to scope task and take off ^active
-					sml.Identifier interruptedTaskWME = agent.GetInputLink().GetChildren("task")
-						.Select(wme => wme.ConvertToIdentifier())
-						.Where(id => id.FindStringByAttribute("taskID") == ID).First();
+					sml.Identifier interruptedTaskWME = GetInputTask(((InterruptDecision)lastDecision).interruptUniqueID);
 					// take off ^active
 					interruptedTaskWME.FindByAttribute("active", 0).DestroyWME();
 					// add ^delayed
@@ -335,7 +330,7 @@ namespace SoarIMPRINTPlugin
 
 				// add task props to Soar input
 				log.log("Scope: BE: Adding task " + task.ID + " as an active task", 3);
-				sml.Identifier taskWME = AddActiveTask(task);
+				AddActiveTask(executor.Simulation.GetEntity());
 			}
 		}
 		
@@ -348,7 +343,7 @@ namespace SoarIMPRINTPlugin
 			{
 				log.log("Scope: OnAfterEndingEffect: " + executor.Simulation.GetTask().Properties.Name, "event");
 
-				log.log("Scope: EE: Removing task " + task.ID + " from input: " + RemoveTask(GetIMPRINTTaskFromRuntimeTask(task)), 5);
+				log.log("Scope: EE: Removing task " + task.ID + " from input: " + RemoveTask(executor.Simulation.GetEntity()), 5);
 
 				// check that there are any delayed tasks before trying to resume them
 				// if we don't check, the scope agent can get confused
@@ -370,11 +365,17 @@ namespace SoarIMPRINTPlugin
 						{
 							// scope says to resume a task
 							// find the task scope wants to resume
-							string taskIDString = command.FindIDByAttribute("task").FindStringByAttribute("taskID");
+							int UniqueID = (int)command.FindIDByAttribute("task").FindIntByAttribute("UniqueID");
 
 							// search through entities in the task
-							foreach (MAAD.Simulator.IEntity entity in app.Executor.Simulation.IModel.Find("ID", taskIDString))
+							foreach (MAAD.Simulator.IEntity entity in app.Executor.Simulation.IModel.Find("UniqueID", UniqueID))
 							{
+								// sanity check
+								if (UniqueID != entity.UniqueID)
+								{
+									throw new Exception("Sanity check failed. Entity.UniqueID != UniqueID");
+								}
+
 								// check if it is in a suspended state
 								if (entityProperties.EntityHas(entity.UniqueID, EntityProperty.DelayEntity))
 								{
@@ -392,7 +393,7 @@ namespace SoarIMPRINTPlugin
 
 									// remove task from input, and it will be added as active in begin event
 									log.log("Scope: EE: removing task " + entity.ID, 5);
-									RemoveTask(executor.GetRuntimeTask(entity.ID));
+									RemoveTask(entity);
 								}
 								else if (entityProperties.EntityHas(entity.UniqueID, EntityProperty.InterruptEntity))
 								{
@@ -414,18 +415,12 @@ namespace SoarIMPRINTPlugin
 									// add ^active
 									//command.FindIDByAttribute("task").CreateStringWME("active", "yes");
 									
-									// TODO this method will cause problems when we want to allow multiple
-									// entities in a single task. We will have to put the Entity's UniqueID in WM
-									foreach (sml.Identifier taskElement in agent.GetInputLink().GetIDChildren("task"))
-									{
-										if (taskElement.FindStringByAttribute("taskID") == entity.ID)
-										{
-											// remove ^delayed from WME
-											taskElement.FindByAttribute("delayed", 0).DestroyWME();
-											// add ^active
-											taskElement.CreateStringWME("active", "yes");
-										}
-									}
+									// update task WME
+									sml.Identifier taskElement = GetInputTask(entity);
+									// remove ^delayed from WME
+									taskElement.FindByAttribute("delayed", 0).DestroyWME();
+									// add ^active
+									taskElement.CreateStringWME("active", "yes");
 
 									log.log("Scope: EE: Switching from ^delayed to ^active", 6);
 								}
@@ -526,7 +521,7 @@ namespace SoarIMPRINTPlugin
 					log.log("Scope: RC: adding release task: " + nt.ID, 5);
 
 					// add task props to Soar input
-					sml.Identifier taskWME = AddReleaseTask(nt);
+					sml.Identifier taskWME = AddReleaseTask(executor.Simulation.GetEntity());
 
 					log.log("Scope: RC: Running scope to get release decision", 5);
 					string output = agent.RunSelfTilOutput();
@@ -725,8 +720,7 @@ namespace SoarIMPRINTPlugin
 						entityProperties.AddProp(decision.uniqueID, EntityProperty.DelayEntity);
 
 						// add task as delayed in scope
-						string ID = ((MAAD.Simulator.IEntity)app.Executor.Simulation.IModel.Find("UniqueID", decision.uniqueID)[0]).ID;
-						this.AddTask(app.Executor.Simulation.IModel.FindTask(ID)).CreateStringWME("delayed", "yes");
+						AddTask((MAAD.Simulator.IEntity)app.Executor.Simulation.IModel.Find("UniqueID", decision.uniqueID)[0]).CreateStringWME("delayed", "yes");
 						log.log("Scope: Setting task as acutally delayed for delay-new", 3);
 
 						// enter decision in scope log
@@ -945,44 +939,29 @@ namespace SoarIMPRINTPlugin
 		// relying on task ID because this may cause problems if multiple entities go through
 		// a task
 		// Remove a task from the input-link
-		private bool RemoveTask(MAAD.Simulator.Utilities.IRuntimeTask task)
-		{
-			return RemoveTask(GetIMPRINTTaskFromRuntimeTask(task));
-		}
-		private bool RemoveTask(MAAD.IMPRINTPro.NetworkTask task)
+		private bool RemoveTask(MAAD.Simulator.IEntity entity)
 		{
 			// get input link
 			sml.Identifier input = agent.GetInputLink();
 
-			// search task children
-			foreach (sml.Identifier taskLink in input.GetIDChildren("task"))
-			{
-				// for the given ID
-				if (taskLink.FindStringByAttribute("taskID") == task.ID)
-				{
-					// and destroy if we find it
-					bool success = taskLink.DestroyWME();
-					log.log("Scope: Attempting to remove task from input: " + success, 7);
-					return success;
-				}
-			}
-
-			// return false if we didn't find a matching task
-			return false;
+			bool success = GetInputTask(entity.UniqueID).DestroyWME();
+			log.log("Scope: Attempting to remove task from input: " + success, 7);
+			return success;
 		}
 	
 		// Put a task on the input-link
-		private sml.Identifier AddTask(MAAD.Simulator.Utilities.IRuntimeTask task)
+		private sml.Identifier AddTask(MAAD.Simulator.IEntity entity)
 		{
-			return AddTask(GetIMPRINTTaskFromRuntimeTask(task));
-		}
-		private sml.Identifier AddTask(MAAD.IMPRINTPro.NetworkTask task)
-		{
+			MAAD.IMPRINTPro.NetworkTask task = GetIMPRINTTaskFromRuntimeTask(app.Executor.Simulation.IModel.FindTask(entity.ID));
+
 			// get input link
 			sml.Identifier input = agent.GetInputLink();
 
 			// create a wme for the task
 			sml.Identifier taskLink = input.CreateIdWME("task");
+
+			// add the entity uniqueID
+			taskLink.CreateIntWME("UniqueID", entity.UniqueID);
 
 			// add the task ID
 			taskLink.CreateStringWME("taskID", task.ID);
@@ -1020,29 +999,32 @@ namespace SoarIMPRINTPlugin
 		}
 		
 		// Add a task to the input link and add ^active yes attribute
-		private sml.Identifier AddActiveTask(MAAD.Simulator.Utilities.IRuntimeTask task)
+		private sml.Identifier AddActiveTask(MAAD.Simulator.IEntity entity)
 		{
-			return AddActiveTask(GetIMPRINTTaskFromRuntimeTask(task));
-		}
-		private sml.Identifier AddActiveTask(MAAD.IMPRINTPro.NetworkTask task)
-		{
-			sml.Identifier taskWME = AddTask(task);
+			sml.Identifier taskWME = AddTask(entity);
 			// add active attribute
 			taskWME.CreateStringWME("active", "yes");
 			return taskWME;
 		}
 		
 		// Add a task to the input link and add ^release yes attribute
-		private sml.Identifier AddReleaseTask(MAAD.Simulator.Utilities.IRuntimeTask task)
+		private sml.Identifier AddReleaseTask(MAAD.Simulator.IEntity entity)
 		{
-			return AddReleaseTask(GetIMPRINTTaskFromRuntimeTask(task));
-		}
-		private sml.Identifier AddReleaseTask(MAAD.IMPRINTPro.NetworkTask task)
-		{
-			sml.Identifier taskWME = AddTask(task);
+			sml.Identifier taskWME = AddTask(entity);
 			// add release attribute
 			taskWME.CreateStringWME("release", "yes");
 			return taskWME;
+		}
+
+		private sml.Identifier GetInputTask(MAAD.Simulator.IEntity entity)
+		{
+			return GetInputTask(entity.UniqueID);
+		}
+		private sml.Identifier GetInputTask(int UniqueID)
+		{
+			return agent.GetInputLink().GetChildren("task")
+				.Select(wme => wme.ConvertToIdentifier())
+				.Where(id => id.FindIntByAttribute("UniqueID") == UniqueID).First();
 		}
 		
 		// Mostly for testing
