@@ -10,7 +10,7 @@ namespace SoarIMPRINTPlugin
 	public class Scope : Utility.IMPRINTAccess, MAAD.Utilities.Plugins.IPlugin
 	{
 		// for logging to the IMPRINT window
-		private static Utility.IMPRINTLogger log = new IMPRINTLogger(5, new string[] {"debug", "event", "error"});
+		private static Utility.IMPRINTLogger log = new IMPRINTLogger(3, new string[] {"debug", "event", "error"});
 
 		private ScopeData scopeData = new ScopeData();
 
@@ -302,7 +302,7 @@ namespace SoarIMPRINTPlugin
 				if (lastDecision.type == DeferredDecision.DecisionType.InterruptDecision)
 				{
 					// suspend task
-					log.log("Scope: Suspending entity for interrupt-task: " +
+					log.log("Scope: Suspending entity (" + ((InterruptDecision) lastDecision).interruptUniqueID + ") for interrupt-task: " +
 						executor.Simulation.IModel.Suspend("UniqueID", ((InterruptDecision)lastDecision).interruptUniqueID)
 						, 3);
 
@@ -373,7 +373,8 @@ namespace SoarIMPRINTPlugin
 								// sanity check
 								if (UniqueID != entity.UniqueID)
 								{
-									throw new Exception("Sanity check failed. Entity.UniqueID != UniqueID");
+									//throw new Exception("Sanity check failed. Entity.UniqueID != UniqueID");
+									log.log("Sanity check failed. Entity.UniqueID (" + entity.UniqueID + " ) != UniqueID (" + UniqueID + ")", "error");
 								}
 
 								// check if it is in a suspended state
@@ -454,7 +455,7 @@ namespace SoarIMPRINTPlugin
 			if (entityProperties.EntityHas(executor.Simulation.GetEntity().UniqueID, EntityProperty.ResumePurgatoryEntity))
 			{
 				log.log("Scope: RC: Entity in resume purgatory entering RC", "error");
-				throw new Exception("Entity in resume purgatory entering RC");
+				//throw new Exception("Entity in resume purgatory entering RC");
 			}
 
 			// abort any entities that scope said to reject because they are duplicates
