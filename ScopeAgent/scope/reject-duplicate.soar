@@ -1,6 +1,6 @@
 # propose to reject a duplicate task if there is one
 sp {propose*reject-duplicate
-   (state <s> ^name release-decision
+   (state <s> ^disabled yes ^name release-decision
               ^io.input-link ( ^task <release>
                                ^task <delayed> ))
    (<release> ^release yes
