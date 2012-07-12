@@ -10,7 +10,7 @@ namespace SoarIMPRINTPlugin
 	public class Scope : Utility.IMPRINTAccess, MAAD.Utilities.Plugins.IPlugin
 	{
 		// for logging to the IMPRINT window
-		private static Utility.IMPRINTLogger log = new IMPRINTLogger(3, new string[] {"debug", "event", "error"});
+		private static Utility.IMPRINTLogger log = new IMPRINTLogger(10, new string[] {"debug", "event", "error"});
 
 		private ScopeData scopeData = new ScopeData();
 
@@ -415,7 +415,7 @@ namespace SoarIMPRINTPlugin
 									//command.FindIDByAttribute("task").FindByAttribute("delayed", 0).DestroyWME();
 									// add ^active
 									//command.FindIDByAttribute("task").CreateStringWME("active", "yes");
-									
+
 									// update task WME
 									sml.Identifier taskElement = GetInputTask(entity);
 									// remove ^delayed from WME
@@ -431,6 +431,11 @@ namespace SoarIMPRINTPlugin
 						log.log("Scope: EE: Marking command complete and clearing output changed", 7);
 						command.AddStatusComplete();
 						agent.ClearOutputLinkChanges();
+					}
+					else
+					{
+						//agent.GetInputLink().Print(3);
+						ShowInputState();
 					}
 				}
 			}
@@ -632,8 +637,9 @@ namespace SoarIMPRINTPlugin
 					log.log("Scope: Interrupt task", 3);
 
 					// get task which should be interrupted
-					sml.Identifier interruptedTaskWME = agent.GetOutputLink().GetIDAtAttributePath("strategy.interrupt-task");
-					string taskID = interruptedTaskWME.FindStringByAttribute("taskID");
+					//sml.Identifier interruptedTaskWME = agent.GetOutputLink().GetIDAtAttributePath("strategy.interrupt-task");
+					//string taskID = interruptedTaskWME.FindStringByAttribute("taskID");
+					int UniqueID = (int)agent.GetOutputLink().GetIntAtAttributePath("strategy.interrupt-task.UniqueID");
 
 					// store info on decision
 					this.lastDecision = new InterruptDecision
@@ -641,7 +647,7 @@ namespace SoarIMPRINTPlugin
 						type = DeferredDecision.DecisionType.InterruptDecision,
 						uniqueID = app.Executor.Simulation.GetEntity().UniqueID,
 						scheduledBeginTime = app.Executor.Simulation.Clock,
-						interruptUniqueID = ((MAAD.Simulator.IEntity)app.Executor.Simulation.IModel.Find("ID", taskID)[0]).UniqueID
+						interruptUniqueID = UniqueID
 					};
 
 					// suspend entity(ies?) in task
@@ -686,6 +692,15 @@ namespace SoarIMPRINTPlugin
 
 		private void OnClockAdvance(object sender, MAAD.Simulator.ClockChangedArgs args)
 		{
+			// if task 2 is active, report that it advanced
+			foreach (MAAD.Simulator.IEntity entity in app.Executor.Simulation.IModel.Find("ID", "2"))
+			{
+				if (!entityProperties.EntityHas(entity.UniqueID, EntityProperty.DelayEntity) &&
+					!entityProperties.EntityHas(entity.UniqueID, EntityProperty.InterruptEntity))
+				{
+					log.log("Task 2 advancing from " + args.OldClock + " to " + args.Clock + ": " + (args.Clock - args.OldClock));
+				}
+			}
 			// call to check for reject/delayed actions
 			CheckForDelaysAndRejects(args.Clock);
 		}
