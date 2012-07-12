@@ -111,7 +111,7 @@ namespace SoarIMPRINTPlugin
 
 		// TODO test when IMPRINT creates plugin objects
 		private static sml.Kernel kernel = null;
-		private sml.Agent agent = null;
+		private static sml.Agent agent = null;
 		// True iff scope should be used during the simulation
 		private static bool enable = false;
 		// True iff the agent exists, has been initialized,
@@ -215,7 +215,14 @@ namespace SoarIMPRINTPlugin
 				{
 					log.log("Scope: Unregistering events and killing agent", 5);
 					instance.UnregisterEvents();
-					instance.KillAgent();
+					if (kernel.IsRemoteConnection())
+					{
+						log.log("Scope: Kernel is remote, not killing agent", 6);
+					}
+					else
+					{
+						instance.KillAgent();
+					}
 
 					// write data
 					instance.scopeData.WriteCounts("C:\\Users\\christopher.j.best2\\Documents\\ScopeData\\scope_counts.txt");
@@ -759,11 +766,48 @@ namespace SoarIMPRINTPlugin
 		// TODO this does more than initialize the kernel and should be renamed
 		public static bool InitializeKernel()
 		{
+			log.log("Scope: Initializing Kernel", 6);
 			// create the kernel if it doesn't exist yet
 			if (kernel == null)
 			{
-				kernel = sml.Kernel.CreateKernelInNewThread();
-				log.log("Scope: Creating kernel", 6);
+				// try connecting to a remote kernel first, in case
+				// we have a debugger open and running
+				kernel = sml.Kernel.CreateRemoteConnection();
+				if (!kernel.HadError())
+				{
+					log.log("Scope: Connecting to remote kernel", 6);
+					// check that it's running the correct agent,
+					// and not just some random debugger
+					// TODO the agent won't be named this unless we manually
+					// create a new agent in the debugger, name it, and then load
+					// the source
+					//agent = kernel.GetAgent("scope-agent");
+					if (kernel.GetNumberAgents() > 0)
+					{
+						// just get the first agent // TODO how can we check this is scope?
+						agent = kernel.GetAgentByIndex(0);
+						if (!AgentIsGood())
+						{
+							log.log("Scope: Agent in remote kernel invalid, disconnecting from remote kernel", 6);
+						}
+					}
+					else
+					{
+						log.log("Scope: No agents found in kernel, disconnecting from remote kernel", 6);
+						kernel = null;
+					}
+				}
+				else
+				{
+					// TODO do we have to dispose the object?
+					kernel = null;
+				}
+				// if remote connection fails, create local kernel
+				if (kernel == null)
+				{
+					kernel = sml.Kernel.CreateKernelInNewThread();
+					log.log("Scope: No remote kernel found, creating local kernel", 6);
+				}
 
 				// register static event handlers
 				app.Generator.OnSimulationBegin += OSB;
@@ -784,12 +828,11 @@ namespace SoarIMPRINTPlugin
 		}
 		public bool InitializeAgent(string source)
 		{
-			// this will never happen but it's good practice if this is public
-			if (agent != null && kernel.IsAgentValid(agent))
+			// don't create a new agent if one already exists
+			if (AgentIsGood())
 			{
-				log.log("Scope: Destroying existing agent to create new one", 6);
-				kernel.DestroyAgent(agent);
-				agent = null;
+				log.log("Scope: Agent already exists, not creating a new one", 6);
+				return true;
 			}
 
 			if (agent == null)
@@ -814,6 +857,11 @@ namespace SoarIMPRINTPlugin
 			}
 
 			return true;
+		}
+		// return true iff agent exists and is valid
+		private static bool AgentIsGood()
+		{
+			return kernel != null && agent != null && kernel.IsAgentValid(agent);
 		}
 		
 		// Clear the input link and populate with initial info
