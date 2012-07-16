@@ -53,8 +53,7 @@ namespace SoarIMPRINTPlugin
 			InterruptEntity,
 			DelayEntity,
 			TentativeDelayEntity,
-			ResumeEntity,
-			ResumePurgatoryEntity
+			ResumeEntity
 		};
 		
 		// A class to manage entity markings
@@ -270,9 +269,8 @@ namespace SoarIMPRINTPlugin
 		{
 			log.log("Scope: OnBeforeBeginningEffect", 10);
 
-			// TODO checking for bug that should exist (see RC handler)
-			// once an entity starts its task, it is out of resume purgatory
-			entityProperties.RemoveProp(executor.Simulation.GetEntity().UniqueID, EntityProperty.ResumePurgatoryEntity);
+			// take Resume property off once a resume task starts
+			entityProperties.RemoveProp(executor.Simulation.GetEntity().UniqueID, EntityProperty.ResumeEntity);
 
 			// TODO if a KILL_TAG entity gets here, something has gone wrong
 			// check that entity hasn't been marked KILL_TAG yet
@@ -484,16 +482,32 @@ namespace SoarIMPRINTPlugin
 			// don't override false RC evaluations
 			// TODO should the special case checks be evaluated before this?
 			// TODO seems like maybe the ResumeEntity and RejectDuplicateEntity should?
-			if (release == false)
+			if (release == false && !entityProperties.EntityHas(executor.Simulation.GetEntity().UniqueID, EntityProperty.ResumeEntity))
 			{
 				return;
 			}
 
-			// TODO check for resume purgatory entities which may exist due to a bug I can't produce but should exist
-			if (entityProperties.EntityHas(executor.Simulation.GetEntity().UniqueID, EntityProperty.ResumePurgatoryEntity))
+			// if there is a resume entity trying to get through, return false for all others until it starts
+			if (entityProperties.EntitiesWith(EntityProperty.ResumeEntity).Count() > 0)
 			{
-				log.log("Scope: RC: Entity in resume purgatory entering RC", "error");
-				//throw new Exception("Entity in resume purgatory entering RC");
+				if (entityProperties.EntityHas(executor.Simulation.GetEntity().UniqueID, EntityProperty.ResumeEntity))
+				{
+					release = true;
+
+					// update last decision as resume decision
+					log.log("Scope: RC: Setting last decision to this resume decision", 5);
+					this.lastDecision = new DeferredDecision
+					{
+						type = DeferredDecision.DecisionType.ResumeDecision,
+						uniqueID = executor.Simulation.GetEntity().UniqueID,
+						scheduledBeginTime = executor.Simulation.Clock
+					};
+				}
+				else
+				{
+					release = false;
+				}
+				return;
 			}
 
 			// abort any entities that scope said to reject because they are duplicates
@@ -516,32 +530,6 @@ namespace SoarIMPRINTPlugin
 				release = false;
 
 				// also don't make a decision about it
-				return;
-			}
-
-			// if entity is marked to resume after delay, return true
-			if (entityProperties.EntityHas(executor.Simulation.GetEntity().UniqueID, EntityProperty.ResumeEntity))
-			{
-				log.log("Scope: RC: Resuming entity coming through release condition, accepting", 3);
-
-				// remove resume property
-				// TODO what if there is another task starting when this is resumed, and they both have their
-				// RCs evaluated, but the other one actually starts before this one, so this one has RC evaluated
-				// again. then this would be subject to release decision again. This is a bug
-				entityProperties.RemoveProp(executor.Simulation.GetEntity().UniqueID, EntityProperty.ResumeEntity);
-				// TODO to detect manifestation of this bug, put the resume purgatory property on the entity and check for it later
-				entityProperties.AddProp(executor.Simulation.GetEntity().UniqueID, EntityProperty.ResumePurgatoryEntity);
-
-				// update last decision as resume decision
-				log.log("Scope: RC: Setting last decision to this resume decision", 5);
-				this.lastDecision = new DeferredDecision
-				{
-					type = DeferredDecision.DecisionType.ResumeDecision,
-					uniqueID = executor.Simulation.GetEntity().UniqueID,
-					scheduledBeginTime = executor.Simulation.Clock
-				};
-
-				release = true;
 				return;
 			}
 
