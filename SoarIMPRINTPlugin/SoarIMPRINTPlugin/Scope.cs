@@ -512,6 +512,20 @@ namespace SoarIMPRINTPlugin
 				return;
 			}
 
+			// if an entity has a deferred decision associated with it, destroy it because we are making a new decision
+			int UniqueID = executor.Simulation.GetEntity().UniqueID;
+			if (entityProperties.EntityHas(UniqueID, EntityProperty.TentativeDelayEntity))
+			{
+				// TentativeDelay entities will have a deferred decision in the queue
+				deferredDecisions.RemoveWhere(decision => decision.uniqueID == UniqueID);
+				// TODO, this should be a hash table, which would at least limit us to one deferred decision per UID
+
+				// remove TentativeDelay property
+				entityProperties.RemoveProp(UniqueID, EntityProperty.TentativeDelayEntity);
+
+				// TODO implement this for ignore-new
+			}
+
 			MAAD.Simulator.Utilities.IRuntimeTask task = executor.EventQueue.GetTask();
 
 			// ignore the first and last task
