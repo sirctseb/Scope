@@ -302,16 +302,17 @@ namespace SoarIMPRINTPlugin
 				if (lastDecision.type == DeferredDecision.DecisionType.InterruptDecision)
 				{
 					// suspend task
+					log.log("Scope: Matching UID: " + executor.Simulation.IModel.Find("UniqueID", ((InterruptDecision)lastDecision).interruptUniqueID).Count);
 					log.log("Scope: Suspending entity (" + ((InterruptDecision) lastDecision).interruptUniqueID + ") for interrupt-task: " +
 						executor.Simulation.IModel.Suspend("UniqueID", ((InterruptDecision)lastDecision).interruptUniqueID)
 						, 3);
-
+					//PrintEntitiesInTasks();
 					// add ^delayed to scope task and take off ^active
 					sml.Identifier interruptedTaskWME = GetInputTask(((InterruptDecision)lastDecision).interruptUniqueID);
 					// take off ^active
-					interruptedTaskWME.FindByAttribute("active", 0).DestroyWME();
+					log.log("Scope: BE: Removing ^active: " + interruptedTaskWME.FindByAttribute("active", 0).DestroyWME(), 8);
 					// add ^delayed
-					interruptedTaskWME.CreateStringWME("delayed", "yes");
+					log.log("Scope: BE: Adding ^delayed: " + interruptedTaskWME.CreateStringWME("delayed", "yes"), 8);
 
 					log.log("Scope: Added ^delayed and removed ^active", 4);
 
@@ -333,6 +334,28 @@ namespace SoarIMPRINTPlugin
 				AddActiveTask(executor.Simulation.GetEntity());
 			}
 		}
+
+		private void PrintEntitiesInTasks()
+		{
+			try
+			{
+				foreach (var entry in app.Executor.RuntimeTaskList)
+				{
+					log.log(entry.Key + ":");
+					if (entry.Value.Entities != null)
+					{
+						foreach (MAAD.Simulator.IEntity entity in entry.Value.Entities)
+						{
+							log.log("(" + entity.UniqueID + ") " + entity.Event + ", " + entity.ToString());
+						}
+					}
+				}
+			}
+			catch (Exception e)
+			{
+				log.log(e.Message);
+			}
+		}
 		
 		private void OnAfterEndingEffect(MAAD.Simulator.Executor executor)
 		{
@@ -343,6 +366,13 @@ namespace SoarIMPRINTPlugin
 			{
 				log.log("Scope: OnAfterEndingEffect: " + executor.Simulation.GetTask().Properties.Name, "event");
 
+				// TODO debugging
+				if (executor.Simulation.GetTask().ID == "2")
+				{
+					log.log("Task 2 ending, UniqueID: " + executor.Simulation.GetEntity().UniqueID);
+					log.log(GetInputTask(executor.Simulation.GetEntity().UniqueID).Print(2));
+					//executor.Simulation.IModel.Pause();
+				}
 				log.log("Scope: EE: Removing task " + task.ID + " from input: " + RemoveTask(executor.Simulation.GetEntity()), 5);
 
 				// check that there are any delayed tasks before trying to resume them
@@ -399,7 +429,8 @@ namespace SoarIMPRINTPlugin
 								else if (entityProperties.EntityHas(entity.UniqueID, EntityProperty.InterruptEntity))
 								{
 									// trace that we are resuming
-									log.log("Scope: EE: Resuming interrupted task " + entity.ID + ": " + executor.Simulation.IModel.Resume("ID", entity.ID));
+									//log.log("Scope: EE: Resuming interrupted task " + entity.ID + ": " + executor.Simulation.IModel.Resume("ID", entity.ID));
+									log.log("Scope: EE: Resuming interrupted task " + entity.ID + "(" + entity.UniqueID + "): " + executor.Simulation.IModel.Resume(entity));
 
 									// TODO this should be restored from what it was before
 									entityProperties.RemoveProp(entity.UniqueID, EntityProperty.InterruptEntity);
@@ -419,9 +450,9 @@ namespace SoarIMPRINTPlugin
 									// update task WME
 									sml.Identifier taskElement = GetInputTask(entity);
 									// remove ^delayed from WME
-									taskElement.FindByAttribute("delayed", 0).DestroyWME();
+									log.log("Scope: EE: Removing ^delayed: " + taskElement.FindByAttribute("delayed", 0).DestroyWME(), 8);
 									// add ^active
-									taskElement.CreateStringWME("active", "yes");
+									log.log("Scope: EE: Adding ^active: " + taskElement.CreateStringWME("active", "yes"), 8);
 
 									log.log("Scope: EE: Switching from ^delayed to ^active", 6);
 								}
@@ -438,6 +469,8 @@ namespace SoarIMPRINTPlugin
 						ShowInputState();
 					}
 				}
+				log.log("pausing after 4 ending");
+				//executor.Simulation.IModel.Pause();
 			}
 		}
 		
