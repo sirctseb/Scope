@@ -330,6 +330,9 @@ namespace SoarIMPRINTPlugin
 				// add task props to Soar input
 				log.log("Scope: BE: Adding task " + task.ID + " as an active task", 3);
 				AddActiveTask(executor.Simulation.GetEntity());
+
+				// clear last decision
+				lastDecision = null;
 			}
 		}
 
