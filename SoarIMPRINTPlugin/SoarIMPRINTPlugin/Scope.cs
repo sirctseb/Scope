@@ -753,10 +753,42 @@ namespace SoarIMPRINTPlugin
 			}
 
 			// put new clock value on input-link
+			log.log("Scope: CA: Setting new clock value: " + args.Clock, 8);
 			agent.GetInputLink().FindByAttribute("clock", 0).ConvertToFloatElement().Update(args.Clock);
 
 			// call to check for reject/delayed actions
 			CheckForDelaysAndRejects(args.Clock);
+
+			// ask scope if we should expire anything
+			
+			// put request on input
+			log.log("Scope: CA: Putting expire decision request on input link", 8);
+			sml.StringElement expireString = agent.GetInputLink().CreateStringWME("decision-request", "expire");
+			
+			// run scope to output
+			log.log("Scope: CA: Running agent to make expire decision", 9);
+			string result = agent.RunSelfTilOutput();
+
+			// get output commnad
+			sml.Identifier command = agent.GetCommand(0);
+
+			// get strategy name
+			string strategy = command.GetParameterValue("name");
+			log.log("Scope: CA: Scope returned: " + strategy, 5);
+
+			// TODO this returns a valid entity, so we have to be careful below
+			// when we abort an expired entity. If it is the one returned here,
+			// it might fail to abort. This is probably a bug.
+			//log.log(args.Executor.Simulation.GetEntity().UniqueID);
+
+			if (strategy == "expire-task")
+			{
+				sml.Identifier taskIdentifier = command.FindIDByAttribute("task");
+				string expireTaskID = taskIdentifier.FindStringByAttribute("taskID");
+				int UniqueID = (int)taskIdentifier.FindIntByAttribute("UniqueID");
+				log.log("Scope: CA: Expiring entity (" + UniqueID + ") in task: " + expireTaskID + ": " +
+						args.Executor.Simulation.IModel.Abort("UniqueID", UniqueID), 4);
+			}
 		}
 
 		// Check if there are delayed or rejected entities that we should act on
