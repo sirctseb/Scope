@@ -983,6 +983,8 @@ namespace SoarIMPRINTPlugin
 				agent.GetInputLink().CreateFloatWME("threshold", 8);
 				// put clock value on
 				agent.GetInputLink().CreateFloatWME("clock", 0);
+				// put expiration time on
+				agent.GetInputLink().CreateFloatWME("expiration-date", 3);
 
 				log.log("Scope: Putting IMPRINT on input link", 6);
 			}
