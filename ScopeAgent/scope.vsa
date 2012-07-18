@@ -8,33 +8,38 @@ VERSION 4
 5	3	FOPERATOR top-state top-state.soar 6
 6	0	OPERATOR debug debug.soar 7
 7	0	OPERATOR delay-new delay-new.soar 8
-8	0	OPERATOR ignore-new ignore-new.soar 9
-9	0	OPERATOR initialize-scope initialize-scope.soar 10
-10	0	OPERATOR interrupt-task interrupt-task.soar 11
-11	0	OPERATOR mark-new mark-new.soar 12
-12	0	OPERATOR meta meta.soar 13
-13	0	OPERATOR minimize-workload minimize-workload.soar 14
-14	0	OPERATOR perform-all perform-all.soar 15
-15	0	OPERATOR reject-duplicate reject-duplicate.soar 16
-16	0	OPERATOR release-decision-subgoal release-decision-subgoal.soar 17
-17	0	HLOPERATOR resume-decision-subgoal resume-decision-subgoal.soar resume-decision-subgoal 262 18
-18	17	FOPERATOR elaborations elaborations.soar 19
-19	17	OPERATOR continue-delay continue-delay.soar 20
-20	17	HLIOPERATOR Impasse__Operator_Tie Impasse__Operator_Tie.soar Impasse__Operator_Tie 271 21
-21	20	FOPERATOR elaborations elaborations.soar 22
-22	17	HLIOPERATOR Impasse__State_No-Change Impasse__State_No-Change.soar Impasse__State_No-Change 274 23
-23	22	FOPERATOR elaborations elaborations.soar 24
-24	17	OPERATOR resume-delayed resume-delayed.soar 25
-25	0	HLOPERATOR simulation-simulator simulation-simulator.soar simulation-simulator 277 26
-26	25	FOPERATOR elaborations elaborations.soar 27
-27	25	OPERATOR default-test default-test.soar 28
-28	25	OPERATOR reject-duplicate-test reject-duplicate-test.soar 29
-29	25	OPERATOR resume-none-test resume-none-test.soar 30
-30	25	OPERATOR resume-tie-test resume-tie-test.soar 31
-31	25	OPERATOR simultaneous-add-remove-test simultaneous-add-remove-test.soar 32
-32	25	OPERATOR tie-interrupt-delay-ignore-test tie-interrupt-delay-ignore-test.soar 33
-33	25	OPERATOR wait-test wait-test.soar 34
-34	0	OPERATOR wait wait.soar 35
-35	0	OPERATOR workload workload.soar 36
-36	0	OPERATOR workload-threshold workload-threshold.soar 37
+8	0	HLOPERATOR expire-decision-subgoal expire-decision-subgoal.soar expire-decision-subgoal 308 9
+9	8	FOPERATOR elaborations elaborations.soar 39
+10	8	HLIOPERATOR Impasse__State_No-Change Impasse__State_No-Change.soar Impasse__State_No-Change 311 40
+11	10	FOPERATOR elaborations elaborations.soar 41
+12	8	OPERATOR expire-task expire-task.soar 42
+13	0	OPERATOR ignore-new ignore-new.soar 10
+14	0	OPERATOR initialize-scope initialize-scope.soar 11
+15	0	OPERATOR interrupt-task interrupt-task.soar 12
+16	0	OPERATOR mark-new mark-new.soar 13
+17	0	OPERATOR meta meta.soar 14
+18	0	OPERATOR minimize-workload minimize-workload.soar 15
+19	0	OPERATOR perform-all perform-all.soar 16
+20	0	OPERATOR reject-duplicate reject-duplicate.soar 17
+21	0	OPERATOR release-decision-subgoal release-decision-subgoal.soar 18
+22	0	HLOPERATOR resume-decision-subgoal resume-decision-subgoal.soar resume-decision-subgoal 262 19
+23	22	FOPERATOR elaborations elaborations.soar 20
+24	22	OPERATOR continue-delay continue-delay.soar 21
+25	22	HLIOPERATOR Impasse__Operator_Tie Impasse__Operator_Tie.soar Impasse__Operator_Tie 271 22
+26	25	FOPERATOR elaborations elaborations.soar 23
+27	22	HLIOPERATOR Impasse__State_No-Change Impasse__State_No-Change.soar Impasse__State_No-Change 274 24
+28	27	FOPERATOR elaborations elaborations.soar 25
+29	22	OPERATOR resume-delayed resume-delayed.soar 26
+30	0	HLOPERATOR simulation-simulator simulation-simulator.soar simulation-simulator 277 27
+31	30	FOPERATOR elaborations elaborations.soar 28
+32	30	OPERATOR default-test default-test.soar 29
+33	30	OPERATOR reject-duplicate-test reject-duplicate-test.soar 30
+34	30	OPERATOR resume-none-test resume-none-test.soar 31
+35	30	OPERATOR resume-tie-test resume-tie-test.soar 32
+36	30	OPERATOR simultaneous-add-remove-test simultaneous-add-remove-test.soar 33
+37	30	OPERATOR tie-interrupt-delay-ignore-test tie-interrupt-delay-ignore-test.soar 34
+38	30	OPERATOR wait-test wait-test.soar 35
+39	0	OPERATOR wait wait.soar 36
+40	0	OPERATOR workload workload.soar 37
+41	0	OPERATOR workload-threshold workload-threshold.soar 38
 END

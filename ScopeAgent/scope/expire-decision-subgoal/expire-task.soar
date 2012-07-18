@@ -1,0 +1,5 @@
+# decide which tasks should expire
+
+# propose to expire a task if it hasbeen _alive_ (TODO define)
+# longer than a fixed amount of time
+#sp {expire-decision*propose*expire-task

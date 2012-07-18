@@ -1,0 +1,25 @@
+# elaborate tasks with expiration information
+# TODO first draft: mark as expire if Clock - initial-time > expire-time
+
+# elaborate with Clock - initial-time
+sp {elaborate*expire-decision*age
+   (state <s> ^name expire-decision
+              ^io.input-link
+              (  ^clock <clock>
+                 ^task (<task>
+                        ^delayed yes
+                        ^initial-time <initial-time>)))
+-->
+   (<task> ^age (- <clock> <initial-time>))
+}
+   
+# copy io and workload to new state when expire-decision subgoal is created
+sp {elaborate*expire-decision*state
+   (state <s> ^name expire-decision
+              ^superstate <ts>)
+   (<ts> ^io <io>
+         ^workload <workload>)
+-->
+   (<s> ^io <io>
+        ^workload <workload>)
+}
