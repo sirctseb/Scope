@@ -156,6 +156,21 @@ namespace SoarIMPRINTPlugin
 			return true;
 		}
 
+		public void SetExpirationTime(double expirationTime)
+		{
+			if (Scope.enable && scopeInitialized)
+			{
+				log.log("Scope: Setting expiration length to " + expirationTime, 6);
+				// destroy existing one if it exists first
+				sml.WMElement element = agent.GetInputLink().FindByAttribute("expiration-date", 0);
+				if (element != null)
+				{
+					log.log("Scope: Destroying existing value first: " + element.DestroyWME(), 7);
+				}
+				agent.GetInputLink().CreateFloatWME("expiration-date", expirationTime);
+			}
+		}
+
 		#region Static Event Handlers
 
 		// Static handlers for initalization
