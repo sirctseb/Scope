@@ -108,6 +108,9 @@ namespace SoarIMPRINTPlugin
 
 		private EntityProperties entityProperties = new EntityProperties();
 
+		// A map from an Entity's UniqueID to the time it first RCed at its current task
+		private Dictionary<int, double> initTimes = new Dictionary<int, double>();
+
 		// TODO test when IMPRINT creates plugin objects
 		private static sml.Kernel kernel = null;
 		private static sml.Agent agent = null;
@@ -151,6 +154,21 @@ namespace SoarIMPRINTPlugin
 				}
 			}
 			return true;
+		}
+
+		public void SetExpirationTime(double expirationTime)
+		{
+			if (Scope.enable && scopeInitialized)
+			{
+				log.log("Scope: Setting expiration length to " + expirationTime, 6);
+				// destroy existing one if it exists first
+				sml.WMElement element = agent.GetInputLink().FindByAttribute("expiration-date", 0);
+				if (element != null)
+				{
+					log.log("Scope: Destroying existing value first: " + element.DestroyWME(), 7);
+				}
+				agent.GetInputLink().CreateFloatWME("expiration-date", expirationTime);
+			}
 		}
 
 		#region Static Event Handlers
@@ -360,6 +378,9 @@ namespace SoarIMPRINTPlugin
 		
 		private void OnAfterEndingEffect(MAAD.Simulator.Executor executor)
 		{
+			// clear initial time for the entity
+			initTimes.Remove(executor.Simulation.GetEntity().UniqueID);
+
 			MAAD.Simulator.Utilities.IRuntimeTask task = executor.EventQueue.GetTask();
 			// ignore first and last tasks
 			int taskID = int.Parse(task.ID);
@@ -482,6 +503,12 @@ namespace SoarIMPRINTPlugin
 		}
 		private void OnAfterReleaseCondition(MAAD.Simulator.Executor executor, ref bool release)
 		{
+			// mark first RC time if it doesn't have one yet
+			if (!initTimes.ContainsKey(executor.Simulation.GetEntity().UniqueID))
+			{
+				initTimes[executor.Simulation.GetEntity().UniqueID] = executor.Simulation.Clock;
+			}
+
 			// don't override false RC evaluations
 			// TODO should the special case checks be evaluated before this?
 			// TODO seems like maybe the ResumeEntity and RejectDuplicateEntity should?
@@ -679,6 +706,8 @@ namespace SoarIMPRINTPlugin
 					//string taskID = interruptedTaskWME.FindStringByAttribute("taskID");
 					int UniqueID = (int)agent.GetOutputLink().GetIntAtAttributePath("strategy.interrupt-task.UniqueID");
 
+					log.log("Scope: Interrupt: Creating InterruptDecision with uniqueID: " + app.Executor.Simulation.GetEntity().UniqueID, 8);
+					log.log("Scope:                                   interruptUniqueID: " + UniqueID, 8);
 					// store info on decision
 					this.lastDecision = new InterruptDecision
 					{
@@ -706,7 +735,7 @@ namespace SoarIMPRINTPlugin
 					}*/
 
 					// destroy the task input element and it will be added later on task begin
-					taskWME.DestroyWME();
+					log.log("Scope: Interrupt: Removing task from input: " + taskWME.DestroyWME(), 8);
 					// return true because entity should be released
 					return true;
 					break;
@@ -739,8 +768,51 @@ namespace SoarIMPRINTPlugin
 					log.log("Task 2 advancing from " + args.OldClock + " to " + args.Clock + ": " + (args.Clock - args.OldClock));
 				}
 			}
+
+			// put new clock value on input-link
+			log.log("Scope: CA: Setting new clock value: " + args.Clock, 8);
+			agent.GetInputLink().FindByAttribute("clock", 0).ConvertToFloatElement().Update(args.Clock);
+
 			// call to check for reject/delayed actions
 			CheckForDelaysAndRejects(args.Clock);
+
+			// ask scope if we should expire anything
+			
+			// put request on input
+			log.log("Scope: CA: Putting expire decision request on input link", 8);
+			sml.StringElement expireString = agent.GetInputLink().CreateStringWME("decision-request", "expire");
+			
+			// run scope to output
+			log.log("Scope: CA: Running agent to make expire decision", 9);
+			string result = agent.RunSelfTilOutput();
+
+			// get output commnad
+			sml.Identifier command = agent.GetCommand(0);
+
+			// get strategy name
+			string strategy = command.GetParameterValue("name");
+			log.log("Scope: CA: Scope returned: " + strategy, 5);
+
+			// TODO this returns a valid entity, so we have to be careful below
+			// when we abort an expired entity. If it is the one returned here,
+			// it might fail to abort. This is probably a bug.
+			//log.log(args.Executor.Simulation.GetEntity().UniqueID);
+
+			if (strategy == "expire-task")
+			{
+				sml.Identifier taskIdentifier = command.FindIDByAttribute("task");
+				string expireTaskID = taskIdentifier.FindStringByAttribute("taskID");
+				int UniqueID = (int)taskIdentifier.FindIntByAttribute("UniqueID");
+				log.log("Scope: CA: Expiring entity (" + UniqueID + ") in task: " + expireTaskID + ": " +
+						args.Executor.Simulation.IModel.Abort("UniqueID", UniqueID), 4);
+			}
+
+			// mark command as complete
+			command.AddStatusComplete();
+			agent.ClearOutputLinkChanges();
+
+			// remove expire decision request from input link
+			expireString.DestroyWME();
 		}
 
 		// Check if there are delayed or rejected entities that we should act on
@@ -922,8 +994,12 @@ namespace SoarIMPRINTPlugin
 			if (agent.GetInputLink().FindByAttribute("IMPRINT", 0) == null)
 			{
 				agent.GetInputLink().CreateStringWME("IMPRINT", "yes");
-				// sneak in a threshold value too
+				// put threshold value on
 				agent.GetInputLink().CreateFloatWME("threshold", 8);
+				// put clock value on
+				agent.GetInputLink().CreateFloatWME("clock", 0);
+				// put expiration time on
+				agent.GetInputLink().CreateFloatWME("expiration-date", 3);
 
 				log.log("Scope: Putting IMPRINT on input link", 6);
 			}
@@ -1019,6 +1095,10 @@ namespace SoarIMPRINTPlugin
 
 			// add the task ID
 			taskLink.CreateStringWME("taskID", task.ID);
+
+			// add the initial time
+			log.log("Adding initial time: " + initTimes[entity.UniqueID]);
+			taskLink.CreateFloatWME("initial-time", initTimes[entity.UniqueID]);
 
 			double totalWorkload = 0;
 

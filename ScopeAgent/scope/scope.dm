@@ -1,4 +1,4 @@
-302
+316
 SOAR_ID 0
 SOAR_ID 1
 SOAR_ID 2
@@ -301,7 +301,21 @@ SOAR_ID 298
 ENUMERATION 299 1 reject-duplicate
 ENUMERATION 300 1 reject-duplicate-test
 SOAR_ID 301
-306
+SOAR_ID 302
+ENUMERATION 303 1 expire-decision
+SOAR_ID 304
+ENUMERATION 305 1 expire-decision-subgoal
+SOAR_ID 306
+ENUMERATION 307 1 clock
+SOAR_ID 308
+ENUMERATION 309 1 state
+ENUMERATION 310 1 expire-decision-subgoal
+SOAR_ID 311
+ENUMERATION 312 1 state
+ENUMERATION 313 1 Impasse__State_No-Change
+ENUMERATION 314 1 expire-task
+SOAR_ID 315
+322
 0 desired 118
 0 disable 69
 0 failure 138
@@ -328,6 +342,9 @@ SOAR_ID 301
 0 operator 269
 0 operator 292
 0 operator 298
+0 operator 302
+0 operator 304
+0 operator 306
 0 phase 66
 0 problem-space 139
 0 simulate-task 152
@@ -608,3 +625,16 @@ SOAR_ID 301
 297 name 296
 298 name 299
 301 name 300
+302 name 303
+304 name 305
+306 name 307
+308 name 310
+308 operator 315
+308 superstate 0
+308 top-state 0
+308 type 309
+311 name 313
+311 superstate 308
+311 top-state 0
+311 type 312
+315 name 314

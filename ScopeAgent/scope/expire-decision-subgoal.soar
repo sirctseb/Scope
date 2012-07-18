@@ -1,0 +1,11 @@
+# expire-decision-subgoal is a subgoal where we decide if
+# we should kill a task that has been delayed for a while
+
+# propose the expire task subgoal when we get a request
+sp {propose*expire-decision
+   (state <s> ^name scope
+              ^io.input-link.decision-request expire)
+-->
+   (<s> ^operator <o> +)
+   (<o> ^name expire-decision)
+}
