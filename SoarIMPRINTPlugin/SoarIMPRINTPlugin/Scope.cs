@@ -108,6 +108,9 @@ namespace SoarIMPRINTPlugin
 
 		private EntityProperties entityProperties = new EntityProperties();
 
+		// A map from an Entity's UniqueID to the time it first RCed at its current task
+		private Dictionary<int, double> initTimes = new Dictionary<int, double>();
+
 		// TODO test when IMPRINT creates plugin objects
 		private static sml.Kernel kernel = null;
 		private static sml.Agent agent = null;
@@ -360,6 +363,9 @@ namespace SoarIMPRINTPlugin
 		
 		private void OnAfterEndingEffect(MAAD.Simulator.Executor executor)
 		{
+			// clear initial time for the entity
+			initTimes.Remove(executor.Simulation.GetEntity().UniqueID);
+
 			MAAD.Simulator.Utilities.IRuntimeTask task = executor.EventQueue.GetTask();
 			// ignore first and last tasks
 			int taskID = int.Parse(task.ID);
@@ -482,6 +488,12 @@ namespace SoarIMPRINTPlugin
 		}
 		private void OnAfterReleaseCondition(MAAD.Simulator.Executor executor, ref bool release)
 		{
+			// mark first RC time if it doesn't have one yet
+			if (!initTimes.ContainsKey(executor.Simulation.GetEntity().UniqueID))
+			{
+				initTimes[executor.Simulation.GetEntity().UniqueID] = executor.Simulation.Clock;
+			}
+
 			// don't override false RC evaluations
 			// TODO should the special case checks be evaluated before this?
 			// TODO seems like maybe the ResumeEntity and RejectDuplicateEntity should?
@@ -1019,6 +1031,10 @@ namespace SoarIMPRINTPlugin
 
 			// add the task ID
 			taskLink.CreateStringWME("taskID", task.ID);
+
+			// add the initial time
+			log.log("Adding initial time: " + initTimes[entity.UniqueID]);
+			taskLink.CreateFloatWME("initial-time", initTimes[entity.UniqueID]);
 
 			double totalWorkload = 0;
 
