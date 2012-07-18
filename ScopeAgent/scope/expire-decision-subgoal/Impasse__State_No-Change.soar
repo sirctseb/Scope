@@ -18,4 +18,5 @@ sp {apply*expire-none
 -->
    (<out> ^strategy <strategy>)
    (<strategy> ^name expire-none)
+   (write (crlf) |Expire None|)
 }
