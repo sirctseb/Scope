@@ -751,6 +751,10 @@ namespace SoarIMPRINTPlugin
 					log.log("Task 2 advancing from " + args.OldClock + " to " + args.Clock + ": " + (args.Clock - args.OldClock));
 				}
 			}
+
+			// put new clock value on input-link
+			agent.GetInputLink().FindByAttribute("clock", 0).ConvertToFloatElement().Update(args.Clock);
+
 			// call to check for reject/delayed actions
 			CheckForDelaysAndRejects(args.Clock);
 		}
@@ -934,8 +938,10 @@ namespace SoarIMPRINTPlugin
 			if (agent.GetInputLink().FindByAttribute("IMPRINT", 0) == null)
 			{
 				agent.GetInputLink().CreateStringWME("IMPRINT", "yes");
-				// sneak in a threshold value too
+				// put threshold value on
 				agent.GetInputLink().CreateFloatWME("threshold", 8);
+				// put clock value on
+				agent.GetInputLink().CreateFloatWME("clock", 0);
 
 				log.log("Scope: Putting IMPRINT on input link", 6);
 			}
