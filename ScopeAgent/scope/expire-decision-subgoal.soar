@@ -4,7 +4,7 @@
 # propose the expire task subgoal when we get a request
 sp {propose*expire-decision
    (state <s> ^name scope
-              ^input-link.clock.decision-request expire)
+              ^io.input-link.decision-request expire)
 -->
    (<s> ^operator <o> +)
    (<o> ^name expire-decision)
