@@ -691,6 +691,8 @@ namespace SoarIMPRINTPlugin
 					//string taskID = interruptedTaskWME.FindStringByAttribute("taskID");
 					int UniqueID = (int)agent.GetOutputLink().GetIntAtAttributePath("strategy.interrupt-task.UniqueID");
 
+					log.log("Scope: Interrupt: Creating InterruptDecision with uniqueID: " + app.Executor.Simulation.GetEntity().UniqueID, 8);
+					log.log("Scope:                                   interruptUniqueID: " + UniqueID, 8);
 					// store info on decision
 					this.lastDecision = new InterruptDecision
 					{
@@ -718,7 +720,7 @@ namespace SoarIMPRINTPlugin
 					}*/
 
 					// destroy the task input element and it will be added later on task begin
-					taskWME.DestroyWME();
+					log.log("Scope: Interrupt: Removing task from input: " + taskWME.DestroyWME(), 8);
 					// return true because entity should be released
 					return true;
 					break;
@@ -789,6 +791,10 @@ namespace SoarIMPRINTPlugin
 				log.log("Scope: CA: Expiring entity (" + UniqueID + ") in task: " + expireTaskID + ": " +
 						args.Executor.Simulation.IModel.Abort("UniqueID", UniqueID), 4);
 			}
+
+			// mark command as complete
+			command.AddStatusComplete();
+			agent.ClearOutputLinkChanges();
 
 			// remove expire decision request from input link
 			expireString.DestroyWME();
