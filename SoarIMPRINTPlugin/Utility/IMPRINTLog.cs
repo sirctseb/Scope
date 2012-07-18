@@ -35,6 +35,10 @@ namespace Utility
 		public void disable(string group) {
 			groups[group] = false;
 		}
+		public void disableAll()
+		{
+			groups.Clear();
+		}
 
 		public void log(object msg)
 		{

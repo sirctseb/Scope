@@ -156,6 +156,8 @@ namespace SoarIMPRINTPlugin
 			return true;
 		}
 
+		#region Parameters
+
 		public void SetExpirationTime(double expirationTime)
 		{
 			if (Scope.enable && scopeInitialized)
@@ -170,6 +172,27 @@ namespace SoarIMPRINTPlugin
 				agent.GetInputLink().CreateFloatWME("expiration-date", expirationTime);
 			}
 		}
+
+		public void SetLogLevel(int level)
+		{
+			log.LogLevel = level;
+		}
+
+		public void EnableLogGroup(string group)
+		{
+			log.enable(group);
+		}
+		public void DisableLogGroup(string group)
+		{
+			log.disable(group);
+		}
+		public void DisableAllLogGroups()
+		{
+			log.disableAll();
+		}
+
+
+		#endregion
 
 		#region Static Event Handlers
 
@@ -318,7 +341,6 @@ namespace SoarIMPRINTPlugin
 				if (lastDecision.type == DeferredDecision.DecisionType.InterruptDecision)
 				{
 					// suspend task
-					log.log("Scope: Matching UID: " + executor.Simulation.IModel.Find("UniqueID", ((InterruptDecision)lastDecision).interruptUniqueID).Count);
 					log.log("Scope: Suspending entity (" + ((InterruptDecision) lastDecision).interruptUniqueID + ") for interrupt-task: " +
 						executor.Simulation.IModel.Suspend("UniqueID", ((InterruptDecision)lastDecision).interruptUniqueID)
 						, 3);
@@ -388,13 +410,6 @@ namespace SoarIMPRINTPlugin
 			{
 				log.log("Scope: OnAfterEndingEffect: " + executor.Simulation.GetTask().Properties.Name, "event");
 
-				// TODO debugging
-				if (executor.Simulation.GetTask().ID == "2")
-				{
-					log.log("Task 2 ending, UniqueID: " + executor.Simulation.GetEntity().UniqueID);
-					log.log(GetInputTask(executor.Simulation.GetEntity().UniqueID).Print(2));
-					//executor.Simulation.IModel.Pause();
-				}
 				log.log("Scope: EE: Removing task " + task.ID + " from input: " + RemoveTask(executor.Simulation.GetEntity()), 5);
 
 				// check that there are any delayed tasks before trying to resume them
@@ -452,7 +467,7 @@ namespace SoarIMPRINTPlugin
 								{
 									// trace that we are resuming
 									//log.log("Scope: EE: Resuming interrupted task " + entity.ID + ": " + executor.Simulation.IModel.Resume("ID", entity.ID));
-									log.log("Scope: EE: Resuming interrupted task " + entity.ID + "(" + entity.UniqueID + "): " + executor.Simulation.IModel.Resume(entity));
+									log.log("Scope: EE: Resuming interrupted task " + entity.ID + "(" + entity.UniqueID + "): " + executor.Simulation.IModel.Resume(entity), 4);
 
 									// TODO this should be restored from what it was before
 									entityProperties.RemoveProp(entity.UniqueID, EntityProperty.InterruptEntity);
@@ -485,14 +500,7 @@ namespace SoarIMPRINTPlugin
 						command.AddStatusComplete();
 						agent.ClearOutputLinkChanges();
 					}
-					else
-					{
-						//agent.GetInputLink().Print(3);
-						ShowInputState();
-					}
 				}
-				log.log("pausing after 4 ending");
-				//executor.Simulation.IModel.Pause();
 			}
 		}
 		
@@ -759,16 +767,6 @@ namespace SoarIMPRINTPlugin
 
 		private void OnClockAdvance(object sender, MAAD.Simulator.ClockChangedArgs args)
 		{
-			// if task 2 is active, report that it advanced
-			foreach (MAAD.Simulator.IEntity entity in app.Executor.Simulation.IModel.Find("ID", "2"))
-			{
-				if (!entityProperties.EntityHas(entity.UniqueID, EntityProperty.DelayEntity) &&
-					!entityProperties.EntityHas(entity.UniqueID, EntityProperty.InterruptEntity))
-				{
-					log.log("Task 2 advancing from " + args.OldClock + " to " + args.Clock + ": " + (args.Clock - args.OldClock));
-				}
-			}
-
 			// put new clock value on input-link
 			log.log("Scope: CA: Setting new clock value: " + args.Clock, 8);
 			agent.GetInputLink().FindByAttribute("clock", 0).ConvertToFloatElement().Update(args.Clock);
@@ -1097,7 +1095,7 @@ namespace SoarIMPRINTPlugin
 			taskLink.CreateStringWME("taskID", task.ID);
 
 			// add the initial time
-			log.log("Adding initial time: " + initTimes[entity.UniqueID]);
+			log.log("Adding initial time: " + initTimes[entity.UniqueID], 7);
 			taskLink.CreateFloatWME("initial-time", initTimes[entity.UniqueID]);
 
 			double totalWorkload = 0;
