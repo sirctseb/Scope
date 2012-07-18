@@ -173,10 +173,24 @@ namespace SoarIMPRINTPlugin
 			}
 		}
 
-		public void SetDebugLevel(int level)
+		public void SetLogLevel(int level)
 		{
 			log.LogLevel = level;
 		}
+
+		public void EnableLogGroup(string group)
+		{
+			log.enable(group);
+		}
+		public void DisableLogGroup(string group)
+		{
+			log.disable(group);
+		}
+		public void DisableAllLogGroups()
+		{
+			log.disableAll();
+		}
+
 
 		#endregion
 
