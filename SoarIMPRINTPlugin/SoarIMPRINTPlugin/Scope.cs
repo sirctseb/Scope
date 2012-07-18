@@ -789,6 +789,9 @@ namespace SoarIMPRINTPlugin
 				log.log("Scope: CA: Expiring entity (" + UniqueID + ") in task: " + expireTaskID + ": " +
 						args.Executor.Simulation.IModel.Abort("UniqueID", UniqueID), 4);
 			}
+
+			// remove expire decision request from input link
+			expireString.DestroyWME();
 		}
 
 		// Check if there are delayed or rejected entities that we should act on
