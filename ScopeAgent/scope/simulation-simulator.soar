@@ -56,7 +56,8 @@ sp {apply*not-simulate-input
 sp {elaborate*strategy*operators
    (state <s> ^operator <o> +)
    (<o> ^name << perform-all ignore-new interrupt-task
-                 delay-new resume-delayed resume-none wait reject-duplicate >> )
+                 delay-new resume-delayed resume-none wait
+                 reject-duplicate expire-none >> )
 -->
    (<o> ^strategy yes)
 }

@@ -7,6 +7,10 @@ source elaborations_source.soar
 popd
 source debug.soar
 source delay-new.soar
+source expire-decision-subgoal.soar
+pushd expire-decision-subgoal
+source expire-decision-subgoal_source.soar
+popd
 source ignore-new.soar
 source initialize-scope.soar
 source interrupt-task.soar

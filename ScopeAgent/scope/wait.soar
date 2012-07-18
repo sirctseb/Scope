@@ -30,7 +30,7 @@ sp {apply*wait
 
 # propose wait if no release or delayed tasks exist
 sp {propose*wait*no*tasks
-   (state <s> ^name scope
+   (state <s> ^disabled yes ^name scope
              -^io.input-link.task.delayed
              -^io.input-link.task.release)
 -->

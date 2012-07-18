@@ -10,7 +10,7 @@ namespace SoarIMPRINTPlugin
 	public class Scope : Utility.IMPRINTAccess, MAAD.Utilities.Plugins.IPlugin
 	{
 		// for logging to the IMPRINT window
-		private static Utility.IMPRINTLogger log = new IMPRINTLogger(5, new string[] {"debug", "event", "error"});
+		private static Utility.IMPRINTLogger log = new IMPRINTLogger(10, new string[] {"debug", "event", "error"});
 
 		private ScopeData scopeData = new ScopeData();
 
@@ -53,12 +53,11 @@ namespace SoarIMPRINTPlugin
 			InterruptEntity,
 			DelayEntity,
 			TentativeDelayEntity,
-			ResumeEntity,
-			ResumePurgatoryEntity
+			ResumeEntity
 		};
 		
 		// A class to manage entity markings
-		private class MutliDict<TKey, TValue> : Dictionary<TKey, HashSet<TValue> >
+		private class MultiDict<TKey, TValue> : Dictionary<TKey, HashSet<TValue> >
 		{
 			// determine if an entity has a property
 			public bool Contains(TKey key, TValue value) {
@@ -88,7 +87,7 @@ namespace SoarIMPRINTPlugin
 				return false;
 			}
 		}
-		private class EntityProperties : MutliDict<int, EntityProperty>
+		private class EntityProperties : MultiDict<int, EntityProperty>
 		{
 			public bool EntityHas(int ID, EntityProperty property)
 			{
@@ -109,9 +108,12 @@ namespace SoarIMPRINTPlugin
 
 		private EntityProperties entityProperties = new EntityProperties();
 
+		// A map from an Entity's UniqueID to the time it first RCed at its current task
+		private Dictionary<int, double> initTimes = new Dictionary<int, double>();
+
 		// TODO test when IMPRINT creates plugin objects
 		private static sml.Kernel kernel = null;
-		private sml.Agent agent = null;
+		private static sml.Agent agent = null;
 		// True iff scope should be used during the simulation
 		private static bool enable = false;
 		// True iff the agent exists, has been initialized,
@@ -152,6 +154,21 @@ namespace SoarIMPRINTPlugin
 				}
 			}
 			return true;
+		}
+
+		public void SetExpirationTime(double expirationTime)
+		{
+			if (Scope.enable && scopeInitialized)
+			{
+				log.log("Scope: Setting expiration length to " + expirationTime, 6);
+				// destroy existing one if it exists first
+				sml.WMElement element = agent.GetInputLink().FindByAttribute("expiration-date", 0);
+				if (element != null)
+				{
+					log.log("Scope: Destroying existing value first: " + element.DestroyWME(), 7);
+				}
+				agent.GetInputLink().CreateFloatWME("expiration-date", expirationTime);
+			}
 		}
 
 		#region Static Event Handlers
@@ -215,7 +232,18 @@ namespace SoarIMPRINTPlugin
 				{
 					log.log("Scope: Unregistering events and killing agent", 5);
 					instance.UnregisterEvents();
-					instance.KillAgent();
+					if (kernel.IsRemoteConnection())
+					{
+						log.log("Scope: Kernel is remote, not killing agent", 6);
+					}
+					else
+					{
+						instance.KillAgent();
+					}
+
+					// write data
+					instance.scopeData.WriteCounts("C:\\Users\\christopher.j.best2\\Documents\\ScopeData\\scope_counts.txt");
+					instance.scopeData.WriteTrace("C:\\Users\\christopher.j.best2\\Documents\\ScopeData\\scope_trace.txt");
 				}
 				else
 				{
@@ -224,11 +252,6 @@ namespace SoarIMPRINTPlugin
 
 				// set enabled to false when a simulation ends so that it doesn't get stuck on after one simulation uses it
 				enable = false;
-
-				// TOOD renable this
-				// write data
-				//scopeData.WriteCounts("C:\\Users\\christopher.j.best2\\Documents\\ScopeData\\scope_counts.txt");
-				//scopeData.WriteTrace("C:\\Users\\christopher.j.best2\\Documents\\ScopeData\\scope_trace.txt");
 			}
 			else
 			{
@@ -264,9 +287,8 @@ namespace SoarIMPRINTPlugin
 		{
 			log.log("Scope: OnBeforeBeginningEffect", 10);
 
-			// TODO checking for bug that should exist (see RC handler)
-			// once an entity starts its task, it is out of resume purgatory
-			entityProperties.RemoveProp(executor.Simulation.GetEntity().UniqueID, EntityProperty.ResumePurgatoryEntity);
+			// take Resume property off once a resume task starts
+			entityProperties.RemoveProp(executor.Simulation.GetEntity().UniqueID, EntityProperty.ResumeEntity);
 
 			// TODO if a KILL_TAG entity gets here, something has gone wrong
 			// check that entity hasn't been marked KILL_TAG yet
@@ -292,47 +314,73 @@ namespace SoarIMPRINTPlugin
 					//throw new Exception("Entity beginning task that is not in last decision");
 				}
 
-				// if the strategy that allowed this task to begin was a perform-all returned
-				// to OnAfterReleaseCondition, then the strategy was submitted to the log but
-				// has not yet been entered to prevent multiple entries for the same perform-all.
-				// enter it to the log here
-				scopeData.CommitStrategy();
-
 				// if entity is starting because of interrupt-task strategy, suspend the other task
 				if (lastDecision.type == DeferredDecision.DecisionType.InterruptDecision)
 				{
 					// suspend task
-					log.log("Scope: Suspending entity for interrupt-task: " +
+					log.log("Scope: Matching UID: " + executor.Simulation.IModel.Find("UniqueID", ((InterruptDecision)lastDecision).interruptUniqueID).Count);
+					log.log("Scope: Suspending entity (" + ((InterruptDecision) lastDecision).interruptUniqueID + ") for interrupt-task: " +
 						executor.Simulation.IModel.Suspend("UniqueID", ((InterruptDecision)lastDecision).interruptUniqueID)
 						, 3);
-
-					// get interrupted task ID
-					string ID = ((MAAD.Simulator.IEntity)executor.Simulation.IModel.Find("UniqueID", ((InterruptDecision)lastDecision).interruptUniqueID)[0]).ID;
-
+					//PrintEntitiesInTasks();
 					// add ^delayed to scope task and take off ^active
-					sml.Identifier interruptedTaskWME = agent.GetInputLink().GetChildren("task")
-						.Select(wme => wme.ConvertToIdentifier())
-						.Where(id => id.FindStringByAttribute("taskID") == ID).First();
+					sml.Identifier interruptedTaskWME = GetInputTask(((InterruptDecision)lastDecision).interruptUniqueID);
 					// take off ^active
-					interruptedTaskWME.FindByAttribute("active", 0).DestroyWME();
+					log.log("Scope: BE: Removing ^active: " + interruptedTaskWME.FindByAttribute("active", 0).DestroyWME(), 8);
 					// add ^delayed
-					interruptedTaskWME.CreateStringWME("delayed", "yes");
+					log.log("Scope: BE: Adding ^delayed: " + interruptedTaskWME.CreateStringWME("delayed", "yes"), 8);
 
 					log.log("Scope: Added ^delayed and removed ^active", 4);
 
 					// mark interrupted task as interrupted
 					entityProperties.AddProp(((InterruptDecision)lastDecision).interruptUniqueID, EntityProperty.InterruptEntity);
 					log.log("Scope: Added InteruptEntity property", 6);
+
+					// enter decision in scope log
+					scopeData.LogStrategy("interrupt-task", executor.Simulation.Clock);
+				}
+				else if (lastDecision.type == DeferredDecision.DecisionType.PerformAllDecision)
+				{
+					// enter decision in scope log
+					scopeData.LogStrategy("perform-all", executor.Simulation.Clock);
 				}
 
 				// add task props to Soar input
 				log.log("Scope: BE: Adding task " + task.ID + " as an active task", 3);
-				sml.Identifier taskWME = AddActiveTask(task);
+				AddActiveTask(executor.Simulation.GetEntity());
+
+				// clear last decision
+				lastDecision = null;
+			}
+		}
+
+		private void PrintEntitiesInTasks()
+		{
+			try
+			{
+				foreach (var entry in app.Executor.RuntimeTaskList)
+				{
+					log.log(entry.Key + ":");
+					if (entry.Value.Entities != null)
+					{
+						foreach (MAAD.Simulator.IEntity entity in entry.Value.Entities)
+						{
+							log.log("(" + entity.UniqueID + ") " + entity.Event + ", " + entity.ToString());
+						}
+					}
+				}
+			}
+			catch (Exception e)
+			{
+				log.log(e.Message);
 			}
 		}
 		
 		private void OnAfterEndingEffect(MAAD.Simulator.Executor executor)
 		{
+			// clear initial time for the entity
+			initTimes.Remove(executor.Simulation.GetEntity().UniqueID);
+
 			MAAD.Simulator.Utilities.IRuntimeTask task = executor.EventQueue.GetTask();
 			// ignore first and last tasks
 			int taskID = int.Parse(task.ID);
@@ -340,7 +388,14 @@ namespace SoarIMPRINTPlugin
 			{
 				log.log("Scope: OnAfterEndingEffect: " + executor.Simulation.GetTask().Properties.Name, "event");
 
-				log.log("Scope: EE: Removing task " + task.ID + " from input: " + RemoveTask(GetIMPRINTTaskFromRuntimeTask(task)), 5);
+				// TODO debugging
+				if (executor.Simulation.GetTask().ID == "2")
+				{
+					log.log("Task 2 ending, UniqueID: " + executor.Simulation.GetEntity().UniqueID);
+					log.log(GetInputTask(executor.Simulation.GetEntity().UniqueID).Print(2));
+					//executor.Simulation.IModel.Pause();
+				}
+				log.log("Scope: EE: Removing task " + task.ID + " from input: " + RemoveTask(executor.Simulation.GetEntity()), 5);
 
 				// check that there are any delayed tasks before trying to resume them
 				// if we don't check, the scope agent can get confused
@@ -362,11 +417,18 @@ namespace SoarIMPRINTPlugin
 						{
 							// scope says to resume a task
 							// find the task scope wants to resume
-							string taskIDString = command.FindIDByAttribute("task").FindStringByAttribute("taskID");
+							int UniqueID = (int)command.FindIDByAttribute("task").FindIntByAttribute("UniqueID");
 
 							// search through entities in the task
-							foreach (MAAD.Simulator.IEntity entity in app.Executor.Simulation.IModel.Find("ID", taskIDString))
+							foreach (MAAD.Simulator.IEntity entity in app.Executor.Simulation.IModel.Find("UniqueID", UniqueID))
 							{
+								// sanity check
+								if (UniqueID != entity.UniqueID)
+								{
+									//throw new Exception("Sanity check failed. Entity.UniqueID != UniqueID");
+									log.log("Sanity check failed. Entity.UniqueID (" + entity.UniqueID + " ) != UniqueID (" + UniqueID + ")", "error");
+								}
+
 								// check if it is in a suspended state
 								if (entityProperties.EntityHas(entity.UniqueID, EntityProperty.DelayEntity))
 								{
@@ -384,25 +446,35 @@ namespace SoarIMPRINTPlugin
 
 									// remove task from input, and it will be added as active in begin event
 									log.log("Scope: EE: removing task " + entity.ID, 5);
-									RemoveTask(executor.GetRuntimeTask(entity.ID));
+									RemoveTask(entity);
 								}
 								else if (entityProperties.EntityHas(entity.UniqueID, EntityProperty.InterruptEntity))
 								{
 									// trace that we are resuming
-									log.log("Scope: EE: Resuming interrupted task " + entity.ID + ": " + executor.Simulation.IModel.Resume("ID", entity.ID));
+									//log.log("Scope: EE: Resuming interrupted task " + entity.ID + ": " + executor.Simulation.IModel.Resume("ID", entity.ID));
+									log.log("Scope: EE: Resuming interrupted task " + entity.ID + "(" + entity.UniqueID + "): " + executor.Simulation.IModel.Resume(entity));
 
 									// TODO this should be restored from what it was before
 									entityProperties.RemoveProp(entity.UniqueID, EntityProperty.InterruptEntity);
 
 									// log that we resumed a task
-									scopeData.LogStrategy("Resume", app.Executor.Simulation.Clock);
-									// log the decision that allowed for the resume
-									scopeData.LogStrategy(strategy, app.Executor.Simulation.Clock);
+									scopeData.LogStrategy("Resume Interrupted", app.Executor.Simulation.Clock);
 
+									/* TODO: looks like there is a big problem with changing modifying objects
+									 * that we get from GetCommand instead of input. We should only change stuff
+									 * that we get from input link
+									 */
 									// remove ^delayed from WME
-									command.FindIDByAttribute("task").FindByAttribute("delayed", 0).DestroyWME();
+									//command.FindIDByAttribute("task").FindByAttribute("delayed", 0).DestroyWME();
 									// add ^active
-									command.FindIDByAttribute("task").CreateStringWME("active", "yes");
+									//command.FindIDByAttribute("task").CreateStringWME("active", "yes");
+
+									// update task WME
+									sml.Identifier taskElement = GetInputTask(entity);
+									// remove ^delayed from WME
+									log.log("Scope: EE: Removing ^delayed: " + taskElement.FindByAttribute("delayed", 0).DestroyWME(), 8);
+									// add ^active
+									log.log("Scope: EE: Adding ^active: " + taskElement.CreateStringWME("active", "yes"), 8);
 
 									log.log("Scope: EE: Switching from ^delayed to ^active", 6);
 								}
@@ -413,17 +485,59 @@ namespace SoarIMPRINTPlugin
 						command.AddStatusComplete();
 						agent.ClearOutputLinkChanges();
 					}
+					else
+					{
+						//agent.GetInputLink().Print(3);
+						ShowInputState();
+					}
 				}
+				log.log("pausing after 4 ending");
+				//executor.Simulation.IModel.Pause();
 			}
 		}
 		
+		private void ShowInputState()
+		{
+			log.log("From SML: " + agent.GetInputLink().Print(3));
+			log.log("From CMD: " + agent.ExecuteCommandLine("print i2 --depth 3", true, true));
+		}
 		private void OnAfterReleaseCondition(MAAD.Simulator.Executor executor, ref bool release)
 		{
-			// TODO check for resume purgatory entities which may exist due to a bug I can't produce but should exist
-			if (entityProperties.EntityHas(executor.Simulation.GetEntity().UniqueID, EntityProperty.ResumePurgatoryEntity))
+			// mark first RC time if it doesn't have one yet
+			if (!initTimes.ContainsKey(executor.Simulation.GetEntity().UniqueID))
 			{
-				log.log("Scope: RC: Entity in resume purgatory entering RC", "error");
-				throw new Exception("Entity in resume purgatory entering RC");
+				initTimes[executor.Simulation.GetEntity().UniqueID] = executor.Simulation.Clock;
+			}
+
+			// don't override false RC evaluations
+			// TODO should the special case checks be evaluated before this?
+			// TODO seems like maybe the ResumeEntity and RejectDuplicateEntity should?
+			if (release == false && !entityProperties.EntityHas(executor.Simulation.GetEntity().UniqueID, EntityProperty.ResumeEntity))
+			{
+				return;
+			}
+
+			// if there is a resume entity trying to get through, return false for all others until it starts
+			if (entityProperties.EntitiesWith(EntityProperty.ResumeEntity).Count() > 0)
+			{
+				if (entityProperties.EntityHas(executor.Simulation.GetEntity().UniqueID, EntityProperty.ResumeEntity))
+				{
+					release = true;
+
+					// update last decision as resume decision
+					log.log("Scope: RC: Setting last decision to this resume decision", 5);
+					this.lastDecision = new DeferredDecision
+					{
+						type = DeferredDecision.DecisionType.ResumeDecision,
+						uniqueID = executor.Simulation.GetEntity().UniqueID,
+						scheduledBeginTime = executor.Simulation.Clock
+					};
+				}
+				else
+				{
+					release = false;
+				}
+				return;
 			}
 
 			// abort any entities that scope said to reject because they are duplicates
@@ -449,30 +563,18 @@ namespace SoarIMPRINTPlugin
 				return;
 			}
 
-			// if entity is marked to resume after delay, return true
-			if (entityProperties.EntityHas(executor.Simulation.GetEntity().UniqueID, EntityProperty.ResumeEntity))
+			// if an entity has a deferred decision associated with it, destroy it because we are making a new decision
+			int UniqueID = executor.Simulation.GetEntity().UniqueID;
+			if (entityProperties.EntityHas(UniqueID, EntityProperty.TentativeDelayEntity))
 			{
-				log.log("Scope: RC: Resuming entity coming through release condition, accepting", 3);
+				// TentativeDelay entities will have a deferred decision in the queue
+				deferredDecisions.RemoveWhere(decision => decision.uniqueID == UniqueID);
+				// TODO, this should be a hash table, which would at least limit us to one deferred decision per UID
 
-				// remove resume property
-				// TODO what if there is another task starting when this is resumed, and they both have their
-				// RCs evaluated, but the other one actually starts before this one, so this one has RC evaluated
-				// again. then this would be subject to release decision again. This is a bug
-				entityProperties.RemoveProp(executor.Simulation.GetEntity().UniqueID, EntityProperty.ResumeEntity);
-				// TODO to detect manifestation of this bug, put the resume purgatory property on the entity and check for it later
-				entityProperties.AddProp(executor.Simulation.GetEntity().UniqueID, EntityProperty.ResumePurgatoryEntity);
+				// remove TentativeDelay property
+				entityProperties.RemoveProp(UniqueID, EntityProperty.TentativeDelayEntity);
 
-				// update last decision as resume decision
-				log.log("Scope: RC: Setting last decision to this resume decision", 5);
-				this.lastDecision = new DeferredDecision
-				{
-					type = DeferredDecision.DecisionType.ResumeDecision,
-					uniqueID = executor.Simulation.GetEntity().UniqueID,
-					scheduledBeginTime = executor.Simulation.Clock
-				};
-
-				release = true;
-				return;
+				// TODO implement this for ignore-new
 			}
 
 			MAAD.Simulator.Utilities.IRuntimeTask task = executor.EventQueue.GetTask();
@@ -490,7 +592,7 @@ namespace SoarIMPRINTPlugin
 					log.log("Scope: RC: adding release task: " + nt.ID, 5);
 
 					// add task props to Soar input
-					sml.Identifier taskWME = AddReleaseTask(nt);
+					sml.Identifier taskWME = AddReleaseTask(executor.Simulation.GetEntity());
 
 					log.log("Scope: RC: Running scope to get release decision", 5);
 					string output = agent.RunSelfTilOutput();
@@ -514,9 +616,6 @@ namespace SoarIMPRINTPlugin
 					// mark the command as complete
 					command.AddStatusComplete();
 					agent.ClearOutputLinkChanges();
-
-					// log the decision
-					scopeData.LogStrategy(strategy, executor.Simulation.Clock);
 				}
 			}
 		}
@@ -603,16 +702,19 @@ namespace SoarIMPRINTPlugin
 					log.log("Scope: Interrupt task", 3);
 
 					// get task which should be interrupted
-					sml.Identifier interruptedTaskWME = agent.GetOutputLink().GetIDAtAttributePath("strategy.interrupt-task");
-					string taskID = interruptedTaskWME.FindStringByAttribute("taskID");
+					//sml.Identifier interruptedTaskWME = agent.GetOutputLink().GetIDAtAttributePath("strategy.interrupt-task");
+					//string taskID = interruptedTaskWME.FindStringByAttribute("taskID");
+					int UniqueID = (int)agent.GetOutputLink().GetIntAtAttributePath("strategy.interrupt-task.UniqueID");
 
+					log.log("Scope: Interrupt: Creating InterruptDecision with uniqueID: " + app.Executor.Simulation.GetEntity().UniqueID, 8);
+					log.log("Scope:                                   interruptUniqueID: " + UniqueID, 8);
 					// store info on decision
 					this.lastDecision = new InterruptDecision
 					{
 						type = DeferredDecision.DecisionType.InterruptDecision,
 						uniqueID = app.Executor.Simulation.GetEntity().UniqueID,
 						scheduledBeginTime = app.Executor.Simulation.Clock,
-						interruptUniqueID = ((MAAD.Simulator.IEntity)app.Executor.Simulation.IModel.Find("ID", taskID)[0]).UniqueID
+						interruptUniqueID = UniqueID
 					};
 
 					// suspend entity(ies?) in task
@@ -633,7 +735,7 @@ namespace SoarIMPRINTPlugin
 					}*/
 
 					// destroy the task input element and it will be added later on task begin
-					taskWME.DestroyWME();
+					log.log("Scope: Interrupt: Removing task from input: " + taskWME.DestroyWME(), 8);
 					// return true because entity should be released
 					return true;
 					break;
@@ -657,8 +759,60 @@ namespace SoarIMPRINTPlugin
 
 		private void OnClockAdvance(object sender, MAAD.Simulator.ClockChangedArgs args)
 		{
+			// if task 2 is active, report that it advanced
+			foreach (MAAD.Simulator.IEntity entity in app.Executor.Simulation.IModel.Find("ID", "2"))
+			{
+				if (!entityProperties.EntityHas(entity.UniqueID, EntityProperty.DelayEntity) &&
+					!entityProperties.EntityHas(entity.UniqueID, EntityProperty.InterruptEntity))
+				{
+					log.log("Task 2 advancing from " + args.OldClock + " to " + args.Clock + ": " + (args.Clock - args.OldClock));
+				}
+			}
+
+			// put new clock value on input-link
+			log.log("Scope: CA: Setting new clock value: " + args.Clock, 8);
+			agent.GetInputLink().FindByAttribute("clock", 0).ConvertToFloatElement().Update(args.Clock);
+
 			// call to check for reject/delayed actions
 			CheckForDelaysAndRejects(args.Clock);
+
+			// ask scope if we should expire anything
+			
+			// put request on input
+			log.log("Scope: CA: Putting expire decision request on input link", 8);
+			sml.StringElement expireString = agent.GetInputLink().CreateStringWME("decision-request", "expire");
+			
+			// run scope to output
+			log.log("Scope: CA: Running agent to make expire decision", 9);
+			string result = agent.RunSelfTilOutput();
+
+			// get output commnad
+			sml.Identifier command = agent.GetCommand(0);
+
+			// get strategy name
+			string strategy = command.GetParameterValue("name");
+			log.log("Scope: CA: Scope returned: " + strategy, 5);
+
+			// TODO this returns a valid entity, so we have to be careful below
+			// when we abort an expired entity. If it is the one returned here,
+			// it might fail to abort. This is probably a bug.
+			//log.log(args.Executor.Simulation.GetEntity().UniqueID);
+
+			if (strategy == "expire-task")
+			{
+				sml.Identifier taskIdentifier = command.FindIDByAttribute("task");
+				string expireTaskID = taskIdentifier.FindStringByAttribute("taskID");
+				int UniqueID = (int)taskIdentifier.FindIntByAttribute("UniqueID");
+				log.log("Scope: CA: Expiring entity (" + UniqueID + ") in task: " + expireTaskID + ": " +
+						args.Executor.Simulation.IModel.Abort("UniqueID", UniqueID), 4);
+			}
+
+			// mark command as complete
+			command.AddStatusComplete();
+			agent.ClearOutputLinkChanges();
+
+			// remove expire decision request from input link
+			expireString.DestroyWME();
 		}
 
 		// Check if there are delayed or rejected entities that we should act on
@@ -680,6 +834,10 @@ namespace SoarIMPRINTPlugin
 						log.log("Scope: Killing entity for ignore-task: " +
 							app.Executor.Simulation.IModel.Abort("UniqueID", decision.uniqueID)
 							, 3);
+
+						// enter decision in scope log
+						// TODO check that "ignore-new" is exactly equal to DD.DT.RejectDecision
+						scopeData.LogStrategy("ignore-new", decision.scheduledBeginTime);
 					}
 					else if (decision.type == DeferredDecision.DecisionType.DelayDecision)
 					{
@@ -688,9 +846,11 @@ namespace SoarIMPRINTPlugin
 						entityProperties.AddProp(decision.uniqueID, EntityProperty.DelayEntity);
 
 						// add task as delayed in scope
-						string ID = ((MAAD.Simulator.IEntity)app.Executor.Simulation.IModel.Find("UniqueID", decision.uniqueID)[0]).ID;
-						this.AddTask(app.Executor.Simulation.IModel.FindTask(ID)).CreateStringWME("delayed", "yes");
+						AddTask((MAAD.Simulator.IEntity)app.Executor.Simulation.IModel.Find("UniqueID", decision.uniqueID)[0]).CreateStringWME("delayed", "yes");
 						log.log("Scope: Setting task as acutally delayed for delay-new", 3);
+
+						// enter decision in scope log
+						scopeData.LogStrategy("delay-new", decision.scheduledBeginTime);
 					}
 				}
 			}
@@ -726,11 +886,48 @@ namespace SoarIMPRINTPlugin
 		// TODO this does more than initialize the kernel and should be renamed
 		public static bool InitializeKernel()
 		{
+			log.log("Scope: Initializing Kernel", 6);
 			// create the kernel if it doesn't exist yet
 			if (kernel == null)
 			{
-				kernel = sml.Kernel.CreateKernelInNewThread();
-				log.log("Scope: Creating kernel", 6);
+				// try connecting to a remote kernel first, in case
+				// we have a debugger open and running
+				kernel = sml.Kernel.CreateRemoteConnection();
+				if (!kernel.HadError())
+				{
+					log.log("Scope: Connecting to remote kernel", 6);
+					// check that it's running the correct agent,
+					// and not just some random debugger
+					// TODO the agent won't be named this unless we manually
+					// create a new agent in the debugger, name it, and then load
+					// the source
+					//agent = kernel.GetAgent("scope-agent");
+					if (kernel.GetNumberAgents() > 0)
+					{
+						// just get the first agent // TODO how can we check this is scope?
+						agent = kernel.GetAgentByIndex(0);
+						if (!AgentIsGood())
+						{
+							log.log("Scope: Agent in remote kernel invalid, disconnecting from remote kernel", 6);
+						}
+					}
+					else
+					{
+						log.log("Scope: No agents found in kernel, disconnecting from remote kernel", 6);
+						kernel = null;
+					}
+				}
+				else
+				{
+					// TODO do we have to dispose the object?
+					kernel = null;
+				}
+				// if remote connection fails, create local kernel
+				if (kernel == null)
+				{
+					kernel = sml.Kernel.CreateKernelInNewThread();
+					log.log("Scope: No remote kernel found, creating local kernel", 6);
+				}
 
 				// register static event handlers
 				app.Generator.OnSimulationBegin += OSB;
@@ -751,12 +948,11 @@ namespace SoarIMPRINTPlugin
 		}
 		public bool InitializeAgent(string source)
 		{
-			// this will never happen but it's good practice if this is public
-			if (agent != null && kernel.IsAgentValid(agent))
+			// don't create a new agent if one already exists
+			if (AgentIsGood())
 			{
-				log.log("Scope: Destroying existing agent to create new one", 6);
-				kernel.DestroyAgent(agent);
-				agent = null;
+				log.log("Scope: Agent already exists, not creating a new one", 6);
+				return true;
 			}
 
 			if (agent == null)
@@ -782,6 +978,11 @@ namespace SoarIMPRINTPlugin
 
 			return true;
 		}
+		// return true iff agent exists and is valid
+		private static bool AgentIsGood()
+		{
+			return kernel != null && agent != null && kernel.IsAgentValid(agent);
+		}
 		
 		// Clear the input link and populate with initial info
 		private bool ResetSoar()
@@ -793,8 +994,12 @@ namespace SoarIMPRINTPlugin
 			if (agent.GetInputLink().FindByAttribute("IMPRINT", 0) == null)
 			{
 				agent.GetInputLink().CreateStringWME("IMPRINT", "yes");
-				// sneak in a threshold value too
+				// put threshold value on
 				agent.GetInputLink().CreateFloatWME("threshold", 8);
+				// put clock value on
+				agent.GetInputLink().CreateFloatWME("clock", 0);
+				// put expiration time on
+				agent.GetInputLink().CreateFloatWME("expiration-date", 3);
 
 				log.log("Scope: Putting IMPRINT on input link", 6);
 			}
@@ -864,47 +1069,36 @@ namespace SoarIMPRINTPlugin
 		// relying on task ID because this may cause problems if multiple entities go through
 		// a task
 		// Remove a task from the input-link
-		private bool RemoveTask(MAAD.Simulator.Utilities.IRuntimeTask task)
-		{
-			return RemoveTask(GetIMPRINTTaskFromRuntimeTask(task));
-		}
-		private bool RemoveTask(MAAD.IMPRINTPro.NetworkTask task)
+		private bool RemoveTask(MAAD.Simulator.IEntity entity)
 		{
 			// get input link
 			sml.Identifier input = agent.GetInputLink();
 
-			// search task children
-			foreach (sml.Identifier taskLink in input.GetIDChildren("task"))
-			{
-				// for the given ID
-				if (taskLink.FindStringByAttribute("taskID") == task.ID)
-				{
-					// and destroy if we find it
-					bool success = taskLink.DestroyWME();
-					log.log("Scope: Attempting to remove task from input: " + success, 7);
-					return success;
-				}
-			}
-
-			// return false if we didn't find a matching task
-			return false;
+			bool success = GetInputTask(entity.UniqueID).DestroyWME();
+			log.log("Scope: Attempting to remove task from input: " + success, 7);
+			return success;
 		}
 	
 		// Put a task on the input-link
-		private sml.Identifier AddTask(MAAD.Simulator.Utilities.IRuntimeTask task)
+		private sml.Identifier AddTask(MAAD.Simulator.IEntity entity)
 		{
-			return AddTask(GetIMPRINTTaskFromRuntimeTask(task));
-		}
-		private sml.Identifier AddTask(MAAD.IMPRINTPro.NetworkTask task)
-		{
+			MAAD.IMPRINTPro.NetworkTask task = GetIMPRINTTaskFromRuntimeTask(app.Executor.Simulation.IModel.FindTask(entity.ID));
+
 			// get input link
 			sml.Identifier input = agent.GetInputLink();
 
 			// create a wme for the task
 			sml.Identifier taskLink = input.CreateIdWME("task");
 
+			// add the entity uniqueID
+			taskLink.CreateIntWME("UniqueID", entity.UniqueID);
+
 			// add the task ID
 			taskLink.CreateStringWME("taskID", task.ID);
+
+			// add the initial time
+			log.log("Adding initial time: " + initTimes[entity.UniqueID]);
+			taskLink.CreateFloatWME("initial-time", initTimes[entity.UniqueID]);
 
 			double totalWorkload = 0;
 
@@ -939,29 +1133,32 @@ namespace SoarIMPRINTPlugin
 		}
 		
 		// Add a task to the input link and add ^active yes attribute
-		private sml.Identifier AddActiveTask(MAAD.Simulator.Utilities.IRuntimeTask task)
+		private sml.Identifier AddActiveTask(MAAD.Simulator.IEntity entity)
 		{
-			return AddActiveTask(GetIMPRINTTaskFromRuntimeTask(task));
-		}
-		private sml.Identifier AddActiveTask(MAAD.IMPRINTPro.NetworkTask task)
-		{
-			sml.Identifier taskWME = AddTask(task);
+			sml.Identifier taskWME = AddTask(entity);
 			// add active attribute
 			taskWME.CreateStringWME("active", "yes");
 			return taskWME;
 		}
 		
 		// Add a task to the input link and add ^release yes attribute
-		private sml.Identifier AddReleaseTask(MAAD.Simulator.Utilities.IRuntimeTask task)
+		private sml.Identifier AddReleaseTask(MAAD.Simulator.IEntity entity)
 		{
-			return AddReleaseTask(GetIMPRINTTaskFromRuntimeTask(task));
-		}
-		private sml.Identifier AddReleaseTask(MAAD.IMPRINTPro.NetworkTask task)
-		{
-			sml.Identifier taskWME = AddTask(task);
+			sml.Identifier taskWME = AddTask(entity);
 			// add release attribute
 			taskWME.CreateStringWME("release", "yes");
 			return taskWME;
+		}
+
+		private sml.Identifier GetInputTask(MAAD.Simulator.IEntity entity)
+		{
+			return GetInputTask(entity.UniqueID);
+		}
+		private sml.Identifier GetInputTask(int UniqueID)
+		{
+			return agent.GetInputLink().GetChildren("task")
+				.Select(wme => wme.ConvertToIdentifier())
+				.Where(id => id.FindIntByAttribute("UniqueID") == UniqueID).First();
 		}
 		
 		// Mostly for testing

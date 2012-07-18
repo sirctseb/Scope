@@ -1,0 +1,22 @@
+# propose an operator to not expire any tasks if there
+# were no acceptable expire operators
+sp {expire-decision*propose*no*expire
+   (state <s> ^superstate <super>
+              ^attribute state
+              ^choices none)
+   (<super> ^name expire-decision)
+-->
+   (<super> ^operator <o> +)
+   (<o> ^name expire-none)
+}
+
+# apply the expire-non operator
+sp {apply*expire-none
+   (state <s> ^name expire-decision
+              ^operator.name expire-none
+              ^io.output-link <out>)
+-->
+   (<out> ^strategy <strategy>)
+   (<strategy> ^name expire-none)
+   (write (crlf) |Expire None|)
+}

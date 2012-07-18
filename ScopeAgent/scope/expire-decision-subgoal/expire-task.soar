@@ -1,0 +1,31 @@
+# decide which tasks should expire
+
+# propose to expire a task if it hasbeen _alive_ (TODO define)
+# longer than a fixed amount of time
+sp {expire-decision*propose*expire-task
+   (state <s> ^name expire-decision
+              ^io.input-link.task <task>
+              ^io.input-link.expiration-date <exp-date>
+              ^age <age-id>)
+   (<task> ^UniqueID <UniqueID>)
+   (<age-id> ^UniqueID <UniqueID>
+             ^age > <exp-date>)
+-->
+   # indifferent so we randomly choose between them for now
+   (<s> ^operator <o> + =)
+   (<o> ^name expire-task
+        ^task <task>)
+}
+
+# apply expire-task
+sp {expire-decision*apply*expire-task
+   (state <s> ^name expire-decision
+              ^operator <o>
+              ^io.output-link <output>)
+   (<o> ^name expire-task
+        ^task <task>)
+-->
+   (<output> ^strategy <strategy>)
+   (<strategy> ^name expire-task
+               ^task <task>)
+}

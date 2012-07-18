@@ -29,7 +29,6 @@ namespace SoarIMPRINTPlugin
 		}
 
 		public List<Strategy> StrategyLog { get; set; }
-		private Strategy lastStrategy = new Strategy();
 
 		public ScopeData()
 		{
@@ -39,22 +38,7 @@ namespace SoarIMPRINTPlugin
 		// add a strategy decision to the log
 		public void LogStrategy(string strategy, double time)
 		{
-			lastStrategy.Name = strategy;
-			lastStrategy.Time = time;
-
-			// if strategy is a perform-all, wait until commit to add it	
-			if (strategy != "perform-all")
-			{
-				StrategyLog.Add(new Strategy { Name = strategy, Time = time });
-			}
-		}
-		// add the last strategy if it is a peform-all
-		public void CommitStrategy()
-		{
-			if (lastStrategy.Name == "perform-all")
-			{
-				StrategyLog.Add(new Strategy { Name = lastStrategy.Name, Time = lastStrategy.Time });
-			}
+			StrategyLog.Add(new Strategy { Name = strategy, Time = time });
 		}
 
 		// return the number of times a strategy has been used
@@ -72,29 +56,12 @@ namespace SoarIMPRINTPlugin
 		// returns IEnumberable< {string Name, int Count} >
 		public IEnumerable<StrategyCount> GetStrategyCounts()
 		{
-			/*List<StrategyCount> counts = new List<StrategyCount>();
-			IEnumerable<string> strings = GetStrategies();
-			foreach (string strategy in strings)
-			{
-				int count = StrategyLog.Count(strat => strat.Name == strategy);
-				counts.Add(new StrategyCount { Name = strategy, Count = count });
-			}
-			return counts;*/
-
-			return GetStrategies().Select(strategy => new StrategyCount{Name= strategy, Count= StrategyLog.Count(strat => strat.Name == strategy)} );
+			return StrategyLog.GroupBy(strategy => strategy.Name, (name, strategies) => new StrategyCount { Name = name, Count = strategies.Count() });
 		}
 
 		// return a list of the strategies used
 		public IEnumerable<string> GetStrategies()
 		{
-			/*IEnumerable<Strategy> distincts = StrategyLog.Distinct();
-			List<Strategy> actuallyDistinct = new List<Strategy>();
-			foreach (Strategy strategy in distincts)
-			{
-				actuallyDistinct.Add(strategy);
-			}
-			IEnumerable<string> strings = distincts.Select(strategy => strategy.Name);
-			return strings;*/
 			return StrategyLog.Distinct().Select(strategy => strategy.Name);
 		}
 
