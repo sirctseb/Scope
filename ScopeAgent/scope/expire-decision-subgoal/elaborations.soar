@@ -12,7 +12,17 @@ sp {elaborate*expire-decision*age
 -->
    (<task> ^age (- <clock> <initial-time>))
 }
-   
+
+# expire decision better than resume decision
+sp {preference*expire-decision*gt*resume-decision
+   (state <s> ^name scope
+              ^operator <o1> + <o2> +)
+   (<o1> ^name expire-decision)
+   (<o2> ^name resume-decision)
+-->
+   (<s> ^operator <o1> > <o2>)
+}
+
 # copy io and workload to new state when expire-decision subgoal is created
 sp {elaborate*expire-decision*state
    (state <s> ^name expire-decision
