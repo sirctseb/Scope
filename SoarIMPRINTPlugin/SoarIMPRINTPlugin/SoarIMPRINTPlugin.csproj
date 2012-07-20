@@ -68,6 +68,10 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\IMPRINTLog\IMPRINTLog\IMPRINTLog.csproj">
+      <Project>{0B16522D-5B21-4391-8E45-EE0B4648E6A8}</Project>
+      <Name>IMPRINTLog</Name>
+    </ProjectReference>
     <ProjectReference Include="..\SMLExtension\SMLExtension.csproj">
       <Project>{2F17A010-320F-45DD-8828-41DBD6ED108F}</Project>
       <Name>SMLExtension</Name>

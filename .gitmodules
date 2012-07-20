@@ -1,3 +1,6 @@
 [submodule "SoarIMPRINTPlugin\\SMLExtension"]
 	path = SoarIMPRINTPlugin\\SMLExtension
 	url = git://github.com/sirctseb/SMLExtension.git
+[submodule "SoarIMPRINTPlugin/IMPRINTLog"]
+	path = SoarIMPRINTPlugin/IMPRINTLog
+	url = https://github.com/sirctseb/IMPRINTLog.git
