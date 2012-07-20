@@ -174,6 +174,10 @@ namespace SoarIMPRINTPlugin
 			}
 		}
 
+		#endregion
+
+		#region Log access
+		// IMPRINT code should just use IMPRINTLog.GetLog("scope").Stuff now
 		public void SetLogLevel(int level)
 		{
 			log.LogLevel = level;
@@ -181,21 +185,16 @@ namespace SoarIMPRINTPlugin
 
 		public void EnableLogGroup(string group)
 		{
-			//log.enable(group);
 			log.EnableGroup(group);
 		}
 		public void DisableLogGroup(string group)
 		{
-			//log.disable(group);
 			log.DisableGroup(group);
 		}
 		public void DisableAllLogGroups()
 		{
-			//log.disableAll();
 			log.DisableAllGroups();
 		}
-
-
 		#endregion
 
 		#region Static Event Handlers
