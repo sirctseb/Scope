@@ -801,8 +801,15 @@ namespace SoarIMPRINTPlugin
 				sml.Identifier taskIdentifier = command.FindIDByAttribute("task");
 				string expireTaskID = taskIdentifier.FindStringByAttribute("taskID");
 				int UniqueID = (int)taskIdentifier.FindIntByAttribute("UniqueID");
+				log.log(args.Executor.Simulation.GetEntity().UniqueID);
+				log.log("Scope: CA: Resuming entity (" + UniqueID + ") in task: " + expireTaskID + ": " +
+						app.Executor.Simulation.IModel.Resume("UniqueID", UniqueID), 4);
 				log.log("Scope: CA: Expiring entity (" + UniqueID + ") in task: " + expireTaskID + ": " +
-						args.Executor.Simulation.IModel.Abort("UniqueID", UniqueID), 4);
+						app.Executor.Simulation.IModel.Abort("UniqueID", UniqueID), 4);
+				log.log("Scope: CA: Removing expired entity from input link", 4);
+				GetInputTask(UniqueID).DestroyWME();
+				entityProperties.RemoveProp(UniqueID, EntityProperty.DelayEntity);
+				entityProperties.RemoveProp(UniqueID, EntityProperty.InterruptEntity);
 			}
 
 			// mark command as complete
