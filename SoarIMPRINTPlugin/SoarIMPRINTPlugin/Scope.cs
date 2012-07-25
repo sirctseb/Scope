@@ -898,14 +898,28 @@ namespace SoarIMPRINTPlugin
 			{
 				log.Log("Scope: AER: Updating scope task for entity (" + entity.UniqueID + ")", 8);
 				sml.Identifier taskID = GetInputTask(entity);
-				// remove ^delayed
-				log.Log("Scope: AER: Removing ^delayed: " +
-					taskID.FindByAttribute("delayed", 0).DestroyWME(),
-					9);
-				// add ^active
-				log.Log("Scope: AER: Adding ^active: " +
-					taskID.CreateStringWME("active", "yes"),
-					9);
+				if (taskID != null)
+				{
+					sml.WMElement delayed = taskID.FindByAttribute("delayed", 0);
+					if (delayed != null)
+					{
+						// remove ^delayed
+						log.Log("Scope: AER: Removing ^delayed: " +
+							delayed.DestroyWME(),
+							9);
+						// add ^active
+						log.Log("Scope: AER: Adding ^active: " +
+							taskID.CreateStringWME("active", "yes"),
+							9);
+					}
+				}
+				else
+				{
+					// TODO should we add the task here?
+					// a task might resume and not be on the input-link if
+					// it hasn't started a task yet. in that case, we wouldn't
+					// want to add it to the input link.
+				}
 			}
 		}
 
@@ -933,14 +947,21 @@ namespace SoarIMPRINTPlugin
 			{
 				log.Log("Scope: AESu: Updating scope task for entity (" + entity.UniqueID + ")", 8);
 				sml.Identifier taskID = GetInputTask(entity);
-				// remove ^active
-				log.Log("Scope: AESu: Removing ^active: " +
-					taskID.FindByAttribute("active", 0).DestroyWME(),
-					9);
-				// add ^delayed
-				log.Log("Scope: AESu: Adding ^delayed: " +
-					taskID.CreateStringWME("delayed", "yes"),
-					9);
+				if (taskID != null)
+				{
+					sml.WMElement active = taskID.FindByAttribute("active", 0);
+					if (active != null)
+					{
+						// remove ^active
+						log.Log("Scope: AESu: Removing ^active: " +
+							active.DestroyWME(),
+							9);
+						// add ^delayed
+						log.Log("Scope: AESu: Adding ^delayed: " +
+							taskID.CreateStringWME("delayed", "yes"),
+							9);
+					}
+				}
 			}
 		}
 
@@ -1169,12 +1190,14 @@ namespace SoarIMPRINTPlugin
 		// Remove a task from the input-link
 		private bool RemoveTask(MAAD.Simulator.IEntity entity)
 		{
-			// get input link
-			sml.Identifier input = agent.GetInputLink();
-
-			bool success = GetInputTask(entity.UniqueID).DestroyWME();
-			log.Log("Scope: Attempting to remove task from input: " + success, 7);
-			return success;
+			sml.Identifier inputTask = GetInputTask(entity.UniqueID);
+			if (inputTask != null)
+			{
+				bool success = inputTask.DestroyWME();
+				log.Log("Scope: Attempting to remove task from input: " + success, 7);
+				return success;
+			}
+			return false;
 		}
 	
 		// Put a task on the input-link
