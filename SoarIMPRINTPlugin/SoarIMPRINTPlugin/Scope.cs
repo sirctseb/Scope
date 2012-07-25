@@ -307,6 +307,10 @@ namespace SoarIMPRINTPlugin
 		private MAAD.Simulator.Utilities.DSimulationBoolEvent OARC;
 		private MAAD.Simulator.Utilities.DSimulationEvent OAEE;
 		private EventHandler<MAAD.Simulator.ClockChangedArgs> OCA;
+		private MAAD.Simulator.Utilities.DSimulationModificationEvent OAEA;
+		private MAAD.Simulator.Utilities.DSimulationModificationEvent OAER;
+		private MAAD.Simulator.Utilities.DSimulationModificationEvent OAES;
+		private MAAD.Simulator.Utilities.DSimulationModificationEvent OAESu;
 
 		// Handler definitions
 		private void OnBeforeBeginningEffect(MAAD.Simulator.Executor executor)
@@ -866,6 +870,80 @@ namespace SoarIMPRINTPlugin
 			deferredDecisions.RemoveWhere(decision => decision.scheduledBeginTime < Clock);
 		}
 
+
+		/** Notify Scope when entity states are modified in IMPRINT
+		 * TODO are these called when we modify entities in plugin code? probably. that will be annoying to handle
+		 **/
+
+		// Remove task from Scope when it is aborted
+		private void OnAfterEntitiesAborted(MAAD.Simulator.Executor executor, System.Collections.ArrayList modifiedEntities)
+		{
+			log.Log("Scope: AEA: Notified of aborted entities", 6);
+			// remove aborted tasks
+			foreach (MAAD.Simulator.IEntity entity in modifiedEntities)
+			{
+				log.Log("Scope: AEA: Removing scope task for entity (" + entity.UniqueID + "): " +
+					this.RemoveTask(entity),
+					8
+				);
+			}
+		}
+
+		// Update task on scope when a task is resumed
+		private void OnAfterEntitiesResumed(MAAD.Simulator.Executor executor, System.Collections.ArrayList modifiedEntities)
+		{
+			log.Log("Scope: AER: Notified of resumed entities", 6);
+			// update resumed tasks
+			foreach (MAAD.Simulator.IEntity entity in modifiedEntities)
+			{
+				log.Log("Scope: AER: Updating scope task for entity (" + entity.UniqueID + ")", 8);
+				sml.Identifier taskID = GetInputTask(entity);
+				// remove ^delayed
+				log.Log("Scope: AER: Removing ^delayed: " +
+					taskID.FindByAttribute("delayed", 0).DestroyWME(),
+					9);
+				// add ^active
+				log.Log("Scope: AER: Adding ^active: " +
+					taskID.CreateStringWME("active", "yes"),
+					9);
+			}
+		}
+
+		// Remove tasks from Scope when stopped
+		// TODO I don't think we should actually do this, because I think they will have gone through
+		// EE and been removed there
+		private void OnAfterEntitiesStopped(MAAD.Simulator.Executor executor, System.Collections.ArrayList modifiedEntities)
+		{
+			log.Log("Scope: AES: Notified of stopped entities", 6);
+			// removed stopped tasks
+			foreach (MAAD.Simulator.IEntity entity in modifiedEntities)
+			{
+				log.Log("Scope: AES: Removing scope task for entity (" + entity.UniqueID + "): " +
+					this.RemoveTask(entity),
+					8);
+			}
+		}
+
+		// Update task on scope when a task is suspended
+		private void OnAfterEntitiesSuspended(MAAD.Simulator.Executor executor, System.Collections.ArrayList modifiedEntities)
+		{
+			log.Log("Scope: AESu: Notified of suspended entities", 6);
+			// update suspended tasks
+			foreach (MAAD.Simulator.IEntity entity in modifiedEntities)
+			{
+				log.Log("Scope: AESu: Updating scope task for entity (" + entity.UniqueID + ")", 8);
+				sml.Identifier taskID = GetInputTask(entity);
+				// remove ^active
+				log.Log("Scope: AESu: Removing ^active: " +
+					taskID.FindByAttribute("active", 0).DestroyWME(),
+					9);
+				// add ^delayed
+				log.Log("Scope: AESu: Adding ^delayed: " +
+					taskID.CreateStringWME("delayed", "yes"),
+					9);
+			}
+		}
+
 		// Register for simulation events
 		private void RegisterEvents()
 		{
@@ -877,6 +955,14 @@ namespace SoarIMPRINTPlugin
 				OAEE = new MAAD.Simulator.Utilities.DSimulationEvent(OnAfterEndingEffect);
 			app.Generator.OnClockAdvance +=
 				OCA = new EventHandler<MAAD.Simulator.ClockChangedArgs>(OnClockAdvance);
+			app.Generator.OnAfterEntitiesAborted +=
+				new MAAD.Simulator.Utilities.DSimulationModificationEvent(OnAfterEntitiesAborted);
+			app.Generator.OnAfterEntitiesResumed +=
+				new MAAD.Simulator.Utilities.DSimulationModificationEvent(OnAfterEntitiesResumed);
+			app.Generator.OnAfterEntitiesStopped +=
+				new MAAD.Simulator.Utilities.DSimulationModificationEvent(OnAfterEntitiesStopped);
+			app.Generator.OnAfterEntitiesSuspended +=
+				new MAAD.Simulator.Utilities.DSimulationModificationEvent(OnAfterEntitiesSuspended);
 		}
 		private void UnregisterEvents()
 		{
@@ -884,6 +970,10 @@ namespace SoarIMPRINTPlugin
 			app.Generator.OnBeforeBeginningEffect -= OBBE;
 			app.Generator.OnAfterEndingEffect -= OAEE;
 			app.Generator.OnClockAdvance -= OCA;
+			app.Generator.OnAfterEntitiesAborted -= OAEA;
+			app.Generator.OnAfterEntitiesResumed -= OAER;
+			app.Generator.OnAfterEntitiesStopped -= OAES;
+			app.Generator.OnAfterEntitiesSuspended -= OAESu;
 		}
 
 		#endregion
