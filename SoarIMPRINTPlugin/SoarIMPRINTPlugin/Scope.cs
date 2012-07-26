@@ -353,11 +353,12 @@ namespace SoarIMPRINTPlugin
 						, 3);
 					//PrintEntitiesInTasks();
 					// add ^delayed to scope task and take off ^active
-					sml.Identifier interruptedTaskWME = GetInputTask(((InterruptDecision)lastDecision).interruptUniqueID);
+					// TODO this is done in suspend handler
+					/*sml.Identifier interruptedTaskWME = GetInputTask(((InterruptDecision)lastDecision).interruptUniqueID);
 					// take off ^active
 					log.Log("Scope: BE: Removing ^active: " + interruptedTaskWME.FindByAttribute("active", 0).DestroyWME(), 8);
 					// add ^delayed
-					log.Log("Scope: BE: Adding ^delayed: " + interruptedTaskWME.CreateStringWME("delayed", "yes"), 8);
+					log.Log("Scope: BE: Adding ^delayed: " + interruptedTaskWME.CreateStringWME("delayed", "yes"), 8);*/
 
 					log.Log("Scope: Added ^delayed and removed ^active", 4);
 
@@ -492,13 +493,14 @@ namespace SoarIMPRINTPlugin
 									//command.FindIDByAttribute("task").CreateStringWME("active", "yes");
 
 									// update task WME
-									sml.Identifier taskElement = GetInputTask(entity);
+									// TODO this is done in resume handler
+									/*sml.Identifier taskElement = GetInputTask(entity);
 									// remove ^delayed from WME
 									log.Log("Scope: EE: Removing ^delayed: " + taskElement.FindByAttribute("delayed", 0).DestroyWME(), 8);
 									// add ^active
 									log.Log("Scope: EE: Adding ^active: " + taskElement.CreateStringWME("active", "yes"), 8);
 
-									log.Log("Scope: EE: Switching from ^delayed to ^active", 6);
+									log.Log("Scope: EE: Switching from ^delayed to ^active", 6);*/
 								}
 							}
 						}
@@ -814,7 +816,9 @@ namespace SoarIMPRINTPlugin
 				log.Log("Scope: CA: Expiring entity (" + UniqueID + ") in task: " + expireTaskID + ": " +
 						app.Executor.Simulation.IModel.Abort("UniqueID", UniqueID), 4);
 				log.Log("Scope: CA: Removing expired entity from input link", 4);
-				GetInputTask(UniqueID).DestroyWME();
+				// TODO this happens in abort handler
+				// TODO test this because it's complicated with the resume
+				//GetInputTask(UniqueID).DestroyWME();
 				entityProperties.RemoveProp(UniqueID, EntityProperty.DelayEntity);
 				entityProperties.RemoveProp(UniqueID, EntityProperty.InterruptEntity);
 			}
@@ -1190,7 +1194,9 @@ namespace SoarIMPRINTPlugin
 		// Remove a task from the input-link
 		private bool RemoveTask(MAAD.Simulator.IEntity entity)
 		{
+			log.Log("Scope: RT: About to get input task");
 			sml.Identifier inputTask = GetInputTask(entity.UniqueID);
+			log.Log("Scope: RT: Got input task: " + inputTask);
 			if (inputTask != null)
 			{
 				bool success = inputTask.DestroyWME();
@@ -1277,6 +1283,17 @@ namespace SoarIMPRINTPlugin
 		}
 		private sml.Identifier GetInputTask(int UniqueID)
 		{
+			log.Log("about to get input link");
+			sml.Identifier input = agent.GetInputLink();
+			log.Log("about to get children from : " + input);
+			IEnumerable<sml.WMElement> children = input.GetChildren();
+			log.Log("about to select for identifiers from : " + children);
+			IEnumerable<sml.Identifier> childrenID = children.Select(wme => wme.ConvertToIdentifier());
+			log.Log("about to filter for UniqueID from : " + childrenID);
+			IEnumerable<sml.Identifier> filtered = childrenID.Where(id => id.FindIntByAttribute("UniqueID") == UniqueID);
+			log.Log("about to take first from : " + filtered);
+			sml.Identifier first = filtered.First();
+			return first;
 			return agent.GetInputLink().GetChildren("task")
 				.Select(wme => wme.ConvertToIdentifier())
 				.Where(id => id.FindIntByAttribute("UniqueID") == UniqueID).First();
