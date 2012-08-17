@@ -1283,7 +1283,7 @@ namespace SoarIMPRINTPlugin
 		}
 		private sml.Identifier GetInputTask(int UniqueID)
 		{
-			log.Log("about to get input link");
+			/*log.Log("about to get input link");
 			sml.Identifier input = agent.GetInputLink();
 			log.Log("about to get children from : " + input);
 			IEnumerable<sml.WMElement> children = input.GetChildren();
@@ -1293,10 +1293,17 @@ namespace SoarIMPRINTPlugin
 			IEnumerable<sml.Identifier> filtered = childrenID.Where(id => id.FindIntByAttribute("UniqueID") == UniqueID);
 			log.Log("about to take first from : " + filtered);
 			sml.Identifier first = filtered.First();
-			return first;
-			return agent.GetInputLink().GetChildren("task")
-				.Select(wme => wme.ConvertToIdentifier())
-				.Where(id => id.FindIntByAttribute("UniqueID") == UniqueID).First();
+			return first;*/
+			try
+			{
+				return agent.GetInputLink().GetChildren("task")
+					.Select(wme => wme.ConvertToIdentifier())
+					.Where(id => id.FindIntByAttribute("UniqueID") == UniqueID).First();
+			}
+			catch (InvalidOperationException)
+			{
+				return null;
+			}
 		}
 		
 		// Mostly for testing
