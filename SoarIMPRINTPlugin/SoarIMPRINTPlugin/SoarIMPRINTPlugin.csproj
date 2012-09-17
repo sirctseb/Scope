@@ -37,24 +37,28 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="MAAD.IMPRINTPro.EditableBase">
-      <HintPath>..\..\..\..\..\Desktop\IMPRINT Pro 3.1\MAAD.IMPRINTPro.EditableBase.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\IMPRINT Pro 3.5\MAAD.IMPRINTPro.EditableBase.dll</HintPath>
+    </Reference>
+    <Reference Include="MAAD.IMPRINTPro.GuiBase, Version=1.0.0.0, Culture=neutral, PublicKeyToken=9a7095b7f93b24e1, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\IMPRINT Pro 3.5\MAAD.IMPRINTPro.GuiBase.dll</HintPath>
     </Reference>
     <Reference Include="MAAD.IMPRINTPro.GuiMain">
-      <HintPath>..\..\..\..\..\Desktop\IMPRINT Pro 3.1\MAAD.IMPRINTPro.GuiMain.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\IMPRINT Pro 3.5\MAAD.IMPRINTPro.GuiMain.dll</HintPath>
     </Reference>
     <Reference Include="MAAD.Network, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ab8390509656afcc, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\Desktop\IMPRINT Pro 3.1\MAAD.Network.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\IMPRINT Pro 3.5\MAAD.Network.dll</HintPath>
     </Reference>
     <Reference Include="MAAD.Plugins.ImprintPluginLoader">
-      <HintPath>..\..\..\..\..\Desktop\IMPRINT Pro 3.1\MAAD.Plugins.ImprintPluginLoader.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\IMPRINT Pro 3.5\MAAD.Plugins.ImprintPluginLoader.dll</HintPath>
     </Reference>
     <Reference Include="MAAD.Simulator, Version=1.0.0.0, Culture=neutral, PublicKeyToken=e15f99eef356f3f8, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\Desktop\IMPRINT Pro 3.1\MAAD.Simulator.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\IMPRINT Pro 3.5\MAAD.Simulator.dll</HintPath>
     </Reference>
     <Reference Include="MAAD.Utilities">
-      <HintPath>..\..\..\..\..\Desktop\IMPRINT Pro 3.1\MAAD.Utilities.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\IMPRINT Pro 3.5\MAAD.Utilities.dll</HintPath>
     </Reference>
     <Reference Include="sml_CSharp">
       <HintPath>..\..\include\sml_CSharp.dll</HintPath>
