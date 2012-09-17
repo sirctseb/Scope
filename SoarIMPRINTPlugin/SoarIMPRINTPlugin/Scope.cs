@@ -268,8 +268,8 @@ namespace SoarIMPRINTPlugin
 					}
 
 					// write data
-					instance.scopeData.WriteCounts("C:\\Users\\christopher.j.best2\\Documents\\ScopeData\\scope_counts.txt");
-					instance.scopeData.WriteTrace("C:\\Users\\christopher.j.best2\\Documents\\ScopeData\\scope_trace.txt");
+					instance.scopeData.WriteCounts("C:\\Users\\cjbest\\Desktop\\Coping\\ScopeData\\scope_counts.txt");
+					instance.scopeData.WriteTrace("C:\\Users\\cjbest\\Desktop\\Coping\\ScopeData\\scope_trace.txt");
 				}
 				else
 				{
