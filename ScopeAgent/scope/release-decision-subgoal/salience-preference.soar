@@ -1,0 +1,50 @@
+# declare preferences between operators that state that an
+# operator that results in a more salient task being performed
+# is preferred
+
+# elaboration to enable salience preferences defined below
+sp {elaborate*salience*preferences
+   (state <s> ^name release-decision)
+-->
+   (<s> ^enable-salience yes)
+}
+
+sp {preference*delay-or-ignore*vs*delay-or-ignore*salience
+   (state <s> ^name release-decision
+              ^enable-salience yes
+              ^operator <o1> +
+              ^operator <o2> +)
+   (<o1> ^name << delay-new ignore-new >>
+         ^task.salience <salience1> <> -1)
+   (<o2> ^name << delay-new ignore-new >>
+         ^task.salience > <salience1>)
+-->
+   (<s> ^operator <o2> > <o1>)
+}
+
+# prefer delay/ignore if potentially interrupted task has higher salience
+sp {preference*delay-or-ignore*to*interrupt*salience
+   (state <s> ^name release-decision
+              ^enable-salience yes
+              ^operator <o1> +
+              ^operator <o2> +)
+   (<o1> ^name << delay-new ignore-new >>
+         ^task.salience <salience1> <> -1)
+   (<o2> ^name interrupt-task
+         ^interrupt-task.salience < <salience1>)
+-->
+   (<s> ^operator <o1> < <o2>)
+}
+# prefer interrupt if new task has higher salience
+sp {preference*interrupt*to*delay-or-ignore*salience
+   (state <s> ^name release-decision
+              ^enable-salience yes
+              ^operator <o1> +
+              ^operator <o2> +)
+   (<o1> ^name interrupt-task
+         ^interrupt-task.salience <salience1> <> -1)
+   (<o2> ^name << delay-new ignore-new >>
+         ^task.salience < <salience1>)
+-->
+   (<s> ^operator <o1> < <o2>)
+}
