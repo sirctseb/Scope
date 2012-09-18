@@ -1,4 +1,4 @@
-316
+322
 SOAR_ID 0
 SOAR_ID 1
 SOAR_ID 2
@@ -315,7 +315,13 @@ ENUMERATION 312 1 state
 ENUMERATION 313 1 Impasse__State_No-Change
 ENUMERATION 314 1 expire-task
 SOAR_ID 315
-322
+SOAR_ID 316
+ENUMERATION 317 1 state
+ENUMERATION 318 1 release-decision-subgoal
+SOAR_ID 319
+ENUMERATION 320 1 state
+ENUMERATION 321 1 Impasse__Operator_Tie
+330
 0 desired 118
 0 disable 69
 0 failure 138
@@ -638,3 +644,11 @@ SOAR_ID 315
 311 top-state 0
 311 type 312
 315 name 314
+316 name 318
+316 superstate 0
+316 top-state 0
+316 type 317
+319 name 321
+319 superstate 316
+319 top-state 0
+319 type 320

@@ -6,20 +6,17 @@ pushd elaborations
 source elaborations_source.soar
 popd
 source debug.soar
-source delay-new.soar
 source expire-decision-subgoal.soar
 pushd expire-decision-subgoal
 source expire-decision-subgoal_source.soar
 popd
-source ignore-new.soar
 source initialize-scope.soar
-source interrupt-task.soar
 source mark-new.soar
 source meta.soar
-source minimize-workload.soar
-source perform-all.soar
-source reject-duplicate.soar
 source release-decision-subgoal.soar
+pushd release-decision-subgoal
+source release-decision-subgoal_source.soar
+popd
 source resume-decision-subgoal.soar
 pushd resume-decision-subgoal
 source resume-decision-subgoal_source.soar
@@ -30,4 +27,3 @@ source simulation-simulator_source.soar
 popd
 source wait.soar
 source workload.soar
-source workload-threshold.soar

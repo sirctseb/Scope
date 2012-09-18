@@ -1,0 +1,11 @@
+source elaborations.soar
+source Impasse__Operator_Tie.soar
+pushd Impasse__Operator_Tie
+source Impasse__Operator_Tie_source.soar
+popd
+source delay-new.soar
+source ignore-new.soar
+source interrupt-task.soar
+source perform-all.soar
+source reject-duplicate.soar
+source workload-threshold.soar

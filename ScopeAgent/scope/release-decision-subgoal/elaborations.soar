@@ -1,0 +1,10 @@
+# copy io and workload to new state when release-decision subgoal is created
+sp {elaborate*release-decision*state
+   (state <s> ^name release-decision
+              ^superstate <ts>)
+   (<ts> ^io <io>
+         ^workload <workload>)
+-->
+   (<s> ^io <io>
+        ^workload <workload>)
+}
