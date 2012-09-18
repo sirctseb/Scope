@@ -1209,14 +1209,14 @@ namespace SoarIMPRINTPlugin
 		// Get the salience value from a task
 		private double GetSalience(MAAD.IMPRINTPro.NetworkTask task)
 		{
-			int start = task.LaunchEffect.IndexOf("//salience ") + 11;
-			int end = task.LaunchEffect.IndexOf(" salience//");
+			int start = task.ReleaseCondition.IndexOf("//salience ") + 11;
+			int end = task.ReleaseCondition.IndexOf(" salience//");
 			if (start == -1 || end == -1)
 			{
 				return -1;
 			}
 			double result;
-			if (Double.TryParse(task.LaunchEffect.Substring(start, end - start), out result))
+			if (Double.TryParse(task.ReleaseCondition.Substring(start, end - start), out result))
 			{
 				return result;
 			}
