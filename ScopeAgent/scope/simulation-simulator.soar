@@ -214,7 +214,8 @@ sp {init*task*events
               ^simulated yes)
    (<o> ^name initialize-scope)
 -->
-   (<o> ^test-name reject-duplicate)
+   (<o> ^test-name priority)
+#   (<o> ^test-name reject-duplicate)
 #   (<o> ^test-name wait)
 #   (<o> ^test-name resume-tie)
 #   (<o> ^test-name resume-none)

@@ -1,0 +1,40 @@
+# declare preferences between operators that state that an
+# operator that results in a higher priority task being performed
+# is preferred
+
+sp {preference*delay-or-ignore*vs*delay-or-ignore*priority
+   (state <s> ^name release-decision
+              ^operator <o1> +
+              ^operator <o2> +)
+   (<o1> ^name << delay-new ignore-new >>
+         ^task.priority <priority1> )
+   (<o2> ^name << delay-new ignore-new >>
+         ^task.priority > <priority1>)
+-->
+   (<s> ^operator <o2> < <o1>)
+}
+
+# prefer delay/ignore if potentially interrupted task has higher priority
+sp {preference*delay-or-ignore*to*interrupt*priority
+   (state <s> ^name release-decision
+              ^operator <o1> +
+              ^operator <o2> +)
+   (<o1> ^name << delay-new ignore-new >>
+         ^task.priority <priority1>)
+   (<o2> ^name interrupt-task
+         ^interrupt-task.priority < <priority1>)
+-->
+   (<s> ^operator <o1> > <o2>)
+}
+# prefer interrupt if new task has higher priority
+sp {preference*interrupt*to*delay-or-ignore*priority
+   (state <s> ^name release-decision
+              ^operator <o1> +
+              ^operator <o2> +)
+   (<o1> ^name interrupt-task
+         ^interrupt-task.priority <priority1>)
+   (<o2> ^name << delay-new ignore-new >>
+         ^task.priority < <priority1>)
+-->
+   (<s> ^operator <o1> > <o2>)
+}

@@ -1,4 +1,4 @@
-322
+324
 SOAR_ID 0
 SOAR_ID 1
 SOAR_ID 2
@@ -321,7 +321,9 @@ ENUMERATION 318 1 release-decision-subgoal
 SOAR_ID 319
 ENUMERATION 320 1 state
 ENUMERATION 321 1 Impasse__Operator_Tie
-330
+ENUMERATION 322 1 priority-test
+SOAR_ID 323
+332
 0 desired 118
 0 disable 69
 0 failure 138
@@ -617,6 +619,7 @@ ENUMERATION 321 1 Impasse__Operator_Tie
 277 operator 295
 277 operator 297
 277 operator 301
+277 operator 323
 277 superstate 0
 277 top-state 0
 277 type 278
@@ -652,3 +655,4 @@ ENUMERATION 321 1 Impasse__Operator_Tie
 319 superstate 316
 319 top-state 0
 319 type 320
+323 name 322
