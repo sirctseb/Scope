@@ -307,6 +307,10 @@ namespace SoarIMPRINTPlugin
 		private MAAD.Simulator.Utilities.DSimulationBoolEvent OARC;
 		private MAAD.Simulator.Utilities.DSimulationEvent OAEE;
 		private EventHandler<MAAD.Simulator.ClockChangedArgs> OCA;
+		private MAAD.Simulator.Utilities.DSimulationModificationEvent OAEA;
+		private MAAD.Simulator.Utilities.DSimulationModificationEvent OAER;
+		private MAAD.Simulator.Utilities.DSimulationModificationEvent OAES;
+		private MAAD.Simulator.Utilities.DSimulationModificationEvent OAESu;
 
 		// Handler definitions
 		private void OnBeforeBeginningEffect(MAAD.Simulator.Executor executor)
@@ -349,11 +353,12 @@ namespace SoarIMPRINTPlugin
 						, 3);
 					//PrintEntitiesInTasks();
 					// add ^delayed to scope task and take off ^active
-					sml.Identifier interruptedTaskWME = GetInputTask(((InterruptDecision)lastDecision).interruptUniqueID);
+					// TODO this is done in suspend handler
+					/*sml.Identifier interruptedTaskWME = GetInputTask(((InterruptDecision)lastDecision).interruptUniqueID);
 					// take off ^active
 					log.Log("Scope: BE: Removing ^active: " + interruptedTaskWME.FindByAttribute("active", 0).DestroyWME(), 8);
 					// add ^delayed
-					log.Log("Scope: BE: Adding ^delayed: " + interruptedTaskWME.CreateStringWME("delayed", "yes"), 8);
+					log.Log("Scope: BE: Adding ^delayed: " + interruptedTaskWME.CreateStringWME("delayed", "yes"), 8);*/
 
 					log.Log("Scope: Added ^delayed and removed ^active", 4);
 
@@ -488,13 +493,14 @@ namespace SoarIMPRINTPlugin
 									//command.FindIDByAttribute("task").CreateStringWME("active", "yes");
 
 									// update task WME
-									sml.Identifier taskElement = GetInputTask(entity);
+									// TODO this is done in resume handler
+									/*sml.Identifier taskElement = GetInputTask(entity);
 									// remove ^delayed from WME
 									log.Log("Scope: EE: Removing ^delayed: " + taskElement.FindByAttribute("delayed", 0).DestroyWME(), 8);
 									// add ^active
 									log.Log("Scope: EE: Adding ^active: " + taskElement.CreateStringWME("active", "yes"), 8);
 
-									log.Log("Scope: EE: Switching from ^delayed to ^active", 6);
+									log.Log("Scope: EE: Switching from ^delayed to ^active", 6);*/
 								}
 							}
 						}
@@ -810,7 +816,9 @@ namespace SoarIMPRINTPlugin
 				log.Log("Scope: CA: Expiring entity (" + UniqueID + ") in task: " + expireTaskID + ": " +
 						app.Executor.Simulation.IModel.Abort("UniqueID", UniqueID), 4);
 				log.Log("Scope: CA: Removing expired entity from input link", 4);
-				GetInputTask(UniqueID).DestroyWME();
+				// TODO this happens in abort handler
+				// TODO test this because it's complicated with the resume
+				//GetInputTask(UniqueID).DestroyWME();
 				entityProperties.RemoveProp(UniqueID, EntityProperty.DelayEntity);
 				entityProperties.RemoveProp(UniqueID, EntityProperty.InterruptEntity);
 			}
@@ -866,6 +874,101 @@ namespace SoarIMPRINTPlugin
 			deferredDecisions.RemoveWhere(decision => decision.scheduledBeginTime < Clock);
 		}
 
+
+		/** Notify Scope when entity states are modified in IMPRINT
+		 * TODO are these called when we modify entities in plugin code? probably. that will be annoying to handle
+		 **/
+
+		// Remove task from Scope when it is aborted
+		private void OnAfterEntitiesAborted(MAAD.Simulator.Executor executor, System.Collections.ArrayList modifiedEntities)
+		{
+			log.Log("Scope: AEA: Notified of aborted entities", 6);
+			// remove aborted tasks
+			foreach (MAAD.Simulator.IEntity entity in modifiedEntities)
+			{
+				log.Log("Scope: AEA: Removing scope task for entity (" + entity.UniqueID + "): " +
+					this.RemoveTask(entity),
+					8
+				);
+			}
+		}
+
+		// Update task on scope when a task is resumed
+		private void OnAfterEntitiesResumed(MAAD.Simulator.Executor executor, System.Collections.ArrayList modifiedEntities)
+		{
+			log.Log("Scope: AER: Notified of resumed entities", 6);
+			// update resumed tasks
+			foreach (MAAD.Simulator.IEntity entity in modifiedEntities)
+			{
+				log.Log("Scope: AER: Updating scope task for entity (" + entity.UniqueID + ")", 8);
+				sml.Identifier taskID = GetInputTask(entity);
+				if (taskID != null)
+				{
+					sml.WMElement delayed = taskID.FindByAttribute("delayed", 0);
+					if (delayed != null)
+					{
+						// remove ^delayed
+						log.Log("Scope: AER: Removing ^delayed: " +
+							delayed.DestroyWME(),
+							9);
+						// add ^active
+						log.Log("Scope: AER: Adding ^active: " +
+							taskID.CreateStringWME("active", "yes"),
+							9);
+					}
+				}
+				else
+				{
+					// TODO should we add the task here?
+					// a task might resume and not be on the input-link if
+					// it hasn't started a task yet. in that case, we wouldn't
+					// want to add it to the input link.
+				}
+			}
+		}
+
+		// Remove tasks from Scope when stopped
+		// TODO I don't think we should actually do this, because I think they will have gone through
+		// EE and been removed there
+		private void OnAfterEntitiesStopped(MAAD.Simulator.Executor executor, System.Collections.ArrayList modifiedEntities)
+		{
+			log.Log("Scope: AES: Notified of stopped entities", 6);
+			// removed stopped tasks
+			foreach (MAAD.Simulator.IEntity entity in modifiedEntities)
+			{
+				log.Log("Scope: AES: Removing scope task for entity (" + entity.UniqueID + "): " +
+					this.RemoveTask(entity),
+					8);
+			}
+		}
+
+		// Update task on scope when a task is suspended
+		private void OnAfterEntitiesSuspended(MAAD.Simulator.Executor executor, System.Collections.ArrayList modifiedEntities)
+		{
+			log.Log("Scope: AESu: Notified of suspended entities", 6);
+			// update suspended tasks
+			foreach (MAAD.Simulator.IEntity entity in modifiedEntities)
+			{
+				log.Log("Scope: AESu: Updating scope task for entity (" + entity.UniqueID + ")", 8);
+				sml.Identifier taskID = GetInputTask(entity);
+				if (taskID != null)
+				{
+					sml.WMElement active = taskID.FindByAttribute("active", 0);
+					if (active != null)
+					{
+						// remove ^active
+						log.Log("Scope: AESu: Removing ^active: " +
+							active.DestroyWME(),
+							9);
+						// add ^delayed
+						log.Log("Scope: AESu: Adding ^delayed: " +
+							taskID.CreateStringWME("delayed", "yes"),
+							9);
+					}
+				}
+			}
+		}
+
 		// Register for simulation events
 		private void RegisterEvents()
 		{
@@ -877,6 +980,14 @@ namespace SoarIMPRINTPlugin
 				OAEE = new MAAD.Simulator.Utilities.DSimulationEvent(OnAfterEndingEffect);
 			app.Generator.OnClockAdvance +=
 				OCA = new EventHandler<MAAD.Simulator.ClockChangedArgs>(OnClockAdvance);
+			app.Generator.OnAfterEntitiesAborted +=
+				new MAAD.Simulator.Utilities.DSimulationModificationEvent(OnAfterEntitiesAborted);
+			app.Generator.OnAfterEntitiesResumed +=
+				new MAAD.Simulator.Utilities.DSimulationModificationEvent(OnAfterEntitiesResumed);
+			app.Generator.OnAfterEntitiesStopped +=
+				new MAAD.Simulator.Utilities.DSimulationModificationEvent(OnAfterEntitiesStopped);
+			app.Generator.OnAfterEntitiesSuspended +=
+				new MAAD.Simulator.Utilities.DSimulationModificationEvent(OnAfterEntitiesSuspended);
 		}
 		private void UnregisterEvents()
 		{
@@ -884,6 +995,10 @@ namespace SoarIMPRINTPlugin
 			app.Generator.OnBeforeBeginningEffect -= OBBE;
 			app.Generator.OnAfterEndingEffect -= OAEE;
 			app.Generator.OnClockAdvance -= OCA;
+			app.Generator.OnAfterEntitiesAborted -= OAEA;
+			app.Generator.OnAfterEntitiesResumed -= OAER;
+			app.Generator.OnAfterEntitiesStopped -= OAES;
+			app.Generator.OnAfterEntitiesSuspended -= OAESu;
 		}
 
 		#endregion
@@ -1079,12 +1194,16 @@ namespace SoarIMPRINTPlugin
 		// Remove a task from the input-link
 		private bool RemoveTask(MAAD.Simulator.IEntity entity)
 		{
-			// get input link
-			sml.Identifier input = agent.GetInputLink();
-
-			bool success = GetInputTask(entity.UniqueID).DestroyWME();
-			log.Log("Scope: Attempting to remove task from input: " + success, 7);
-			return success;
+			log.Log("Scope: RT: About to get input task");
+			sml.Identifier inputTask = GetInputTask(entity.UniqueID);
+			log.Log("Scope: RT: Got input task: " + inputTask);
+			if (inputTask != null)
+			{
+				bool success = inputTask.DestroyWME();
+				log.Log("Scope: Attempting to remove task from input: " + success, 7);
+				return success;
+			}
+			return false;
 		}
 	
 		// Put a task on the input-link
@@ -1168,9 +1287,27 @@ namespace SoarIMPRINTPlugin
 		}
 		private sml.Identifier GetInputTask(int UniqueID)
 		{
-			return agent.GetInputLink().GetChildren("task")
-				.Select(wme => wme.ConvertToIdentifier())
-				.Where(id => id.FindIntByAttribute("UniqueID") == UniqueID).First();
+			/*log.Log("about to get input link");
+			sml.Identifier input = agent.GetInputLink();
+			log.Log("about to get children from : " + input);
+			IEnumerable<sml.WMElement> children = input.GetChildren();
+			log.Log("about to select for identifiers from : " + children);
+			IEnumerable<sml.Identifier> childrenID = children.Select(wme => wme.ConvertToIdentifier());
+			log.Log("about to filter for UniqueID from : " + childrenID);
+			IEnumerable<sml.Identifier> filtered = childrenID.Where(id => id.FindIntByAttribute("UniqueID") == UniqueID);
+			log.Log("about to take first from : " + filtered);
+			sml.Identifier first = filtered.First();
+			return first;*/
+			try
+			{
+				return agent.GetInputLink().GetChildren("task")
+					.Select(wme => wme.ConvertToIdentifier())
+					.Where(id => id.FindIntByAttribute("UniqueID") == UniqueID).First();
+			}
+			catch (InvalidOperationException)
+			{
+				return null;
+			}
 		}
 		
 		// Mostly for testing
