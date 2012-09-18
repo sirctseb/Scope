@@ -2,8 +2,16 @@
 # operator that results in a higher priority task being performed
 # is preferred
 
+# elaboration to enable priority preferences defined below
+sp {elaborate*priority*preferences
+   (state <s> ^name release-decision)
+-->
+   (<s> ^enable-priority yes)
+}
+
 sp {preference*delay-or-ignore*vs*delay-or-ignore*priority
    (state <s> ^name release-decision
+              ^enable-priority yes
               ^operator <o1> +
               ^operator <o2> +)
    (<o1> ^name << delay-new ignore-new >>
@@ -17,6 +25,7 @@ sp {preference*delay-or-ignore*vs*delay-or-ignore*priority
 # prefer delay/ignore if potentially interrupted task has higher priority
 sp {preference*delay-or-ignore*to*interrupt*priority
    (state <s> ^name release-decision
+              ^enable-priority yes
               ^operator <o1> +
               ^operator <o2> +)
    (<o1> ^name << delay-new ignore-new >>
@@ -29,6 +38,7 @@ sp {preference*delay-or-ignore*to*interrupt*priority
 # prefer interrupt if new task has higher priority
 sp {preference*interrupt*to*delay-or-ignore*priority
    (state <s> ^name release-decision
+              ^enable-priority yes
               ^operator <o1> +
               ^operator <o2> +)
    (<o1> ^name interrupt-task
