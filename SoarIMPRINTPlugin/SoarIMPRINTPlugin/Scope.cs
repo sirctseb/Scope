@@ -1248,6 +1248,11 @@ namespace SoarIMPRINTPlugin
 			log.Log("Adding task priority: " + task.TaskPriority, 7);
 			taskLink.CreateFloatWME("priority", task.TaskPriority);
 
+			// add the task salience
+			double salience = GetSalience(task);
+			log.Log("Adding task salience: " + salience, 7);
+			taskLink.CreateFloatWME("salience", salience);
+
 			double totalWorkload = 0;
 
 			foreach (MAAD.IMPRINTPro.TaskDemand demand in task.TaskDemandList.Active)
