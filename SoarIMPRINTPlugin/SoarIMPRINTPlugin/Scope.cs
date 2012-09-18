@@ -1108,6 +1108,10 @@ namespace SoarIMPRINTPlugin
 			log.Log("Adding initial time: " + initTimes[entity.UniqueID], 7);
 			taskLink.CreateFloatWME("initial-time", initTimes[entity.UniqueID]);
 
+			// add the task priority
+			log.Log("Adding task priority: " + task.TaskPriority, 7);
+			taskLink.CreateFloatWME("priority", task.TaskPriority);
+
 			double totalWorkload = 0;
 
 			foreach (MAAD.IMPRINTPro.TaskDemand demand in task.TaskDemandList.Active)
