@@ -1,4 +1,4 @@
-324
+326
 SOAR_ID 0
 SOAR_ID 1
 SOAR_ID 2
@@ -323,7 +323,9 @@ ENUMERATION 320 1 state
 ENUMERATION 321 1 Impasse__Operator_Tie
 ENUMERATION 322 1 priority-test
 SOAR_ID 323
-332
+ENUMERATION 324 1 salience-test
+SOAR_ID 325
+334
 0 desired 118
 0 disable 69
 0 failure 138
@@ -620,6 +622,7 @@ SOAR_ID 323
 277 operator 297
 277 operator 301
 277 operator 323
+277 operator 325
 277 superstate 0
 277 top-state 0
 277 type 278
@@ -656,3 +659,4 @@ SOAR_ID 323
 319 top-state 0
 319 type 320
 323 name 322
+325 name 324

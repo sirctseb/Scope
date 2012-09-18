@@ -43,9 +43,10 @@ VERSION 4
 40	36	OPERATOR reject-duplicate-test reject-duplicate-test.soar 40
 41	36	OPERATOR resume-none-test resume-none-test.soar 41
 42	36	OPERATOR resume-tie-test resume-tie-test.soar 42
-43	36	OPERATOR simultaneous-add-remove-test simultaneous-add-remove-test.soar 43
-44	36	OPERATOR tie-interrupt-delay-ignore-test tie-interrupt-delay-ignore-test.soar 44
-45	36	OPERATOR wait-test wait-test.soar 45
-46	0	OPERATOR wait wait.soar 46
-47	0	OPERATOR workload workload.soar 47
+43	36	OPERATOR salience-test salience-test.soar 49
+44	36	OPERATOR simultaneous-add-remove-test simultaneous-add-remove-test.soar 43
+45	36	OPERATOR tie-interrupt-delay-ignore-test tie-interrupt-delay-ignore-test.soar 44
+46	36	OPERATOR wait-test wait-test.soar 45
+47	0	OPERATOR wait wait.soar 46
+48	0	OPERATOR workload workload.soar 47
 END
