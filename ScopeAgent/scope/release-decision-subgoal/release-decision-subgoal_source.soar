@@ -4,6 +4,7 @@ pushd Impasse__Operator_Tie
 source Impasse__Operator_Tie_source.soar
 popd
 source priority-preference.soar
+source salience-preference.soar
 source delay-new.soar
 source ignore-new.soar
 source interrupt-task.soar
