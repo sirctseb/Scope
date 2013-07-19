@@ -6,7 +6,7 @@
 sp {elaborate*salience*preferences
    (state <s> ^name release-decision)
 -->
-   (<s> ^enable-salience yes)
+   (<s> ^enable-salience no)
 }
 
 sp {preference*delay-or-ignore*vs*delay-or-ignore*salience

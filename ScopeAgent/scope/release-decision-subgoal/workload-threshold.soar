@@ -1,3 +1,14 @@
+# this implements a workload decision method based on workload
+# elaborations that compute workload values are always allowed
+# but actual preferences are only declared if state has workload enabled
+
+# elaboration to enable workload preferences
+sp {elaborate*release-decision*method
+   (state <s> ^name release-decision)
+-->
+   (<s> ^enable-worklod yes)
+}
+
 # elaborate perform-all if it puts us over threshold
 sp {elaborate*perform-all*threshold
    (state <s> ^name release-decision
@@ -12,7 +23,8 @@ sp {elaborate*perform-all*threshold
 # prefer to perform all tasks if we're still under threshold
 sp {preference*perform-all*under-threshold
    (state <s> ^name release-decision
-              ^operator <o> +)
+              ^operator <o> +
+              ^workload-enabled yes)
    (<o> ^name perform-all
        -^over-threshold yes)
 -->
@@ -24,7 +36,8 @@ sp {preference*perform-all*under-threshold
 # TODO should we simply make it worst?
 sp {prefer*not*perform-all
    (state <s> ^name release-decision
-              ^operator <o> +)
+              ^operator <o> +
+              ^workload-enabled yes)
    (<o> ^name perform-all
         ^over-threshold yes)
 -->
@@ -49,7 +62,8 @@ sp {prefer*ignore-if-otherwise-safe
    (state <s> ^disable yes ^name release-decision
               ^io.input-link.threshold <threshold>
               ^operator <o1> +
-              ^operator <o2> +)
+              ^operator <o2> +
+              ^workload-enabled yes)
    (<o1> ^name ignore-new
          ^new-workload <= <threshold>)
    (<o2> ^name interrupt-task)

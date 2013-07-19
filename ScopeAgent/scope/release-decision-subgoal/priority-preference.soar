@@ -6,7 +6,7 @@
 sp {elaborate*priority*preferences
    (state <s> ^name release-decision)
 -->
-   (<s> ^enable-priority yes)
+   (<s> ^enable-priority no)
 }
 
 sp {preference*delay-or-ignore*vs*delay-or-ignore*priority
