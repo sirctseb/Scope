@@ -221,8 +221,9 @@ sp {init*task*events
 #   (<o> ^test-name resume-tie)
 #   (<o> ^test-name resume-none)
 #   (<o> ^test-name tie*interrupt*delay*ignore)
-   (<o> ^test-name default)
+#   (<o> ^test-name default)
 #   (<o> ^test-name simultaneous-add-remove)
+   (<o> ^test-name random)
 }
 
 # copy down simulation commands into substates

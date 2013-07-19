@@ -1,0 +1,45 @@
+# this implements a random preference for delaying tasks
+# when there are other active tasks
+
+# rules:
+# if a delayed task exists, make delay best
+# if an active task exists but no delayed task exists,
+# make delay best with probability p
+# make perform-all best with probability (1-p)
+# 
+# for resume:
+# if there is an active task, resume none
+# if there is no active task, resume
+# TODO will this resume all delayed?
+#
+# see also release-decision-subgoal/random-dual-task-preference
+
+
+# enable dual task resume
+sp {elaborate*resume-decition*random
+   (state <s> ^name resume-decision)
+-->
+   (<s> ^enable-random yes)
+}
+
+# resume random if no active task
+sp {prefer*resume*no-active
+   (state <s> ^name resume-decision
+              ^enable-random yes
+              -^io.input-link.task.active yes
+              ^operator <o> +)
+   (<o> ^name resume-delayed)
+-->
+   # best and indifferent
+   (<s> ^operator <o> =, >)
+}
+# reject resume operators if active task
+sp {prefer*continue-delay*active
+   (state <s> ^name resume-decision
+              ^enable-random yes
+              ^io.input-link.task.active yes
+              ^operator <o> +)
+   (<o> ^name resume-delayed)
+-->
+   (<s> ^operator <o> -)
+}

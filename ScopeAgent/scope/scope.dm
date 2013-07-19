@@ -1,4 +1,4 @@
-326
+332
 SOAR_ID 0
 SOAR_ID 1
 SOAR_ID 2
@@ -325,7 +325,13 @@ ENUMERATION 322 1 priority-test
 SOAR_ID 323
 ENUMERATION 324 1 salience-test
 SOAR_ID 325
-334
+ENUMERATION 326 1 random-dual-task-preference
+SOAR_ID 327
+ENUMERATION 328 1 dual-task-resume
+SOAR_ID 329
+ENUMERATION 330 1 random-test
+SOAR_ID 331
+340
 0 desired 118
 0 disable 69
 0 failure 138
@@ -597,6 +603,7 @@ SOAR_ID 325
 262 name 264
 262 operator 266
 262 operator 268
+262 operator 329
 262 superstate 0
 262 top-state 0
 262 type 263
@@ -623,6 +630,7 @@ SOAR_ID 325
 277 operator 301
 277 operator 323
 277 operator 325
+277 operator 331
 277 superstate 0
 277 top-state 0
 277 type 278
@@ -651,6 +659,7 @@ SOAR_ID 325
 311 type 312
 315 name 314
 316 name 318
+316 operator 327
 316 superstate 0
 316 top-state 0
 316 type 317
@@ -660,3 +669,6 @@ SOAR_ID 325
 319 type 320
 323 name 322
 325 name 324
+327 name 326
+329 name 328
+331 name 330

@@ -1,0 +1,57 @@
+# this implements a random preference for delaying tasks
+# when there are other active tasks
+
+# rules:
+# if a delayed task exists, make delay best
+# if an active task exists but no delayed task exists,
+# make delay best with probability p
+# make perform-all best with probability (1-p)
+# 
+# for resume:
+# if there is an active task, resume none
+# if there is no active task, resume
+# TODO will this resume all delayed?
+
+# elaboration to enable workload preferences
+sp {elaborate*release-decision*random
+   (state <s> ^name release-decision)
+-->
+   (<s> ^enable-random yes
+        ^delay-probability 0.4)
+}
+# elaborate (1-p)
+sp {elaborate*release-decision*1-p
+   (state <s> ^delay-probability <p>)
+-->
+   (<s> ^one-minus-delay-probability (- 1 <p>))
+}
+
+# if delayed task exists, make delay best
+sp {elaborate*delay-new*if-delayed
+   (state <s> ^name release-decision
+              ^operator <o> +
+              ^io.input-link.task.delayed yes
+              ^enable-random yes)
+   (<o> ^name delay-new)
+-->
+   (<s> ^operator <o> >)
+}
+
+# if no delayed task, but active task, make delay best with probablilty p
+# and perform-all best with probability (1-p)
+# TODO will there ever be a case when only one is proposed?
+sp {elaborate*delay-new*if-active
+   (state <s> ^name release-decision
+              ^operator <o-delay> +
+              ^operator <o-perform> +
+              -^io.input-link.task.delayed yes
+              ^io.input-link.task.active yes
+              ^enable-random yes
+              ^delay-probability <p>
+              ^one-minus-delay-probability <1-p>)
+   (<o-delay> ^name delay-new)
+   (<o-perform> ^name perform-all)
+-->
+   (<s> ^operator <o-delay> = <p>, >)
+   (<s> ^operator <o-perform> = <1-p>, >)
+}

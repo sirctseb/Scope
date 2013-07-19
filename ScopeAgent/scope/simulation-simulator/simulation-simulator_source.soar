@@ -1,6 +1,7 @@
 source elaborations.soar
 source default-test.soar
 source priority-test.soar
+source random-test.soar
 source reject-duplicate-test.soar
 source resume-none-test.soar
 source resume-tie-test.soar

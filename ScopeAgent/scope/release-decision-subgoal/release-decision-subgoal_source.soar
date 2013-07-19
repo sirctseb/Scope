@@ -9,5 +9,6 @@ source delay-new.soar
 source ignore-new.soar
 source interrupt-task.soar
 source perform-all.soar
+source random-dual-task-preference.soar
 source reject-duplicate.soar
 source workload-threshold.soar

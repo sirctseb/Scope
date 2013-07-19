@@ -9,13 +9,22 @@ sp {propose*continue-delay
         ^task <task>)
 }
 
+# TODO separate workload preferences out into a separate file
+# enable workload preferences
+sp {elaborate*resume-decision*workload
+   (state <s> ^name resume-decision)
+-->
+   (<s> ^enable-workload no)
+}
+
 # prefer continue delay if resuming will put us over the threshold
 sp {prefer*continue-delay*over*threshold
    (state <s> ^name resume-decision
               ^operator <o1> +
               ^operator <o2> +
               # TODO is workload copied here
-              ^io.input-link.threshold <threshold>)
+              ^io.input-link.threshold <threshold>
+              ^enabled-workload yes)
    (<o1> ^name resume-delayed
          ^task <task>
          ^workload > <threshold>)

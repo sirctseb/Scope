@@ -23,7 +23,9 @@ sp {prefer*resume*under*threshold
    (state <s> ^disable yes ^name resume-decision
               ^operator <o1> +
               ^operator <o2> +
-              ^io.input-link.threshold <threshold>)
+              ^io.input-link.threshold <threshold>
+              # TODO set in continue-delay, should be separate file
+              ^enable-workload yes)
    (<o1> ^name resume-delayed
          ^task <task>
          ^workload <= <threshold>)
@@ -36,7 +38,9 @@ sp {prefer*resume*under*threshold
 sp {prefer*reject*resume*over*threshold
    (state <s> ^name resume-decision
               ^operator <o> +
-              ^io.input-link.threshold <threshold>)
+              ^io.input-link.threshold <threshold>
+              # TODO set in continue-delay, should be separate file
+              ^enable-workload yes)
    (<o> ^name resume-delayed
         ^workload > <threshold>)
 -->

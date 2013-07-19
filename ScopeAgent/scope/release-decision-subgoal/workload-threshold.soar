@@ -3,10 +3,10 @@
 # but actual preferences are only declared if state has workload enabled
 
 # elaboration to enable workload preferences
-sp {elaborate*release-decision*method
+sp {elaborate*release-decision*workload
    (state <s> ^name release-decision)
 -->
-   (<s> ^enable-worklod yes)
+   (<s> ^enable-workload no)
 }
 
 # elaborate perform-all if it puts us over threshold
