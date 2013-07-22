@@ -32,7 +32,7 @@ sp {elaborate*perform-all*no-workload
               ^operator <o> +
               ^enable-random yes)
    (<o> ^name << delay-new ignore-new interrupt-task >>
-        ^<< task new-task >>.workload 0)
+        ^<< task new-task >>.workload <= 0)
 -->
    (<s> ^operator <o> <)
 }
@@ -41,7 +41,7 @@ sp {elaborate*perform-all*no-workload
 sp {elaborate*perform-all*no-current-workload
    (state <s> ^name release-decision
               ^operator <o> +
-              ^workload 0
+              ^workload <= 0
               ^enable-random yes)
    (<o> ^name perform-all)
 -->
@@ -55,7 +55,7 @@ sp {elaborate*delay-new*if-delayed
               ^io.input-link.task.delayed yes
               ^enable-random yes)
    (<o> ^name delay-new
-        ^task.workload > 0)
+        ^task.workload <= 0)
 -->
    (<s> ^operator <o> >)
 }
