@@ -701,6 +701,11 @@ namespace SoarIMPRINTPlugin
 					// destroy the task input element and it will be added later on task begin
 					taskWME.DestroyWME();
 
+                    // remove all entity tags
+                    if(entityProperties.ContainsKey(app.Executor.Simulation.GetEntity().UniqueID)) {
+                        entityProperties[app.Executor.Simulation.GetEntity().UniqueID].Clear();
+                    }
+
 					// store info about the decision
 					this.lastDecision = new DeferredDecision
 					{
