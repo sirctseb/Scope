@@ -23,10 +23,10 @@ sp {elaborate*resume-decition*random
 }
 
 # resume random if no active task
-sp {prefer*resume*no-active
+sp {prefer*resume*no-workload
    (state <s> ^name resume-decision
               ^enable-random yes
-              -^io.input-link.task.active yes
+              ^io.workload 0
               ^operator <o> +)
    (<o> ^name resume-delayed)
 -->
@@ -37,7 +37,7 @@ sp {prefer*resume*no-active
 sp {prefer*continue-delay*active
    (state <s> ^name resume-decision
               ^enable-random yes
-              ^io.input-link.task.active yes
+              ^io.workload > 0
               ^operator <o> +)
    (<o> ^name resume-delayed)
 -->

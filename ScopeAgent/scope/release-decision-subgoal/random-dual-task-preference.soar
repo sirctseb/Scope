@@ -26,12 +26,24 @@ sp {elaborate*release-decision*1-p
    (<s> ^one-minus-delay-probability (- 1 <p>))
 }
 
-# if there is a perform all with a task with 0 workload, make it best
+# make delay, ignore, interrupt worst if workload is 0
 sp {elaborate*perform-all*no-workload
    (state <s> ^name release-decision
-              ^operator <o> +)
-   (<o> ^name perform-all
-        ^task.workload 0)
+              ^operator <o> +
+              ^enable-random yes)
+   (<o> ^name << delay-new ignore-new interrupt-task >>
+        ^<< task new-task >>.workload 0)
+-->
+   (<s> ^operator <o> <)
+}
+
+# if current workload is 0, make perform-all best
+sp {elaborate*perform-all*no-current-workload
+   (state <s> ^name release-decision
+              ^operator <o> +
+              ^workload 0
+              ^enable-random yes)
+   (<o> ^name perform-all)
 -->
    (<s> ^operator <o> >)
 }
@@ -60,9 +72,9 @@ sp {elaborate*delay-new*if-active
               ^enable-random yes
               ^delay-probability <p>
               ^one-minus-delay-probability <1-p>)
-   (<o-delay> ^name delay-new)
-   (<o-perform> ^name perform-all
-                ^workload > 0)
+   (<o-delay> ^name delay-new
+              ^task.workload > 0)
+   (<o-perform> ^name perform-all)
 -->
    (<s> ^operator <o-delay> = <p>, >)
    (<s> ^operator <o-perform> = <1-p>, >)

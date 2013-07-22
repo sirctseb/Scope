@@ -23,9 +23,22 @@ sp {initialize*random
          ^taskID 1
          ^release yes)
    (<n2> ^next <n3>)
-   # t=3 remove the first task, second task should resume
-   (<n3> ^remove <r4>)
+   # t=3 add a third task with 0 workload
+   (<n3> ^add <a3>)
+   (<a3> ^obj <input>
+         ^task <t3>)
+   (<t3> ^workload 0
+         ^taskID 2
+         ^release yes)
+   (<n3> ^next <n4>)
+   # t=4 remove the first task, second task should resume
+   (<n4> ^remove <r4>)
    (<r4> ^obj <input>
          ^task <t1>)
-   (<n3> ^next <end>)
+   (<n4> ^next <n5>)
+   # t=5 remove second task
+   (<n5> ^remove <r5>)
+   (<r5> ^obj <input>
+         ^task <t2>)
+   (<n5> ^next <end>)
 }
