@@ -412,8 +412,7 @@ namespace SoarIMPRINTPlugin
 
 			MAAD.Simulator.Utilities.IRuntimeTask task = executor.EventQueue.GetTask();
 			// ignore first and last tasks
-			int taskID = int.Parse(task.ID);
-			if (taskID > 0 && taskID < 999)
+			if (task.ID != "0" && task.ID != "999")
 			{
 				log.Log("Scope: OnAfterEndingEffect: " + executor.Simulation.GetTask().Properties.Name, "event");
 
@@ -596,8 +595,7 @@ namespace SoarIMPRINTPlugin
 			MAAD.Simulator.Utilities.IRuntimeTask task = executor.EventQueue.GetTask();
 
 			// ignore the first and last task
-			int taskID = int.Parse(task.ID);
-			if (taskID > 0 && taskID < 999)
+			if (task.ID != "0" && task.ID != "999")
 			{
 				log.Log("Scope: OnAfterReleaseCondition: " + executor.Simulation.GetTask().Properties.Name, 4);
 
