@@ -3,9 +3,10 @@ sp {propose*release-decision
    (state <s> ^name scope
               ^io.input-link.task (<task> ^release yes))
    # for debug output
-   (<task> ^taskID <taskID>)
+   (<task> ^taskID <taskID>
+           ^UniqueID <UID>)
 -->
    (<s> ^operator <o> +)
    (<o> ^name release-decision)
-   (write (crlf) |Noticed a task in release state: | <taskID> |(| <task> |), propose to figure out what to do|)
+   (write (crlf) |Noticed a task in release state: | <taskID> |(| <task> |) (| <UID> |), propose to figure out what to do|)
 }
