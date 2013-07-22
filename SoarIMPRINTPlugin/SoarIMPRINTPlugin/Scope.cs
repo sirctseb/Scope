@@ -1196,9 +1196,9 @@ namespace SoarIMPRINTPlugin
 		// Remove a task from the input-link
 		private bool RemoveTask(MAAD.Simulator.IEntity entity)
 		{
-			log.Log("Scope: RT: About to get input task");
+			log.Log("Scope: RT: About to get input task", 6);
 			sml.Identifier inputTask = GetInputTask(entity.UniqueID);
-			log.Log("Scope: RT: Got input task: " + inputTask);
+			log.Log("Scope: RT: Got input task: " + inputTask, 6);
 			if (inputTask != null)
 			{
 				bool success = inputTask.DestroyWME();
