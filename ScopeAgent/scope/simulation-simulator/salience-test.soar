@@ -12,6 +12,7 @@ sp {initialize*salience
    (<a1> ^obj <input>
          ^task <t1>)
    (<t1> ^taskID 0
+         ^UniqueID 0
          ^workload 4
          ^release yes
          ^salience 2)
@@ -21,6 +22,7 @@ sp {initialize*salience
    (<a2> ^obj <input>
          ^task <t2>)
    (<t2> ^taskID 1
+         ^UniqueID 1
          ^workload 5
          ^release yes
          ^salience 3)
@@ -30,6 +32,7 @@ sp {initialize*salience
    (<a3> ^obj <input>
          ^task <t3>)
    (<t3> ^taskID 2
+         ^UniqueID 2
          ^workload 2
          ^release yes
          ^salience 3)

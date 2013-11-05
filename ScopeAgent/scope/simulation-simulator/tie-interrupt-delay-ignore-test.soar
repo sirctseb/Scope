@@ -12,6 +12,7 @@ sp {initialize*tie*interrupt*delay*ignore
    (<a1> ^obj <input>
          ^task <t1>)
    (<t1> ^taskID 0
+         ^UniqueID 0
          ^workload 4
          ^release yes)
    (<n1> ^next <n2>)
@@ -20,6 +21,7 @@ sp {initialize*tie*interrupt*delay*ignore
    (<a2> ^obj <input>
          ^task <t2>)
    (<t2> ^taskID 1
+         ^UniqueID 1
          ^workload 5
          ^release yes)
    (<n2> ^next <n3>)
@@ -28,6 +30,7 @@ sp {initialize*tie*interrupt*delay*ignore
    (<a3> ^obj <input>
          ^task <t3>)
    (<t3> ^taskID 2
+         ^UniqueID 2
          ^workload 2
          ^release yes)
    (<n3> ^next <n4>)

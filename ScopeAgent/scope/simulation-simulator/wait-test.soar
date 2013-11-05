@@ -13,6 +13,7 @@ sp {init*wait-test
    (<n2> ^task <t2>)
    (<t2> ^workload 4
          ^taskID 0
+         ^UniqueID 0
          ^release yes)
    (<n2> ^next <n3>)
    (<n3> ^next <n4>)

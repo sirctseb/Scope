@@ -13,6 +13,7 @@ sp {initialize*reject-duplicate
          ^task <t1>)
    (<t1> ^workload 3
          ^taskID 0
+         ^UniqueID 0
          ^release yes)
    (<n1> ^next <n2>)
    # t=2 add the second task, should delay
@@ -21,6 +22,7 @@ sp {initialize*reject-duplicate
          ^task <t2>)
    (<t2> ^workload 7
          ^taskID 1
+         ^UniqueID 1
          ^release yes)
    (<n2> ^next <n3>)
    # t=3 add duplicate second task, should reject
@@ -29,6 +31,7 @@ sp {initialize*reject-duplicate
          ^task <t3>)
    (<t3> ^workload 7
          ^taskID 1
+         ^UniqueID 1
          ^release yes)
    (<n3> ^next <n4>)
    # t=3 remove the first task, second task should fail to resume
