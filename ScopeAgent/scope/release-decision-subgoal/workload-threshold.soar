@@ -2,6 +2,15 @@
 # elaborations that compute workload values are always allowed
 # but actual preferences are only declared if state has workload enabled
 
+# define workload threshold
+# TODO how did we do it with the UAV stuff?
+sp {elaborate*define*threshold
+   (state <s> ^name scope
+              ^io.input-link  <i>)
+-->
+   (<i> ^threshold 8)
+}
+
 # elaboration to enable workload preferences
 sp {elaborate*release-decision*workload
    (state <s> ^name release-decision)
